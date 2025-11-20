@@ -7,9 +7,6 @@ function App() {
   const [medicinesData, setMedicinesData] = useState([])
   const [selectedAgeCategory, setSelectedAgeCategory] = useState('toate')
   
-  // Debug opțional: verifică dacă API key-ul este încărcat din env (fără a o loga)
-  const openAiKeyConfigured = Boolean(import.meta.env.VITE_OPENAI_API_KEY)
-  console.log('OpenAI key configured:', openAiKeyConfigured)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
     return saved ? JSON.parse(saved) : false

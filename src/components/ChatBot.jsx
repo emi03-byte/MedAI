@@ -60,33 +60,11 @@ IMPORTANT:
         ...newMessages
       ]
 
-      // Citește cheia din .env (VITE_OPENAI_API_KEY)
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-      if (!apiKey) {
-        console.error('OpenAI API key not found. Set VITE_OPENAI_API_KEY in .env')
-        setMessages([...newMessages, { 
-          role: 'assistant', 
-          content: 'Nu găsesc cheia de acces OpenAI. Configurează VITE_OPENAI_API_KEY și reîncarcă aplicația.' 
-        }])
-        setIsLoading(false)
-        return
-      }
-
-      // Test de conectivitate (opțional)
-      console.log('Testing network connectivity...')
-      try {
-        const testResponse = await fetch('https://httpbin.org/get', { method: 'GET' })
-        console.log('Network test successful:', testResponse.status)
-      } catch (testError) {
-        console.error('Network test failed:', testError)
-      }
-      
       console.log('Making request to OpenAI API through proxy...')
       const response = await fetch('/api/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',
