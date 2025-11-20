@@ -411,9 +411,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     const advice = []
     
     try {
-      const mouse = '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'
-      if (!mouse) {
-        console.error('OpenAI API key not found')
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+      if (!apiKey) {
+        console.error('OpenAI API key not found. Set VITE_OPENAI_API_KEY in .env')
         return []
       }
 
@@ -421,7 +421,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mouse}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: 'gpt-3.5-turbo',

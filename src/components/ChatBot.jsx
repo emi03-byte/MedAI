@@ -60,15 +60,19 @@ IMPORTANT:
         ...newMessages
       ]
 
-      // Debug: verifică API key-ul
-      const apiKey = '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'
-      console.log('API Key exists:', !!apiKey)
-      console.log('API Key length:', apiKey ? apiKey.length : 0)
-      console.log('API Key starts with:', apiKey ? apiKey.substring(0, 20) + '...' : 'undefined')
-      console.log('Full API Key:', apiKey)
-      console.log('All env vars:', import.meta.env)
-      
-      // Test de conectivitates
+      // Citește cheia din .env (VITE_OPENAI_API_KEY)
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+      if (!apiKey) {
+        console.error('OpenAI API key not found. Set VITE_OPENAI_API_KEY in .env')
+        setMessages([...newMessages, { 
+          role: 'assistant', 
+          content: 'Nu găsesc cheia de acces OpenAI. Configurează VITE_OPENAI_API_KEY și reîncarcă aplicația.' 
+        }])
+        setIsLoading(false)
+        return
+      }
+
+      // Test de conectivitate (opțional)
       console.log('Testing network connectivity...')
       try {
         const testResponse = await fetch('https://httpbin.org/get', { method: 'GET' })

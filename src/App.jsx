@@ -7,9 +7,9 @@ function App() {
   const [medicinesData, setMedicinesData] = useState([])
   const [selectedAgeCategory, setSelectedAgeCategory] = useState('toate')
   
-  // Debug: verifică dacă API key-ul este încărcat
-console.log('App loaded - API Key exists:', true)
-console.log('App loaded - API Key length:', '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'.length)
+  // Debug opțional: verifică dacă API key-ul este încărcat din env (fără a o loga)
+  const openAiKeyConfigured = Boolean(import.meta.env.VITE_OPENAI_API_KEY)
+  console.log('OpenAI key configured:', openAiKeyConfigured)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
     return saved ? JSON.parse(saved) : false
