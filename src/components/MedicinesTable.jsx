@@ -1,6 +1,23 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import './MedicinesTable.css'
 
+const hospitalFaviconSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Hospital icon">
+  <rect width="64" height="64" fill="#f5f5f5"/>
+  <rect x="8" y="20" width="48" height="36" rx="4" fill="#e0ecff" stroke="#3a6ad6" stroke-width="2"/>
+  <rect x="28" y="38" width="8" height="18" fill="#3a6ad6"/>
+  <rect x="18" y="24" width="28" height="18" fill="#ffffff" stroke="#c2d4ff" stroke-width="1.5"/>
+  <rect x="30" y="26" width="4" height="14" fill="#d93025"/>
+  <rect x="24" y="32" width="16" height="4" fill="#d93025"/>
+  <rect x="12" y="46" width="12" height="10" fill="#3a6ad6" opacity="0.4"/>
+  <rect x="40" y="46" width="12" height="10" fill="#3a6ad6" opacity="0.4"/>
+  <rect x="12" y="12" width="10" height="6" fill="#3a6ad6" rx="2"/>
+  <text x="17" y="17" font-size="4" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif">H</text>
+</svg>
+`.trim()
+
+const hospitalFaviconDataUrl = `data:image/svg+xml,${encodeURIComponent(hospitalFaviconSvg)}`
+
 const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {} }) => {
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -818,6 +835,7 @@ Programează o consultație dacă simptomele persistă`
       <html>
         <head>
           <meta charset="utf-8">
+          <link rel="icon" type="image/svg+xml" href="${hospitalFaviconDataUrl}">
           <title>Rețetă</title>
           <style>
             body {
