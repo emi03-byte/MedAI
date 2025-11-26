@@ -53,8 +53,10 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [isNightMode, setIsNightMode] = useState(false)
   const [isRecordingMic, setIsRecordingMic] = useState(false)
   const recognitionRef = useRef(null)
+  const [recordedText, setRecordedText] = useState('')
   const [isRecordingMicPatient, setIsRecordingMicPatient] = useState(false)
   const recognitionPatientRef = useRef(null)
+  const [recordedTextPatient, setRecordedTextPatient] = useState('')
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -1189,6 +1191,7 @@ Programează o consultație dacă simptomele persistă`
   const headers = getVisibleHeaders()
   const canGenerateAIAdvice = patientNotes && patientNotes.trim() !== ''
 
+
   const handleMicRecord = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
@@ -1210,26 +1213,36 @@ Programează o consultație dacă simptomele persistă`
     if (isRecordingMic) {
       setIsRecordingMic(false)
       recognition.stop()
+      
+      // Adaugă textul înregistrat la început
+      if (recordedText.trim()) {
+        const existingText = doctorNotes.replace(recordedText, '').trim()
+        setDoctorNotes(recordedText + (existingText ? `\n\n${existingText}` : ''))
+        setRecordedText('')
+      }
       return
     }
 
-    let finalTranscript = doctorNotes
+    // Salvează textul existent (fără textul înregistrat)
+    const existingText = doctorNotes.replace(recordedText, '').trim()
+    setRecordedText('')
 
     recognition.onresult = (event) => {
       let interimTranscript = ''
-      let newFinalTranscript = finalTranscript
+      let newRecordedText = recordedText
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          newFinalTranscript = (newFinalTranscript ? `${newFinalTranscript} ${transcript}` : transcript).trim()
-          finalTranscript = newFinalTranscript
+          newRecordedText = (newRecordedText ? `${newRecordedText} ${transcript}` : transcript).trim()
+          setRecordedText(newRecordedText)
         } else {
           interimTranscript += transcript
         }
       }
 
-      const displayText = newFinalTranscript + (interimTranscript ? ` ${interimTranscript}` : '')
+      // Afișează textul live: textul înregistrat + interim + textul existent
+      const displayText = newRecordedText + (interimTranscript ? ` ${interimTranscript}` : '') + (existingText ? `\n\n${existingText}` : '')
       setDoctorNotes(displayText)
     }
 
@@ -1259,14 +1272,21 @@ Programează o consultație dacă simptomele persistă`
       console.error('Speech recognition start error:', error)
       setIsRecordingMic(false)
     }
-  }, [isRecordingMic, doctorNotes])
+  }, [isRecordingMic, doctorNotes, recordedText])
 
   const handleStopMic = useCallback(() => {
     if (recognitionRef.current && isRecordingMic) {
       setIsRecordingMic(false)
       recognitionRef.current.stop()
+      
+      // Adaugă textul înregistrat la început
+      if (recordedText.trim()) {
+        const existingText = doctorNotes.replace(recordedText, '').trim()
+        setDoctorNotes(recordedText + (existingText ? `\n\n${existingText}` : ''))
+        setRecordedText('')
+      }
     }
-  }, [isRecordingMic])
+  }, [isRecordingMic, recordedText, doctorNotes])
 
   const handleMicRecordPatient = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -1289,26 +1309,36 @@ Programează o consultație dacă simptomele persistă`
     if (isRecordingMicPatient) {
       setIsRecordingMicPatient(false)
       recognition.stop()
+      
+      // Adaugă textul înregistrat la început
+      if (recordedTextPatient.trim()) {
+        const existingText = patientNotes.replace(recordedTextPatient, '').trim()
+        setPatientNotes(recordedTextPatient + (existingText ? `\n\n${existingText}` : ''))
+        setRecordedTextPatient('')
+      }
       return
     }
 
-    let finalTranscript = patientNotes
+    // Salvează textul existent (fără textul înregistrat)
+    const existingText = patientNotes.replace(recordedTextPatient, '').trim()
+    setRecordedTextPatient('')
 
     recognition.onresult = (event) => {
       let interimTranscript = ''
-      let newFinalTranscript = finalTranscript
+      let newRecordedText = recordedTextPatient
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          newFinalTranscript = (newFinalTranscript ? `${newFinalTranscript} ${transcript}` : transcript).trim()
-          finalTranscript = newFinalTranscript
+          newRecordedText = (newRecordedText ? `${newRecordedText} ${transcript}` : transcript).trim()
+          setRecordedTextPatient(newRecordedText)
         } else {
           interimTranscript += transcript
         }
       }
 
-      const displayText = newFinalTranscript + (interimTranscript ? ` ${interimTranscript}` : '')
+      // Afișează textul live: textul înregistrat + interim + textul existent
+      const displayText = newRecordedText + (interimTranscript ? ` ${interimTranscript}` : '') + (existingText ? `\n\n${existingText}` : '')
       setPatientNotes(displayText)
     }
 
@@ -1338,14 +1368,21 @@ Programează o consultație dacă simptomele persistă`
       console.error('Speech recognition start error:', error)
       setIsRecordingMicPatient(false)
     }
-  }, [isRecordingMicPatient, patientNotes])
+  }, [isRecordingMicPatient, patientNotes, recordedTextPatient])
 
   const handleStopMicPatient = useCallback(() => {
     if (recognitionPatientRef.current && isRecordingMicPatient) {
       setIsRecordingMicPatient(false)
       recognitionPatientRef.current.stop()
+      
+      // Adaugă textul înregistrat la început
+      if (recordedTextPatient.trim()) {
+        const existingText = patientNotes.replace(recordedTextPatient, '').trim()
+        setPatientNotes(recordedTextPatient + (existingText ? `\n\n${existingText}` : ''))
+        setRecordedTextPatient('')
+      }
     }
-  }, [isRecordingMicPatient])
+  }, [isRecordingMicPatient, recordedTextPatient, patientNotes])
 
   // Obține toate coloanele pentru modal
   const getAllColumns = () => {
@@ -1452,7 +1489,7 @@ Programează o consultație dacă simptomele persistă`
             <div className="patient-notes-textarea-wrapper">
               <textarea
                 className="patient-notes-textarea"
-                placeholder="Scrie aici cum se simte pacientul, simptomele, observațiile medicale..."
+                placeholder="Scrie aici exact ce spune pacientul - simptomele, durerile, observațiile lui."
                 value={patientNotes}
                 onChange={(e) => setPatientNotes(e.target.value)}
               />
