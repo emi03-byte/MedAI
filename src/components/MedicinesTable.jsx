@@ -1079,6 +1079,11 @@ Programează o consultație dacă simptomele persistă`
     }
   }, [selectedProducts, medicinePlans, patientNotes, doctorNotes])
 
+  const handleFinalize = useCallback(() => {
+    downloadSelectedProducts()
+    clearAllPatientData()
+  }, [downloadSelectedProducts, clearAllPatientData])
+
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
     return Object.keys(filters[filterKey] || {}).filter(value =>
@@ -1206,6 +1211,12 @@ Programează o consultație dacă simptomele persistă`
             />
             <div className="patient-notes-footer">
               <p>Notițele se salvează automat</p>
+              <button 
+                className="patient-notes-done-button"
+                onClick={() => setShowPatientNotes(false)}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
@@ -1595,12 +1606,6 @@ etc.`
                 >
                   ➕
                 </button>
-                <button 
-                  className="download-selected-products-button"
-                  onClick={downloadSelectedProducts}
-                >
-                  📥
-                </button>
                 {selectedProducts.length > 0 && (
                   <button 
                     className="clear-selected-products-button"
@@ -1688,11 +1693,18 @@ etc.`
               )}
             </div>
             
-            {selectedProducts.length > 0 && (
-              <div className="selected-products-summary">
-                <p>Total produse selectate: <strong>{selectedProducts.length}</strong></p>
-              </div>
-            )}
+            <div className="selected-products-summary">
+              <p className="selected-products-summary-text">
+                Total produse selectate: <strong>{selectedProducts.length}</strong>
+              </p>
+              <button 
+                className="download-selected-products-button download-selected-products-button--compact"
+                onClick={handleFinalize}
+                title="Descarcă lista de medicamente selectate"
+              >
+                📥 Finalizare
+              </button>
+            </div>
           </div>
         </div>
       </div>
