@@ -53,6 +53,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [isNightMode, setIsNightMode] = useState(false)
   const [isRecordingMic, setIsRecordingMic] = useState(false)
   const recognitionRef = useRef(null)
+  const [isRecordingMicPatient, setIsRecordingMicPatient] = useState(false)
+  const recognitionPatientRef = useRef(null)
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -67,6 +69,10 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       if (recognitionRef.current) {
         recognitionRef.current.abort()
         recognitionRef.current = null
+      }
+      if (recognitionPatientRef.current) {
+        recognitionPatientRef.current.abort()
+        recognitionPatientRef.current = null
       }
     }
   }, [])
@@ -1193,8 +1199,8 @@ Programează o consultație dacă simptomele persistă`
     if (!recognitionRef.current) {
       const recognition = new SpeechRecognition()
       recognition.lang = 'ro-RO'
-      recognition.continuous = false
-      recognition.interimResults = false
+      recognition.continuous = true
+      recognition.interimResults = true
       recognition.maxAlternatives = 1
       recognitionRef.current = recognition
     }
@@ -1202,23 +1208,48 @@ Programează o consultație dacă simptomele persistă`
     const recognition = recognitionRef.current
 
     if (isRecordingMic) {
+      setIsRecordingMic(false)
       recognition.stop()
       return
     }
 
+    let finalTranscript = doctorNotes
+
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      setDoctorNotes(prev => (prev ? `${prev}\n${transcript}` : transcript))
+      let interimTranscript = ''
+      let newFinalTranscript = finalTranscript
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          newFinalTranscript = (newFinalTranscript ? `${newFinalTranscript} ${transcript}` : transcript).trim()
+          finalTranscript = newFinalTranscript
+        } else {
+          interimTranscript += transcript
+        }
+      }
+
+      const displayText = newFinalTranscript + (interimTranscript ? ` ${interimTranscript}` : '')
+      setDoctorNotes(displayText)
     }
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error)
-      alert('Nu am putut prelua vocea. Încearcă din nou.')
+      if (event.error !== 'no-speech') {
+        alert('Nu am putut prelua vocea. Încearcă din nou.')
+      }
       setIsRecordingMic(false)
     }
 
     recognition.onend = () => {
-      setIsRecordingMic(false)
+      if (isRecordingMic) {
+        try {
+          recognition.start()
+        } catch (error) {
+          console.error('Speech recognition restart error:', error)
+          setIsRecordingMic(false)
+        }
+      }
     }
 
     try {
@@ -1226,8 +1257,95 @@ Programează o consultație dacă simptomele persistă`
       setIsRecordingMic(true)
     } catch (error) {
       console.error('Speech recognition start error:', error)
+      setIsRecordingMic(false)
     }
-  }, [isRecordingMic, setDoctorNotes])
+  }, [isRecordingMic, doctorNotes])
+
+  const handleStopMic = useCallback(() => {
+    if (recognitionRef.current && isRecordingMic) {
+      setIsRecordingMic(false)
+      recognitionRef.current.stop()
+    }
+  }, [isRecordingMic])
+
+  const handleMicRecordPatient = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Browserul tău nu suportă recunoașterea vocală. Folosește Chrome sau Edge.')
+      return
+    }
+
+    if (!recognitionPatientRef.current) {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'ro-RO'
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.maxAlternatives = 1
+      recognitionPatientRef.current = recognition
+    }
+
+    const recognition = recognitionPatientRef.current
+
+    if (isRecordingMicPatient) {
+      setIsRecordingMicPatient(false)
+      recognition.stop()
+      return
+    }
+
+    let finalTranscript = patientNotes
+
+    recognition.onresult = (event) => {
+      let interimTranscript = ''
+      let newFinalTranscript = finalTranscript
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          newFinalTranscript = (newFinalTranscript ? `${newFinalTranscript} ${transcript}` : transcript).trim()
+          finalTranscript = newFinalTranscript
+        } else {
+          interimTranscript += transcript
+        }
+      }
+
+      const displayText = newFinalTranscript + (interimTranscript ? ` ${interimTranscript}` : '')
+      setPatientNotes(displayText)
+    }
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error)
+      if (event.error !== 'no-speech') {
+        alert('Nu am putut prelua vocea. Încearcă din nou.')
+      }
+      setIsRecordingMicPatient(false)
+    }
+
+    recognition.onend = () => {
+      if (isRecordingMicPatient) {
+        try {
+          recognition.start()
+        } catch (error) {
+          console.error('Speech recognition restart error:', error)
+          setIsRecordingMicPatient(false)
+        }
+      }
+    }
+
+    try {
+      recognition.start()
+      setIsRecordingMicPatient(true)
+    } catch (error) {
+      console.error('Speech recognition start error:', error)
+      setIsRecordingMicPatient(false)
+    }
+  }, [isRecordingMicPatient, patientNotes])
+
+  const handleStopMicPatient = useCallback(() => {
+    if (recognitionPatientRef.current && isRecordingMicPatient) {
+      setIsRecordingMicPatient(false)
+      recognitionPatientRef.current.stop()
+    }
+  }, [isRecordingMicPatient])
 
   // Obține toate coloanele pentru modal
   const getAllColumns = () => {
@@ -1331,12 +1449,36 @@ Programează o consultație dacă simptomele persistă`
                 ✕
               </button>
             </div>
-            <textarea
-              className="patient-notes-textarea"
-              placeholder="Scrie aici cum se simte pacientul, simptomele, observațiile medicale..."
-              value={patientNotes}
-              onChange={(e) => setPatientNotes(e.target.value)}
-            />
+            <div className="patient-notes-textarea-wrapper">
+              <textarea
+                className="patient-notes-textarea"
+                placeholder="Scrie aici cum se simte pacientul, simptomele, observațiile medicale..."
+                value={patientNotes}
+                onChange={(e) => setPatientNotes(e.target.value)}
+              />
+              <div className="mic-buttons-container">
+                {isRecordingMicPatient && (
+                  <button
+                    type="button"
+                    className="mic-cancel-button"
+                    aria-label="Oprește înregistrarea"
+                    title="Oprește înregistrarea"
+                    onClick={handleStopMicPatient}
+                  >
+                    STOP
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`mic-record-button ${isRecordingMicPatient ? 'recording' : ''}`}
+                  aria-label={isRecordingMicPatient ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                  title={isRecordingMicPatient ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
+                  onClick={handleMicRecordPatient}
+                >
+                  <span className="mic-emoji" aria-hidden="true">🎙️</span>
+                </button>
+              </div>
+            </div>
             <div className="patient-notes-footer">
               <p>Notițele se salvează automat</p>
               <button 
@@ -1439,15 +1581,28 @@ etc.`
                   value={doctorNotes}
                   onChange={(e) => setDoctorNotes(e.target.value)}
                 />
-                <button
-                  type="button"
-                  className={`mic-record-button ${isRecordingMic ? 'recording' : ''}`}
-                  aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
-                  title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
-                  onClick={handleMicRecord}
-                >
-                  <span className="mic-emoji" aria-hidden="true">🎙️</span>
-                </button>
+                <div className="mic-buttons-container">
+                  {isRecordingMic && (
+                    <button
+                      type="button"
+                      className="mic-cancel-button"
+                      aria-label="Oprește înregistrarea"
+                      title="Oprește înregistrarea"
+                      onClick={handleStopMic}
+                    >
+                      STOP
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`mic-record-button ${isRecordingMic ? 'recording' : ''}`}
+                    aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                    title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
+                    onClick={handleMicRecord}
+                  >
+                    <span className="mic-emoji" aria-hidden="true">🎙️</span>
+                  </button>
+                </div>
               </div>
               
               {/* Jumătatea de jos - Sfaturile AI */}

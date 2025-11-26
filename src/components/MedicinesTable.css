@@ -2588,6 +2588,13 @@ body.med-ai-dark {
   transform: scale(1.1);
 }
 
+.patient-notes-textarea-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
 .patient-notes-textarea {
   flex: 1;
   padding: 24px;
@@ -2807,10 +2814,17 @@ body.med-ai-dark .patient-notes-done-button:hover {
   border-radius: 0 0 10px 10px;
 }
 
-.mic-record-button {
+.mic-buttons-container {
   position: absolute;
   bottom: 16px;
   right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.mic-record-button {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -2824,6 +2838,35 @@ body.med-ai-dark .patient-notes-done-button:hover {
   font-size: 24px;
   line-height: 1;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mic-cancel-button {
+  width: 50px;
+  height: 32px;
+  border-radius: 16px;
+  border: 2px solid #dc2626;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.mic-cancel-button:hover {
+  background: #dc2626;
+  color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+}
+
+.mic-cancel-button:active {
+  transform: scale(0.95);
 }
 
 .mic-record-button.recording {
@@ -2843,6 +2886,19 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .medicines-container.dark-mode .mic-record-button {
   background: linear-gradient(135deg, #15234f, #253d7a);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.55);
+}
+
+.medicines-container.dark-mode .mic-cancel-button {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.medicines-container.dark-mode .mic-cancel-button:hover {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
 }
 
 .mic-emoji {
