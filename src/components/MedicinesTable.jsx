@@ -50,6 +50,30 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [showAddMedicineModal, setShowAddMedicineModal] = useState(false)
   const [newMedicineName, setNewMedicineName] = useState('')
   const [showNewPatientModal, setShowNewPatientModal] = useState(false)
+  const [isNightMode, setIsNightMode] = useState(false)
+
+  useEffect(() => {
+    document.body.classList.toggle('med-ai-dark', isNightMode)
+
+    return () => {
+      document.body.classList.remove('med-ai-dark')
+    }
+  }, [isNightMode])
+
+  useEffect(() => {
+    const body = document.body
+    if (!body) return
+
+    if (isNightMode) {
+      body.classList.add('medai-dark-mode')
+    } else {
+      body.classList.remove('medai-dark-mode')
+    }
+
+    return () => {
+      body.classList.remove('medai-dark-mode')
+    }
+  }, [isNightMode])
 
   // Primele 4 coloane afișate implicit (fără Coduri_Boli)
   const defaultVisibleColumns = [
@@ -1159,8 +1183,8 @@ Programează o consultație dacă simptomele persistă`
 
   // Loading și Error states DUPĂ toate hook-urile
   if (loading) {
-    return (
-      <div className="medicines-container">
+  return (
+    <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
         <div className="loading">Se încarcă datele...</div>
       </div>
     )
@@ -1175,9 +1199,18 @@ Programează o consultație dacă simptomele persistă`
   }
 
   return (
-    <div className="medicines-container">
+    <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
       {/* Buton Pacient Nou - în colțul din dreapta sus */}
       <div className="new-patient-button-container">
+        <button
+          type="button"
+          className={`theme-toggle-button ${isNightMode ? 'theme-toggle-button--night' : ''}`}
+          onClick={() => setIsNightMode(prev => !prev)}
+          aria-label={isNightMode ? 'Comută la modul zi' : 'Comută la modul noapte'}
+          aria-pressed={isNightMode}
+        >
+          <span className={`theme-icon ${isNightMode ? 'theme-icon--moon' : 'theme-icon--sun'}`}></span>
+        </button>
         <button 
           className="new-patient-button"
           onClick={openNewPatientModal}
@@ -1349,6 +1382,14 @@ etc.`
                   value={doctorNotes}
                   onChange={(e) => setDoctorNotes(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="mic-record-button"
+                  aria-label="Înregistrează notițe vocale"
+                  title="Înregistrează notițe vocale"
+                >
+                  <span className="mic-emoji" aria-hidden="true">🎙️</span>
+                </button>
               </div>
               
               {/* Jumătatea de jos - Sfaturile AI */}
@@ -1590,21 +1631,29 @@ etc.`
                           : (currentPage - 1) * itemsPerPage + index + 1
                         }
                       </td>
-                    {headers.map((header, headerIndex) => (
-                      <td key={headerIndex}>
-                        {header === 'Coduri_Boli' ? (
-                          <div className="diseases-cell">
-                            {getDiseasesForMedicine(medicine[header]).map((disease, idx) => (
-                              <span key={idx} className="disease-tag">
-                                {disease.cod}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          medicine[header]
-                        )}
-                      </td>
-                    ))}
+                    {headers.map((header, headerIndex) => {
+                      const isNameColumn = header === 'Denumire medicament'
+                      return (
+                        <td 
+                          key={headerIndex}
+                          className={isNameColumn ? 'medicine-name-cell' : undefined}
+                        >
+                          {header === 'Coduri_Boli' ? (
+                            <div className="diseases-cell">
+                              {getDiseasesForMedicine(medicine[header]).map((disease, idx) => (
+                                <span key={idx} className="disease-tag">
+                                  {disease.cod}
+                                </span>
+                              ))}
+                            </div>
+                          ) : isNameColumn ? (
+                            <span className="medicine-name">{medicine[header]}</span>
+                          ) : (
+                            medicine[header]
+                          )}
+                        </td>
+                      )
+                    })}
                     </tr>
                   )
                 })}
