@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import html2pdf from 'html2pdf.js'
 import './MedicinesTable.css'
 
 const hospitalFaviconSvg = `
@@ -501,6 +502,27 @@ Programează o consultație dacă simptomele persistă`
     setAiAdvice([])
   }, [])
 
+  const handleGenerateAIAdvice = useCallback(async () => {
+    if (!patientNotes || patientNotes.trim() === '') {
+      console.log('⚠️ Nu există indicații pacient pentru generarea sfaturilor AI')
+      return
+    }
+
+    console.log('🤖 Generez sfaturi AI suplimentare la cererea medicului')
+    setIsLoadingAI(true)
+
+    try {
+      const newAdvice = await generateAIAdvice(patientNotes)
+      console.log('✅ Sfaturi AI suplimentare:', newAdvice)
+      setAiAdvice(prevAdvice => [...prevAdvice, ...newAdvice])
+    } catch (error) {
+      console.error('Eroare la generarea sfaturilor AI:', error)
+      setAiAdvice(prevAdvice => [...prevAdvice, { icon: '❌', text: 'Eroare la generarea sfaturilor AI' }])
+    } finally {
+      setIsLoadingAI(false)
+    }
+  }, [generateAIAdvice, patientNotes])
+
   // Funcție pentru afișarea bolilor asociate unui medicament
   const getDiseasesForMedicine = (coduriBoli) => {
     if (!coduriBoli || !diseases || Object.keys(diseases).length === 0) {
@@ -813,23 +835,12 @@ Programează o consultație dacă simptomele persistă`
   }, [newMedicineName, closeAddMedicineModal])
 
   // Funcție pentru descărcarea produselor selectate în format PDF
-  const downloadSelectedProducts = useCallback(() => {
-    // Actualizează automat toate datele înainte de generarea PDF-ului
+  const downloadSelectedProducts = useCallback(async () => {
     console.log('🔄 Actualizez datele pentru PDF...')
-    
-    // Verifică dacă există medicamente selectate sau notițe
     const hasMedicines = selectedProducts.length > 0
     const hasPatientNotes = patientNotes && patientNotes.trim() !== ''
     const hasDoctorNotes = doctorNotes && doctorNotes.trim() !== ''
-    
-    // Permite descărcarea chiar dacă nu există conținut
-    console.log('📊 Status conținut:', {
-      medicamente: selectedProducts.length,
-      indicatiiPacient: hasPatientNotes,
-      indicatiiMedic: hasDoctorNotes
-    })
 
-    // Generează conținutul HTML pentru PDF
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -840,22 +851,26 @@ Programează o consultație dacă simptomele persistă`
           <style>
             body {
               font-family: Arial, sans-serif;
-              margin: 20px;
+              margin: 28px;
               color: #333;
+            }
+            .pdf-container {
+              margin-top: 35px;
+              padding: 24px 30px 36px;
             }
             .header {
               text-align: center;
-              margin-bottom: 30px;
+              margin-bottom: 28px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 10px;
             }
             .header h1 {
               color: #1a3c7c;
               margin: 0;
-              font-size: 24px;
+              font-size: 24.5px;
             }
             .header p {
-              margin: 5px 0 0 0;
+              margin: 6px 0 0 0;
               color: #666;
               font-size: 14px;
             }
@@ -865,15 +880,23 @@ Programează o consultație dacă simptomele persistă`
               margin-top: 20px;
             }
             .table th {
-              background-color: #1a3c7c;
-              color: white;
-              padding: 12px;
+              background-color: transparent;
+              color: #555;
+              padding: 12px 10px;
               text-align: left;
-              font-weight: bold;
+              font-weight: 600;
+              border-bottom: 1px solid #d0d7e4;
+              font-size: 13.6px;
             }
             .table td {
-              padding: 10px 12px;
-              border-bottom: 1px solid #ddd;
+              padding: 11px 9px;
+              border-bottom: 1px solid #e1e5ed;
+              font-size: 13px;
+            }
+            .table td:nth-child(2),
+            .table td:nth-child(3),
+            .table td:nth-child(4) {
+              font-size: 14.5px;
             }
             .table tr:nth-child(even) {
               background-color: #f9f9f9;
@@ -887,7 +910,7 @@ Programează o consultație dacă simptomele persistă`
             }
             .patient-indications-section h2 {
               color: #1a3c7c;
-              font-size: 18px;
+              font-size: 18.2px;
               margin-bottom: 15px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 5px;
@@ -896,8 +919,8 @@ Programează o consultație dacă simptomele persistă`
               background-color: #f8f9fa;
               border: 1px solid #e9ecef;
               border-radius: 5px;
-              padding: 15px;
-              font-size: 14px;
+              padding: 16px;
+              font-size: 14.7px;
               line-height: 1.6;
               color: #333;
               white-space: pre-line;
@@ -920,7 +943,7 @@ Programează o consultație dacă simptomele persistă`
             }
             .doctor-indications-section h2 {
               color: #1a3c7c;
-              font-size: 18px;
+              font-size: 18.2px;
               margin-bottom: 15px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 5px;
@@ -929,8 +952,8 @@ Programează o consultație dacă simptomele persistă`
               background-color: #f8f9fa;
               border: 1px solid #e9ecef;
               border-radius: 5px;
-              padding: 15px;
-              font-size: 14px;
+              padding: 16px;
+              font-size: 14.7px;
               line-height: 1.6;
               color: #333;
               white-space: pre-line;
@@ -950,7 +973,7 @@ Programează o consultație dacă simptomele persistă`
             .footer {
               margin-top: 30px;
               text-align: center;
-              font-size: 12px;
+              font-size: 12.5px;
               color: #666;
               border-top: 1px solid #ddd;
               padding-top: 10px;
@@ -958,129 +981,143 @@ Programează o consultație dacă simptomele persistă`
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>${hasMedicines ? 'Rețetă' : 'Notițe Medicale'}</h1>
-            <p>Generat la: ${new Date().toLocaleString('ro-RO')}</p>
-            ${hasMedicines ? `<p>Total medicamente: ${selectedProducts.length}</p>` : ''}
-          </div>
-          
-          ${hasMedicines ? `
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Nr.</th>
-                <th>Denumire Medicament</th>
-                <th>Cod Medicament</th>
-                <th>Plan de Tratament</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${selectedProducts.map((product, index) => {
-                const medicineCode = product['Cod medicament']
-                const plan = medicinePlans[medicineCode]
-                let planDescription = 'Fără plan'
-                
-                if (plan) {
-                  const parts = []
+          <div class="pdf-container">
+            <div class="header">
+              <h1>${hasMedicines ? 'Rețetă' : 'Notițe Medicale'}</h1>
+              <p>Generat la: ${new Date().toLocaleString('ro-RO')}</p>
+              ${hasMedicines ? `<p>Total medicamente: ${selectedProducts.length}</p>` : ''}
+            </div>
+            
+            ${hasMedicines ? `
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Denumire Medicament</th>
+                  <th>Cod Medicament</th>
+                  <th>Plan de Tratament</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${selectedProducts.map((product, index) => {
+                  const medicineCode = product['Cod medicament']
+                  const plan = medicinePlans[medicineCode]
+                  let planDescription = 'Fără plan'
                   
-                  if (plan.duration) {
-                    parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
-                  }
-                  
-                  if (plan.frequency) {
-                    if (plan.isCustomFrequency) {
-                      // Dacă e personalizare, afișează direct valoarea cu "ori pe zi"
-                      parts.push(`${plan.frequency} ori pe zi`)
-                    } else {
-                      // Dacă e selecție predefinită, folosește maparea
-                      const frequencyMap = {
-                        '1': 'o dată pe zi',
-                        '2': 'de două ori pe zi',
-                        '3': 'de trei ori pe zi',
-                        '4': 'de patru ori pe zi'
-                      }
-                      parts.push(frequencyMap[plan.frequency] || `${plan.frequency} ori pe zi`)
+                  if (plan) {
+                    const parts = []
+                    
+                    if (plan.duration) {
+                      parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
                     }
-                  }
-                  
-                  if (plan.times && plan.times.length > 0) {
-                    const timesText = plan.times.map(time => {
-                      const timeMap = {
-                        'dimineata': 'dimineața',
-                        'amiaza': 'amiaza',
-                        'seara': 'seara',
-                        'noaptea': 'noaptea',
-                        'la4ore': 'la 4 ore',
-                        'la6ore': 'la 6 ore',
-                        'la8ore': 'la 8 ore',
-                        'la12ore': 'la 12 ore'
+                    
+                    if (plan.frequency) {
+                      if (plan.isCustomFrequency) {
+                        parts.push(`${plan.frequency} ori pe zi`)
+                      } else {
+                        const frequencyMap = {
+                          '1': 'o dată pe zi',
+                          '2': 'de două ori pe zi',
+                          '3': 'de trei ori pe zi',
+                          '4': 'de patru ori pe zi'
+                        }
+                        parts.push(frequencyMap[plan.frequency] || `${plan.frequency} ori pe zi`)
                       }
-                      return timeMap[time] || time
-                    }).join(', ')
-                    parts.push(timesText)
+                    }
+                    
+                    if (plan.times && plan.times.length > 0) {
+                      const timesText = plan.times.map(time => {
+                        const timeMap = {
+                          'dimineata': 'dimineața',
+                          'amiaza': 'amiaza',
+                          'seara': 'seara',
+                          'noaptea': 'noaptea',
+                          'la4ore': 'la 4 ore',
+                          'la6ore': 'la 6 ore',
+                          'la8ore': 'la 8 ore',
+                          'la12ore': 'la 12 ore'
+                        }
+                        return timeMap[time] || time
+                      }).join(', ')
+                      parts.push(timesText)
+                    }
+                    
+                    planDescription = parts.join(', ')
                   }
                   
-                  planDescription = parts.join(', ')
-                }
-                
-                return `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${product['Denumire medicament'] || 'N/A'}</td>
-                    <td>${product['Cod medicament'] || 'N/A'}</td>
-                    <td>${planDescription}</td>
-                  </tr>
-                `
-              }).join('')}
-            </tbody>
-          </table>
-          ` : ''}
-          
-          ${patientNotes && patientNotes.trim() ? `
-          <div class="patient-indications-section">
-            <h2>Indicații Pacient</h2>
-            <div class="patient-indications-content">
-              ${patientNotes}
+                  return `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${product['Denumire medicament'] || 'N/A'}</td>
+                      <td>${product['Cod medicament'] || 'N/A'}</td>
+                      <td>${planDescription}</td>
+                    </tr>
+                  `
+                }).join('')}
+              </tbody>
+            </table>
+            ` : ''}
+            
+            ${patientNotes && patientNotes.trim() ? `
+            <div class="patient-indications-section">
+              <h2>Indicații Pacient</h2>
+              <div class="patient-indications-content">
+                ${patientNotes}
+              </div>
             </div>
-          </div>
-          ` : ''}
-          
-          ${doctorNotes && doctorNotes.trim() ? `
-          <div class="doctor-indications-section">
-            <h2>Indicații Medic</h2>
-            <div class="doctor-indications-content">
-              ${doctorNotes}
+            ` : ''}
+            
+            ${doctorNotes && doctorNotes.trim() ? `
+            <div class="doctor-indications-section">
+              <h2>Indicații Medic</h2>
+              <div class="doctor-indications-content">
+                ${doctorNotes}
+              </div>
             </div>
-          </div>
-          ` : ''}
-          
-          <div class="footer">
-            <p>Document generat automat de aplicația MedAI</p>
+            ` : ''}
+            
+            <div class="footer">
+              <p>Document generat automat de aplicația MedAI</p>
+            </div>
           </div>
         </body>
       </html>
     `
 
-    // Creează un nou window pentru print
-    console.log('📄 Generez PDF cu datele actualizate...')
-    const printWindow = window.open('', '_blank')
-    printWindow.document.write(htmlContent)
-    printWindow.document.close()
-    
-    // Așteaptă ca conținutul să se încarce și apoi deschide dialogul de print
-    printWindow.onload = function() {
-      console.log('✅ PDF generat cu succes! Deschid dialogul de print...')
-      printWindow.print()
-      // Opțional: închide fereastra după print
-      setTimeout(() => {
-        printWindow.close()
-        console.log('📄 PDF descărcat și fereastra închisă')
-      }, 1000)
+    const filename = `reteta-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.pdf`
+
+    try {
+      const worker = html2pdf()
+        .set({
+          margin: 0,
+          filename,
+          html2canvas: { scale: 2, dpi: 192, letterRendering: true, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(htmlContent)
+        .toPdf()
+
+      await worker.save()
+
+      const pdfBlob = await worker.output('blob')
+      const blobUrl = URL.createObjectURL(pdfBlob)
+
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename
+      link.click()
+
+      window.open(blobUrl, '_blank', 'noopener,noreferrer')
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000)
+    } catch (error) {
+      console.error('❌ Eroare la generarea PDF-ului:', error)
+      alert('A apărut o eroare la generarea PDF-ului. Încearcă din nou.')
     }
   }, [selectedProducts, medicinePlans, patientNotes, doctorNotes])
 
-  const handleFinalize = useCallback(() => {
-    downloadSelectedProducts()
+  const handleFinalize = useCallback(async () => {
+    await downloadSelectedProducts()
     clearAllPatientData()
   }, [downloadSelectedProducts, clearAllPatientData])
 
@@ -1109,6 +1146,7 @@ Programează o consultație dacă simptomele persistă`
   }
 
   const headers = getVisibleHeaders()
+  const canGenerateAIAdvice = patientNotes && patientNotes.trim() !== ''
 
   // Obține toate coloanele pentru modal
   const getAllColumns = () => {
@@ -1317,9 +1355,58 @@ etc.`
               <div className="ai-advice-section">
                 <div className="ai-advice-section-header">
                   <h4>🤖 Sfaturi AI</h4>
+                  <button
+                    className="ai-generate-button"
+                    onClick={handleGenerateAIAdvice}
+                    disabled={!canGenerateAIAdvice || isLoadingAI}
+                  >
+                    {isLoadingAI ? 'Se generează...' : 'Generează sfaturi'}
+                  </button>
                 </div>
                 <div className="ai-advice-content">
-                  {isLoadingAI ? (
+                  {aiAdvice.length > 0 && aiAdvice.map((advice, index) => (
+                    <div key={`${advice.text}-${index}`} className="ai-advice-item">
+                      {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
+                      <span className="ai-advice-text">{advice.text}</span>
+                      <div className="ai-advice-actions">
+                        <button 
+                          className="ai-advice-delete-btn"
+                          onClick={() => {
+                            const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                            setAiAdvice(newAdvice)
+                          }}
+                        >
+                          ✕
+                        </button>
+                        <button 
+                          className="ai-advice-save-btn"
+                          onClick={() => {
+                            console.log('💾 Salvând sfatul:', advice)
+                            console.log('📝 Notițele medicului înainte:', doctorNotes)
+                            
+                            // Adaugă sfatul la notițele medicului pe un rând nou
+                            const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
+                            console.log('📝 Notițele medicului după:', newDoctorNotes)
+                            
+                            // Actualizează state-ul
+                            setDoctorNotes(newDoctorNotes)
+                            
+                            // Șterge sfatul din lista AI
+                            const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                            console.log('🗑️ Sfaturi AI după ștergere:', newAdvice)
+                            setAiAdvice(newAdvice)
+                            
+                            // Mesaj de confirmare
+                            console.log('✅ Sfatul a fost salvat în notițele medicului!')
+                          }}
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isLoadingAI && (
                     <div className="ai-advice-loading">
                       <div className="ai-loading-spinner">
                         <span></span>
@@ -1328,52 +1415,16 @@ etc.`
                       </div>
                       <span className="ai-loading-text">🤖 AI-ul analizează indicațiile și generează sfaturi medicale...</span>
                     </div>
-                  ) : aiAdvice.length > 0 ? (
-                    aiAdvice.map((advice, index) => (
-                      <div key={index} className="ai-advice-item">
-                        {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
-                        <span className="ai-advice-text">{advice.text}</span>
-                        <div className="ai-advice-actions">
-                          <button 
-                            className="ai-advice-delete-btn"
-                            onClick={() => {
-                              const newAdvice = aiAdvice.filter((_, i) => i !== index)
-                              setAiAdvice(newAdvice)
-                            }}
-                          >
-                            ✕
-                          </button>
-                          <button 
-                            className="ai-advice-save-btn"
-                            onClick={() => {
-                              console.log('💾 Salvând sfatul:', advice)
-                              console.log('📝 Notițele medicului înainte:', doctorNotes)
-                              
-                              // Adaugă sfatul la notițele medicului pe un rând nou
-                              const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
-                              console.log('📝 Notițele medicului după:', newDoctorNotes)
-                              
-                              // Actualizează state-ul
-                              setDoctorNotes(newDoctorNotes)
-                              
-                              // Șterge sfatul din lista AI
-                              const newAdvice = aiAdvice.filter((_, i) => i !== index)
-                              console.log('🗑️ Sfaturi AI după ștergere:', newAdvice)
-                              setAiAdvice(newAdvice)
-                              
-                              // Mesaj de confirmare
-                              console.log('✅ Sfatul a fost salvat în notițele medicului!')
-                            }}
-                          >
-                            ✓
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
+                  )}
+
+                  {!isLoadingAI && aiAdvice.length === 0 && (
                     <div className="ai-advice-empty">
                       <span className="ai-advice-icon">🤖</span>
-                      <span className="ai-advice-text">Scrie indicațiile pacientului pentru a primi sfaturi AI personalizate</span>
+                      <span className="ai-advice-text">
+                        {canGenerateAIAdvice
+                          ? 'Apasă „Generează sfaturi” pentru a obține recomandări AI bazate pe indicațiile pacientului'
+                          : 'Scrie indicațiile pacientului pentru a primi sfaturi AI personalizate'}
+                      </span>
                     </div>
                   )}
                 </div>
