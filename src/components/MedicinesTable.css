@@ -2826,6 +2826,11 @@ body.med-ai-dark .patient-notes-done-button:hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.mic-record-button.recording {
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.35), 0 8px 18px rgba(26, 60, 124, 0.45);
+  animation: pulse-record 1.2s ease-in-out infinite;
+}
+
 .mic-record-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(26, 60, 124, 0.4);
@@ -2838,6 +2843,22 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .medicines-container.dark-mode .mic-record-button {
   background: linear-gradient(135deg, #15234f, #253d7a);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.55);
+}
+
+.mic-emoji {
+  display: inline-block;
+}
+
+@keyframes pulse-record {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .mic-emoji {

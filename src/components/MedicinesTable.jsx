@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import html2pdf from 'html2pdf.js'
 import './MedicinesTable.css'
 
@@ -51,6 +51,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [newMedicineName, setNewMedicineName] = useState('')
   const [showNewPatientModal, setShowNewPatientModal] = useState(false)
   const [isNightMode, setIsNightMode] = useState(false)
+  const [isRecordingMic, setIsRecordingMic] = useState(false)
+  const recognitionRef = useRef(null)
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -59,6 +61,15 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       document.body.classList.remove('med-ai-dark')
     }
   }, [isNightMode])
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort()
+        recognitionRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const body = document.body
@@ -1172,6 +1183,52 @@ Programează o consultație dacă simptomele persistă`
   const headers = getVisibleHeaders()
   const canGenerateAIAdvice = patientNotes && patientNotes.trim() !== ''
 
+  const handleMicRecord = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Browserul tău nu suportă recunoașterea vocală. Folosește Chrome sau Edge.')
+      return
+    }
+
+    if (!recognitionRef.current) {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'ro-RO'
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+      recognitionRef.current = recognition
+    }
+
+    const recognition = recognitionRef.current
+
+    if (isRecordingMic) {
+      recognition.stop()
+      return
+    }
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setDoctorNotes(prev => (prev ? `${prev}\n${transcript}` : transcript))
+    }
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error)
+      alert('Nu am putut prelua vocea. Încearcă din nou.')
+      setIsRecordingMic(false)
+    }
+
+    recognition.onend = () => {
+      setIsRecordingMic(false)
+    }
+
+    try {
+      recognition.start()
+      setIsRecordingMic(true)
+    } catch (error) {
+      console.error('Speech recognition start error:', error)
+    }
+  }, [isRecordingMic, setDoctorNotes])
+
   // Obține toate coloanele pentru modal
   const getAllColumns = () => {
     if (medicines.length === 0) return []
@@ -1384,9 +1441,10 @@ etc.`
                 />
                 <button
                   type="button"
-                  className="mic-record-button"
-                  aria-label="Înregistrează notițe vocale"
-                  title="Înregistrează notițe vocale"
+                  className={`mic-record-button ${isRecordingMic ? 'recording' : ''}`}
+                  aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                  title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
+                  onClick={handleMicRecord}
                 >
                   <span className="mic-emoji" aria-hidden="true">🎙️</span>
                 </button>
