@@ -256,6 +256,583 @@ body.med-ai-dark {
   color: #34d399;
 }
 
+/* Dark mode pentru meniul de filtre */
+.medicines-container.dark-mode .filter-menu-modal {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .filter-menu-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .filter-menu-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .filter-menu-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .filter-menu-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .filter-menu-content {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .filter-menu-description {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .filter-menu-item {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.medicines-container.dark-mode .filter-menu-item:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(125, 211, 252, 0.4);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.medicines-container.dark-mode .filter-menu-item-icon {
+  color: rgba(125, 211, 252, 0.8);
+}
+
+.medicines-container.dark-mode .filter-menu-item-title {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .filter-menu-item-count {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .filter-menu-item-arrow {
+  color: rgba(125, 211, 252, 0.6);
+}
+
+.medicines-container.dark-mode .filter-menu-item:hover .filter-menu-item-arrow {
+  color: rgba(125, 211, 252, 0.9);
+}
+
+/* Dark mode pentru coloana de produse selectate */
+.medicines-container.dark-mode .selected-products-column {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .clear-selected-products-button {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.medicines-container.dark-mode .clear-selected-products-button:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #f87171;
+}
+
+.medicines-container.dark-mode .download-selected-products-button {
+  background: rgba(125, 211, 252, 0.12);
+  border-color: rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .download-selected-products-button:hover {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #38bdf8;
+}
+
+.medicines-container.dark-mode .add-medicine-button {
+  background: rgba(125, 211, 252, 0.12);
+  border-color: rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .add-medicine-button:hover {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #38bdf8;
+}
+
+/* Dark mode pentru modalul "Pacient nou" */
+.medicines-container.dark-mode .new-patient-modal-content {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .new-patient-modal-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .new-patient-modal-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .new-patient-modal-icon {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.medicines-container.dark-mode .new-patient-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .new-patient-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .new-patient-modal-body {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 13, 27, 0.95) 100%);
+}
+
+.medicines-container.dark-mode .new-patient-modal-warning h4 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .new-patient-modal-warning p {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .warning-list {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.medicines-container.dark-mode .warning-list li {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .warning-note {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.medicines-container.dark-mode .new-patient-modal-footer {
+  background: rgba(8, 13, 27, 0.95);
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .new-patient-cancel-button {
+  background: rgba(15, 23, 42, 0.8);
+  color: var(--text-secondary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .new-patient-cancel-button:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .new-patient-confirm-button {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-color: rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .new-patient-confirm-button:hover {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(59, 130, 246, 0.3));
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #38bdf8;
+}
+
+/* Dark mode pentru modalul de selecție a coloanelor */
+.medicines-container.dark-mode .modal-content {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .modal-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .modal-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .modal-body {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .column-checkbox {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.medicines-container.dark-mode .column-checkbox:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(125, 211, 252, 0.4);
+}
+
+.medicines-container.dark-mode .column-checkbox input[type="checkbox"] {
+  accent-color: rgba(125, 211, 252, 0.8);
+}
+
+.medicines-container.dark-mode .column-checkbox span {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .modal-footer {
+  border-top-color: rgba(148, 163, 184, 0.25);
+  background: transparent;
+}
+
+.medicines-container.dark-mode .modal-button {
+  background: rgba(125, 211, 252, 0.12);
+  border-color: rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .modal-button:hover {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #38bdf8;
+}
+
+/* Dark mode pentru subpaginile de filtre */
+.medicines-container.dark-mode .filter-modal-section {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .filter-modal-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .filter-modal-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .close-filters-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .close-filters-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .clear-filters-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .clear-filters-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .filter-modal-content {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .filter-search-input {
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .filter-search-input:focus {
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 4px 12px rgba(125, 211, 252, 0.2);
+}
+
+.medicines-container.dark-mode .filter-search-input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.medicines-container.dark-mode .clear-filters-inline-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .clear-filters-inline-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .filter-option {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.medicines-container.dark-mode .filter-option:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(125, 211, 252, 0.4);
+}
+
+.medicines-container.dark-mode .filter-option input[type="checkbox"] {
+  accent-color: rgba(125, 211, 252, 0.8);
+}
+
+.medicines-container.dark-mode .filter-option span {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .filter-more {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .filter-no-results {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* Dark mode pentru modalul de adăugare medicament */
+.medicines-container.dark-mode .add-medicine-modal-content {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-body {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 13, 27, 0.95) 100%);
+}
+
+.medicines-container.dark-mode .add-medicine-form label {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .add-medicine-input {
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .add-medicine-input:focus {
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.medicines-container.dark-mode .add-medicine-input::placeholder {
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-footer {
+  background: rgba(8, 13, 27, 0.95);
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .add-medicine-cancel-button {
+  background: rgba(15, 23, 42, 0.8);
+  color: var(--text-secondary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .add-medicine-cancel-button:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .add-medicine-save-button {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-color: rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .add-medicine-save-button:hover {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(59, 130, 246, 0.3));
+  border-color: rgba(125, 211, 252, 0.6);
+  color: #38bdf8;
+}
+
+/* Dark mode pentru modalul de plan de tratament */
+.medicines-container.dark-mode .plan-modal-content {
+  background: rgba(8, 13, 27, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .plan-modal-header {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .plan-modal-header h3 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .plan-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .plan-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.medicines-container.dark-mode .plan-modal-body {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .medicine-info {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .medicine-info h4 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .medicine-info p {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .plan-section h5 {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .plan-option-button {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .plan-option-button:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(125, 211, 252, 0.4);
+}
+
+.medicines-container.dark-mode .plan-option-button.selected {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.5);
+  color: #7dd3fc;
+}
+
+.medicines-container.dark-mode .plan-custom-button {
+  background: rgba(251, 146, 60, 0.2);
+  border-color: rgba(251, 146, 60, 0.4);
+  color: #fb923c;
+}
+
+.medicines-container.dark-mode .plan-custom-button:hover {
+  background: rgba(251, 146, 60, 0.3);
+  border-color: rgba(251, 146, 60, 0.6);
+}
+
+.medicines-container.dark-mode .custom-input-section {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .custom-input {
+  background: rgba(8, 13, 27, 0.8);
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.medicines-container.dark-mode .custom-input:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
+}
+
+.medicines-container.dark-mode .custom-save-button {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.medicines-container.dark-mode .custom-save-button:hover {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.medicines-container.dark-mode .custom-cancel-button {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.medicines-container.dark-mode .custom-cancel-button:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.medicines-container.dark-mode .custom-display {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.medicines-container.dark-mode .custom-label {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .custom-value {
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .plan-modal-footer {
+  border-top-color: rgba(148, 163, 184, 0.25);
+  background: transparent;
+}
+
+.medicines-container.dark-mode .plan-save-button:hover {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+}
+
+.medicines-container.dark-mode .plan-cancel-button:hover {
+  background: rgba(148, 163, 184, 0.25);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
 .medicines-container.dark-mode .theme-toggle-button {
   background: rgba(8, 13, 27, 0.95);
   border-color: rgba(125, 211, 252, 0.35);
@@ -3613,10 +4190,18 @@ body.med-ai-dark .patient-notes-done-button:hover {
   box-shadow: 0 6px 20px rgba(26, 60, 124, 0.4);
 }
 
-body.med-ai-dark .chat-button {
-  background: linear-gradient(135deg, #15234f, #253d7a) !important;
-  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.65);
+/* Dark Mode ChatBot Styles */
+body.medai-dark-mode .chat-button {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 58, 138, 0.9)) !important;
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.65);
   color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+body.medai-dark-mode .chat-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(2, 6, 23, 0.75);
+  border-color: #60a5fa;
 }
 
 .chat-modal-overlay {
@@ -3634,6 +4219,11 @@ body.med-ai-dark .chat-button {
   padding: 20px;
 }
 
+body.medai-dark-mode .chat-modal-overlay {
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(12px);
+}
+
 .chat-modal {
   background: white;
   border-radius: 16px;
@@ -3646,6 +4236,12 @@ body.med-ai-dark .chat-button {
   overflow: hidden;
 }
 
+body.medai-dark-mode .chat-modal {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.75);
+}
+
 .chat-header {
   background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
   color: white;
@@ -3655,11 +4251,20 @@ body.med-ai-dark .chat-button {
   align-items: center;
 }
 
+body.medai-dark-mode .chat-header {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.3));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+}
+
 .chat-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: white;
+}
+
+body.medai-dark-mode .chat-header h3 {
+  color: #f8fafc;
 }
 
 .chat-close-button {
@@ -3677,8 +4282,14 @@ body.med-ai-dark .chat-button {
   transition: background 0.2s ease;
 }
 
-.chat-close-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+body.medai-dark-mode .chat-close-button {
+  background: rgba(148, 163, 184, 0.2);
+  color: #f8fafc;
+}
+
+body.medai-dark-mode .chat-close-button:hover {
+  background: rgba(148, 163, 184, 0.4);
+  color: #cfe1ff;
 }
 
 .chat-messages {
@@ -3688,6 +4299,11 @@ body.med-ai-dark .chat-button {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--background-light);
+}
+
+body.medai-dark-mode .chat-messages {
+  background: var(--background-main);
 }
 
 .chat-message {
@@ -3717,16 +4333,33 @@ body.med-ai-dark .chat-button {
   border-bottom-right-radius: 4px;
 }
 
+body.medai-dark-mode .chat-message.user .message-content {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(96, 165, 250, 0.3));
+  color: #f8fafc;
+  border: 1px solid rgba(96, 165, 250, 0.5);
+}
+
 .chat-message.assistant .message-content {
   background: #f1f3f4;
   color: #333;
   border-bottom-left-radius: 4px;
 }
 
+body.medai-dark-mode .chat-message.assistant .message-content {
+  background: rgba(15, 23, 42, 0.8);
+  color: #cbd5f5;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
 .message-content.loading {
   background: #f1f3f4;
   color: #666;
   font-style: italic;
+}
+
+body.medai-dark-mode .message-content.loading {
+  background: rgba(15, 23, 42, 0.8);
+  color: #94a3b8;
 }
 
 .typing-indicator {
@@ -3749,6 +4382,12 @@ body.med-ai-dark .chat-button {
   display: flex;
   gap: 12px;
   align-items: flex-end;
+  background: var(--background-card);
+}
+
+body.medai-dark-mode .chat-input-container {
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.88);
 }
 
 .chat-input {
@@ -3763,15 +4402,33 @@ body.med-ai-dark .chat-button {
   font-family: inherit;
   min-height: 20px;
   max-height: 100px;
+  background: var(--background-light);
+  color: var(--text-primary);
+}
+
+body.medai-dark-mode .chat-input {
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.8);
+  color: #f8fafc;
 }
 
 .chat-input:focus {
   border-color: #1a3c7c;
 }
 
+body.medai-dark-mode .chat-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
 .chat-input:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+body.medai-dark-mode .chat-input:disabled {
+  background: rgba(15, 23, 42, 0.5);
+  color: #94a3b8;
 }
 
 .chat-send-button {
@@ -3790,9 +4447,21 @@ body.med-ai-dark .chat-button {
   flex-shrink: 0;
 }
 
+body.medai-dark-mode .chat-send-button {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(96, 165, 250, 0.5));
+  border: 1px solid rgba(96, 165, 250, 0.5);
+  color: #f8fafc;
+}
+
 .chat-send-button:hover:not(:disabled) {
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(26, 60, 124, 0.3);
+}
+
+body.medai-dark-mode .chat-send-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.7), rgba(59, 130, 246, 0.6));
+  border-color: #60a5fa;
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.65);
 }
 
 .chat-send-button:disabled {
@@ -3800,5 +4469,11 @@ body.med-ai-dark .chat-button {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+body.medai-dark-mode .chat-send-button:disabled {
+  background: rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.2);
 }
 

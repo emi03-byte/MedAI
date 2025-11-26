@@ -892,39 +892,50 @@ Programează o consultație dacă simptomele persistă`
           <link rel="icon" type="image/svg+xml" href="${hospitalFaviconDataUrl}">
           <title>Rețetă</title>
           <style>
+            * {
+              box-sizing: border-box;
+            }
+            html, body {
+              background-color: #ffffff !important;
+              color: #333333 !important;
+            }
             body {
               font-family: Arial, sans-serif;
               margin: 28px;
-              color: #333;
+              color: #333 !important;
+              background-color: #ffffff !important;
             }
             .pdf-container {
               margin-top: 35px;
               padding: 24px 30px 36px;
+              background-color: #ffffff !important;
             }
             .header {
               text-align: center;
               margin-bottom: 28px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 10px;
+              background-color: #ffffff !important;
             }
             .header h1 {
-              color: #1a3c7c;
+              color: #1a3c7c !important;
               margin: 0;
               font-size: 24.5px;
             }
             .header p {
               margin: 6px 0 0 0;
-              color: #666;
+              color: #666666 !important;
               font-size: 14px;
             }
             .table {
               width: 100%;
               border-collapse: collapse;
               margin-top: 20px;
+              background-color: #ffffff !important;
             }
             .table th {
-              background-color: transparent;
-              color: #555;
+              background-color: #f5f5f5 !important;
+              color: #555555 !important;
               padding: 12px 10px;
               text-align: left;
               font-weight: 600;
@@ -935,6 +946,8 @@ Programează o consultație dacă simptomele persistă`
               padding: 11px 9px;
               border-bottom: 1px solid #e1e5ed;
               font-size: 13px;
+              color: #333333 !important;
+              background-color: #ffffff !important;
             }
             .table td:nth-child(2),
             .table td:nth-child(3),
@@ -942,30 +955,36 @@ Programează o consultație dacă simptomele persistă`
               font-size: 14.5px;
             }
             .table tr:nth-child(even) {
-              background-color: #f9f9f9;
+              background-color: #f9f9f9 !important;
+            }
+            .table tr:nth-child(even) td {
+              background-color: #f9f9f9 !important;
             }
             .table tr:hover {
-              background-color: #f0f8ff;
+              background-color: #f0f8ff !important;
+            }
+            .table tr:hover td {
+              background-color: #f0f8ff !important;
             }
             .patient-indications-section {
               margin-top: 30px;
               page-break-inside: avoid;
             }
             .patient-indications-section h2 {
-              color: #1a3c7c;
+              color: #1a3c7c !important;
               font-size: 18.2px;
               margin-bottom: 15px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 5px;
             }
             .patient-indications-content {
-              background-color: #f8f9fa;
-              border: 1px solid #e9ecef;
+              background-color: #f8f9fa !important;
+              border: 1px solid #e9ecef !important;
               border-radius: 5px;
               padding: 16px;
               font-size: 14.7px;
               line-height: 1.6;
-              color: #333;
+              color: #333333 !important;
               white-space: pre-line;
               text-align: left;
               text-indent: 0 !important;
@@ -976,6 +995,7 @@ Programează o consultație dacă simptomele persistă`
               margin: 0 !important;
               padding: 0 !important;
               text-indent: 0 !important;
+              color: #333333 !important;
             }
             .patient-indications-content::first-line {
               text-indent: 0 !important;
@@ -985,20 +1005,20 @@ Programează o consultație dacă simptomele persistă`
               page-break-inside: avoid;
             }
             .doctor-indications-section h2 {
-              color: #1a3c7c;
+              color: #1a3c7c !important;
               font-size: 18.2px;
               margin-bottom: 15px;
               border-bottom: 2px solid #1a3c7c;
               padding-bottom: 5px;
             }
             .doctor-indications-content {
-              background-color: #f8f9fa;
-              border: 1px solid #e9ecef;
+              background-color: #f8f9fa !important;
+              border: 1px solid #e9ecef !important;
               border-radius: 5px;
               padding: 16px;
               font-size: 14.7px;
               line-height: 1.6;
-              color: #333;
+              color: #333333 !important;
               white-space: pre-line;
               text-align: left;
               text-indent: 0 !important;
@@ -1009,6 +1029,7 @@ Programează o consultație dacă simptomele persistă`
               margin: 0 !important;
               padding: 0 !important;
               text-indent: 0 !important;
+              color: #333333 !important;
             }
             .doctor-indications-content::first-line {
               text-indent: 0 !important;
@@ -1017,9 +1038,13 @@ Programează o consultație dacă simptomele persistă`
               margin-top: 30px;
               text-align: center;
               font-size: 12.5px;
-              color: #666;
-              border-top: 1px solid #ddd;
+              color: #666666 !important;
+              border-top: 1px solid #dddddd;
               padding-top: 10px;
+              background-color: #ffffff !important;
+            }
+            .footer p {
+              color: #666666 !important;
             }
           </style>
         </head>
@@ -2052,7 +2077,7 @@ etc.`
                 onClick={handleFinalize}
                 title="Descarcă lista de medicamente selectate"
               >
-                📥 Finalizare
+                Finalizare
               </button>
             </div>
           </div>
