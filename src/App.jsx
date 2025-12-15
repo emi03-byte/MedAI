@@ -3,6 +3,8 @@ import MedicinesTable from './components/MedicinesTable'
 import ChatBot from './components/ChatBot'
 import './App.css'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+
 function App() {
   const [medicinesData, setMedicinesData] = useState([])
   const [selectedAgeCategory, setSelectedAgeCategory] = useState('toate')
@@ -22,55 +24,47 @@ function App() {
     { id: 'batrani', label: 'Bătrâni', icon: '👴', description: '65+ ani' }
   ]
 
-  // Funcție pentru parsing CSV corect (gestionează ghilimele)
-  const parseCSVLine = (line) => {
-    const values = []
-    let currentValue = ''
-    let insideQuotes = false
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      
-      if (char === '"') {
-        insideQuotes = !insideQuotes
-      } else if (char === ',' && !insideQuotes) {
-        values.push(currentValue.trim())
-        currentValue = ''
-      } else {
-        currentValue += char
-      }
-    }
-    values.push(currentValue.trim())
-    return values
-  }
+  // Mapare rând din backend către format folosit de ChatBot (similar cu tabelul)
+  const mapMedicationRowToUi = (row) => ({
+    'Denumire medicament': row.denumire_medicament || '',
+    'Substanta activa': row.substanta_activa || '',
+    'Lista de compensare': row.lista_compensare || '',
+    'Cod medicament': row.cod_medicament || '',
+    'Formă farmaceutica': row.forma_farmaceutica || '',
+    'Cod ATC': row.cod_atc || '',
+    'Mod de prescriere': row.mod_prescriere || '',
+    'Concentratie': row.concentratie || '',
+    'Forma de ambalare': row.forma_ambalare || '',
+    'Nume detinator APP': row.nume_detinator_app || '',
+    'Tara detinator APP': row.tara_detinator_app || '',
+    'Cantitate pe forma ambalare': row.cantitate_pe_forma_ambalare || '',
+    'Preț maximal al medicamentului raportat la forma de ambalare': row.pret_max_forma_ambalare || '',
+    'Pret maximal al medicamentului raportat la UT': row.pret_max_ut || '',
+    'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 100% din prețul de referinta':
+      row.contributie_max_100 || '',
+    'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiaza de compensare 90% - sublista A, 50% - sublista B, 20% - sublista D din prețul de referinta':
+      row.contributie_max_90_50_20 || '',
+    'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv':
+      row.contributie_max_pensionari_90 || '',
+  })
 
-  // Încarcă datele CSV pentru a le trimite la ChatBot
+  // Încarcă datele din backend (SQLite) pentru a le trimite la ChatBot
   useEffect(() => {
-    const fetchCSV = async () => {
+    const fetchFromBackend = async () => {
       try {
-        const response = await fetch('/medicamente_cu_boli_COMPLET.csv')
-        const csvText = await response.text()
-        const lines = csvText.split('\n')
-        const headers = parseCSVLine(lines[0])
-        
-        const data = []
-        for (let i = 1; i < Math.min(lines.length, 100); i++) { // Primele 100 pentru context
-          const line = lines[i].trim()
-          if (line) {
-            const values = parseCSVLine(line)
-            const medicine = {}
-            headers.forEach((header, index) => {
-              medicine[header] = values[index] || ''
-            })
-            data.push(medicine)
-          }
+        const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
         }
-        setMedicinesData(data)
+        const data = await response.json()
+        const items = Array.isArray(data.items) ? data.items : []
+        const mapped = items.map(mapMedicationRowToUi)
+        setMedicinesData(mapped)
       } catch (error) {
-        console.error('Error loading CSV for chatbot:', error)
+        console.error('Error loading medications for chatbot from backend:', error)
       }
     }
-    fetchCSV()
+    fetchFromBackend()
   }, [])
 
   return (

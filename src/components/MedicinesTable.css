@@ -1488,6 +1488,26 @@ body.med-ai-dark {
   border: 1px solid var(--border-color);
 }
 
+.pagination-info-input {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--background-light);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  outline: none;
+  text-align: center;
+  width: 3rem;
+  cursor: text;
+}
+
+.pagination-info-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(26, 60, 124, 0.1);
+}
+
 .loading, .error {
   text-align: center;
   padding: 4rem;

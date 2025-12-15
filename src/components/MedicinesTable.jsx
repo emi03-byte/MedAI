@@ -19,6 +19,9 @@ const hospitalFaviconSvg = `
 
 const hospitalFaviconDataUrl = `data:image/svg+xml,${encodeURIComponent(hospitalFaviconSvg)}`
 
+// Baza URL pentru backend-ul Node/Express cu SQLite
+const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+
 const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {} }) => {
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +60,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [isRecordingMicPatient, setIsRecordingMicPatient] = useState(false)
   const recognitionPatientRef = useRef(null)
   const [recordedTextPatient, setRecordedTextPatient] = useState('')
+  const [isEditingPage, setIsEditingPage] = useState(false)
+  const [pageInputValue, setPageInputValue] = useState('')
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -254,43 +259,63 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     }
   }
 
-  // Funcție pentru încărcarea medicamentelor
+  // Funcție helper: mapare rând din SQL (backend) la formatul de coloane folosit în UI
+  const mapMedicationRowToUi = (row) => {
+    if (!row) return {}
+    return {
+      'Denumire medicament': row.denumire_medicament || '',
+      'Substanta activa': row.substanta_activa || '',
+      'Lista de compensare': row.lista_compensare || '',
+      'Cod medicament': row.cod_medicament || '',
+      'Formă farmaceutica': row.forma_farmaceutica || '',
+      'Cod ATC': row.cod_atc || '',
+      'Mod de prescriere': row.mod_prescriere || '',
+      'Concentratie': row.concentratie || '',
+      'Forma de ambalare': row.forma_ambalare || '',
+      'Nume detinator APP': row.nume_detinator_app || '',
+      'Tara detinator APP': row.tara_detinator_app || '',
+      'Cantitate pe forma ambalare': row.cantitate_pe_forma_ambalare || '',
+      'Preț maximal al medicamentului raportat la forma de ambalare':
+        row.pret_max_forma_ambalare || '',
+      'Pret maximal al medicamentului raportat la UT': row.pret_max_ut || '',
+      'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 100% din prețul de referinta':
+        row.contributie_max_100 || '',
+      'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiaza de compensare 90% - sublista A, 50% - sublista B, 20% - sublista D din prețul de referinta':
+        row.contributie_max_90_50_20 || '',
+      'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv':
+        row.contributie_max_pensionari_90 || '',
+    }
+  }
+
+  // Funcție pentru încărcarea medicamentelor din backend (SQLite)
   const fetchMedicines = async () => {
     try {
       setLoading(true)
-      console.log('🔄 Încerc să încarc fișierul CSV...')
-      const response = await fetch('/medicamente_cu_boli_COMPLET.csv')
-      
+      console.log('🔄 Încerc să încarc medicamentele din backend SQLite...')
+
+      // Luăm toate medicamentele din baza de date (6479+ înregistrări)
+      const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
-      const csvText = await response.text()
-      console.log('✅ CSV încărcat cu succes, încep procesarea...')
-      
-      const lines = csvText.split('\n')
-      const headers = parseCSVLine(lines[0])
-      
-      const medicinesData = []
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim()
-        if (line) {
-          const values = parseCSVLine(line)
-          const medicine = {}
-          headers.forEach((header, index) => {
-            medicine[header] = values[index] || ''
-          })
-          medicinesData.push(medicine)
-        }
+
+      const data = await response.json()
+      const items = Array.isArray(data.items) ? data.items : []
+
+      // Mapăm fiecare rând SQL la forma de obiect folosită deja în UI
+      const medicinesData = items.map(mapMedicationRowToUi)
+
+      console.log(`✅ Încărcat din backend: ${medicinesData.length} medicamente`)
+      if (medicinesData[0]) {
+        console.log('📊 Exemplu medicament (din SQL):', medicinesData[0])
       }
-      
-      console.log(`✅ Procesat cu succes: ${medicinesData.length} medicamente`)
-      console.log('📊 Exemplu medicament:', medicinesData[0])
+
       setMedicines(medicinesData)
       setError(null)
       setLoading(false)
     } catch (err) {
-      console.error('❌ Eroare la încărcarea medicamentelor:', err)
+      console.error('❌ Eroare la încărcarea medicamentelor din backend:', err)
       setError(err.message)
       setLoading(false)
     }
@@ -616,13 +641,65 @@ Programează o consultație dacă simptomele persistă`
       })
     }
 
-    // Aplică căutarea globală
+    // Aplică căutarea globală cu prioritizare
     if (searchTerm) {
-      filtered = filtered.filter(medicine => 
-        Object.values(medicine).some(value => 
-          value.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      const searchLower = searchTerm.toLowerCase().trim()
+      
+      // Filtrează medicamentele care conțin textul
+      filtered = filtered.filter(medicine => {
+        const denumire = (medicine['Denumire medicament'] || '').toLowerCase()
+        const substanta = (medicine['Substanta activa'] || '').toLowerCase()
+        return denumire.includes(searchLower) || substanta.includes(searchLower) ||
+               Object.values(medicine).some(value => 
+                 value && value.toString().toLowerCase().includes(searchLower)
+               )
+      })
+      
+      // Sortează pentru a prioritiza: exact match primul, apoi cele care încep cu textul, apoi cele care conțin
+      filtered.sort((a, b) => {
+        const denumireA = (a['Denumire medicament'] || '').toLowerCase()
+        const denumireB = (b['Denumire medicament'] || '').toLowerCase()
+        
+        // Exact match primul
+        if (denumireA === searchLower && denumireB !== searchLower) return -1
+        if (denumireB === searchLower && denumireA !== searchLower) return 1
+        
+        // Apoi cele care încep cu textul
+        const aStartsWith = denumireA.startsWith(searchLower)
+        const bStartsWith = denumireB.startsWith(searchLower)
+        if (aStartsWith && !bStartsWith) return -1
+        if (bStartsWith && !aStartsWith) return 1
+        
+        // Apoi sortare alfabetică pentru cele care încep cu textul
+        if (aStartsWith && bStartsWith) {
+          return denumireA.localeCompare(denumireB)
+        }
+        
+        // Apoi cele care conțin textul (nu încep)
+        const aContains = denumireA.includes(searchLower)
+        const bContains = denumireB.includes(searchLower)
+        if (aContains && !bContains) return -1
+        if (bContains && !aContains) return 1
+        
+        // Sortare alfabetică pentru restul
+        return denumireA.localeCompare(denumireB)
+      })
+      
+      // Dacă există exact match, limitează la primul + 5 similare (max 6)
+      const exactMatch = filtered.find(m => 
+        (m['Denumire medicament'] || '').toLowerCase() === searchLower
       )
+      
+      if (exactMatch && filtered.length > 6) {
+        // Păstrează primul (exact match) + următoarele 5 care încep cu textul
+        const startsWithMatches = filtered.filter(m => 
+          (m['Denumire medicament'] || '').toLowerCase().startsWith(searchLower)
+        )
+        filtered = [
+          exactMatch,
+          ...startsWithMatches.filter(m => m !== exactMatch).slice(0, 5)
+        ]
+      }
     }
 
     // Aplică filtrele pentru toate coloanele
@@ -652,6 +729,51 @@ Programează o consultație dacă simptomele persistă`
   useEffect(() => {
     setCurrentPage(1)
   }, [itemsPerPage])
+
+  // Reset la pagina 1 când începi să scrii în bara de căutare
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
+
+  // Funcție pentru click pe paginare - activează modul edit
+  const handlePageClick = () => {
+    setIsEditingPage(true)
+    setPageInputValue(currentPage.toString())
+  }
+
+  // Funcție pentru gestionarea input-ului de pagină - actualizare live
+  const handlePageInputChange = (e) => {
+    const value = e.target.value
+    setPageInputValue(value)
+    
+    // Actualizare live: dacă valoarea este un număr valid, actualizează pagina
+    const numValue = parseInt(value, 10)
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= totalPages) {
+      setCurrentPage(numValue)
+    }
+  }
+
+  // Funcție pentru Enter sau blur - închide modul edit
+  const handlePageInputBlur = () => {
+    setIsEditingPage(false)
+    const numValue = parseInt(pageInputValue, 10)
+    if (isNaN(numValue) || numValue < 1 || numValue > totalPages) {
+      setPageInputValue(currentPage.toString())
+    }
+  }
+
+  const handlePageInputKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      const numValue = parseInt(pageInputValue, 10)
+      if (!isNaN(numValue) && numValue >= 1 && numValue <= totalPages) {
+        setCurrentPage(numValue)
+      } else {
+        setPageInputValue(currentPage.toString())
+      }
+      setIsEditingPage(false)
+      e.target.blur()
+    }
+  }
 
   // Toate hook-urile TREBUIE să fie înainte de orice return condiționat!
   const handleColumnToggle = useCallback((columnName) => {
@@ -1946,9 +2068,26 @@ etc.`
                 Anterior
               </button>
               
-              <span className="pagination-info">
-                {currentPage}/{totalPages}
-              </span>
+              {isEditingPage ? (
+                <input
+                  type="text"
+                  className="pagination-info-input"
+                  value={pageInputValue}
+                  onChange={handlePageInputChange}
+                  onKeyPress={handlePageInputKeyPress}
+                  onBlur={handlePageInputBlur}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span 
+                  className="pagination-info"
+                  onClick={handlePageClick}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {currentPage}/{totalPages}
+                </span>
+              )}
               
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

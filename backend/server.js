@@ -205,7 +205,8 @@ app.get('/health', (_req, res) => {
 app.get('/api/medications', async (req, res) => {
   try {
     const { search = '', limit = 50, offset = 0 } = req.query;
-    const safeLimit = Math.min(Number(limit) || 50, 200);
+    // Permite limită mare pentru a încărca toate medicamentele (max 50000 pentru siguranță)
+    const safeLimit = limit === 'all' || limit === '0' ? 50000 : Math.min(Number(limit) || 50, 50000);
     const safeOffset = Math.max(Number(offset) || 0, 0);
 
     const params = [];
