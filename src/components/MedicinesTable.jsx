@@ -62,6 +62,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [recordedTextPatient, setRecordedTextPatient] = useState('')
   const [isEditingPage, setIsEditingPage] = useState(false)
   const [pageInputValue, setPageInputValue] = useState('')
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -775,6 +776,17 @@ Programează o consultație dacă simptomele persistă`
     }
   }
 
+  const handleCheckoutBack = () => {
+    setIsCheckoutOpen(false)
+  }
+
+  const handleCheckoutConfirm = async () => {
+    // Generează PDF-ul exact ca înainte, apoi șterge datele și închide checkout-ul
+    await downloadSelectedProducts()
+    clearAllPatientData()
+    setIsCheckoutOpen(false)
+  }
+
   // Toate hook-urile TREBUIE să fie înainte de orice return condiționat!
   const handleColumnToggle = useCallback((columnName) => {
     setVisibleColumns(prev => ({
@@ -999,9 +1011,9 @@ Programează o consultație dacă simptomele persistă`
     closeAddMedicineModal()
   }, [newMedicineName, closeAddMedicineModal])
 
-  // Funcție pentru descărcarea produselor selectate în format PDF
+  // Funcție pentru deschiderea produselor selectate într-o pagină de checkout (HTML, fără PDF)
   const downloadSelectedProducts = useCallback(async () => {
-    console.log('🔄 Actualizez datele pentru PDF...')
+    console.log('🔄 Pregătesc pagina de checkout...')
     const hasMedicines = selectedProducts.length > 0
     const hasPatientNotes = patientNotes && patientNotes.trim() !== ''
     const hasDoctorNotes = doctorNotes && doctorNotes.trim() !== ''
@@ -1012,7 +1024,7 @@ Programează o consultație dacă simptomele persistă`
         <head>
           <meta charset="utf-8">
           <link rel="icon" type="image/svg+xml" href="${hospitalFaviconDataUrl}">
-          <title>Rețetă</title>
+          <title>Checkout rețetă</title>
           <style>
             * {
               box-sizing: border-box;
@@ -1306,10 +1318,11 @@ Programează o consultație dacă simptomele persistă`
     }
   }, [selectedProducts, medicinePlans, patientNotes, doctorNotes])
 
-  const handleFinalize = useCallback(async () => {
-    await downloadSelectedProducts()
-    clearAllPatientData()
-  }, [downloadSelectedProducts, clearAllPatientData])
+  const handleFinalize = useCallback(() => {
+    // Deschide pagina de checkout în aplicație (fără pop-up)
+    console.log('🧾 Deschid pagina de checkout (setIsCheckoutOpen(true))')
+    setIsCheckoutOpen(true)
+  }, [])
 
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
@@ -2222,6 +2235,116 @@ etc.`
           </div>
         </div>
       </div>
+
+      {/* Previzualizare rețetă - overlay în aplicație */}
+      {isCheckoutOpen && (
+        <div className="checkout-overlay" onClick={handleCheckoutBack}>
+          <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="checkout-header">
+              <h2>Previzualizare rețetă</h2>
+            </div>
+
+            <div className="checkout-body">
+              <div className="checkout-section">
+                <h3>Medicamente selectate ({selectedProducts.length})</h3>
+                {selectedProducts.length === 0 ? (
+                  <p>Nu ai selectat niciun medicament.</p>
+                ) : (
+                  <div className="checkout-medicines-list">
+                    {selectedProducts.map((product, index) => {
+                      const code = product['Cod medicament']
+                      const plan = code ? medicinePlans[code] : null
+                      const parts = []
+
+                      if (plan) {
+                        if (plan.duration) {
+                          parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
+                        }
+
+                        if (plan.frequency) {
+                          if (plan.isCustomFrequency) {
+                            parts.push(`${plan.frequency} ori pe zi`)
+                          } else {
+                            parts.push(getFrequencyText(plan.frequency))
+                          }
+                        }
+
+                        if (plan.times && plan.times.length > 0) {
+                          const timesText = plan.times.map(time => getTimeText(time)).join(' | ')
+                          parts.push(timesText)
+                        }
+                      }
+
+                      const planText = parts.length > 0 ? parts.join(' | ') : 'Fără plan'
+
+                      return (
+                        <div
+                          key={`${code || product['Denumire medicament'] || index}-checkout`}
+                          className="checkout-medicine-chip"
+                        >
+                          <div className="checkout-medicine-chip-main">
+                            <span className="checkout-medicine-chip-name">
+                              {product['Denumire medicament']}
+                            </span>
+                            {product['Cod medicament'] && (
+                              <span className="checkout-medicine-chip-code">
+                                Cod: {product['Cod medicament']}
+                              </span>
+                            )}
+                            {product['Lista de compensare'] && (
+                              <span className="checkout-medicine-chip-comp">
+                                Compensare: {getCompensationPercentage(product['Lista de compensare'])}
+                              </span>
+                            )}
+                          </div>
+                          <div className="checkout-medicine-chip-plan">
+                            Plan: {planText}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="checkout-section">
+                <h3>Notițe pacient</h3>
+                {patientNotes && patientNotes.trim() ? (
+                  <p className="checkout-notes-text">{patientNotes}</p>
+                ) : (
+                  <p className="checkout-notes-empty">Nu există notițe pentru pacient.</p>
+                )}
+              </div>
+
+              <div className="checkout-section">
+                <h3>Notițe medic</h3>
+                {doctorNotes && doctorNotes.trim() ? (
+                  <p className="checkout-notes-text">{doctorNotes}</p>
+                ) : (
+                  <p className="checkout-notes-empty">Nu există notițe ale medicului.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="checkout-actions">
+              <button
+                type="button"
+                className="checkout-button checkout-button-secondary"
+                onClick={handleCheckoutBack}
+              >
+                Înapoi la listă
+              </button>
+              <button
+                type="button"
+                className="checkout-button checkout-button-primary"
+              onClick={handleCheckoutConfirm}
+              >
+                Finalizează rețeta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Template pentru modalele de filtre */}
       {Object.entries(showFilters).map(([filterKey, isVisible]) => {
