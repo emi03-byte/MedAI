@@ -63,6 +63,25 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [isEditingPage, setIsEditingPage] = useState(false)
   const [pageInputValue, setPageInputValue] = useState('')
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [showStatsModal, setShowStatsModal] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showSignUpModal, setShowSignUpModal] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [signUpName, setSignUpName] = useState('')
+  const [signUpEmail, setSignUpEmail] = useState('')
+  const [signUpPassword, setSignUpPassword] = useState('')
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [signUpError, setSignUpError] = useState('')
+  const [currentUser, setCurrentUser] = useState(null)
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false)
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false)
+  const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [prescriptionHistory, setPrescriptionHistory] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -81,6 +100,36 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       if (recognitionPatientRef.current) {
         recognitionPatientRef.current.abort()
         recognitionPatientRef.current = null
+      }
+    }
+  }, [])
+
+  // Verifică dacă există un utilizator autentificat la încărcarea paginii
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser)
+        setCurrentUser(user)
+        // Verifică dacă utilizatorul există încă în backend
+        fetch(`${API_BASE_URL}/api/auth/me?userId=${user.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              setCurrentUser(data.user)
+              localStorage.setItem('currentUser', JSON.stringify(data.user))
+            } else {
+              // Utilizatorul nu mai există, șterge din localStorage
+              localStorage.removeItem('currentUser')
+              setCurrentUser(null)
+            }
+          })
+          .catch(() => {
+            // Eroare la verificare, păstrează utilizatorul din localStorage
+          })
+      } catch (error) {
+        console.error('Eroare la parsarea utilizatorului:', error)
+        localStorage.removeItem('currentUser')
       }
     }
   }, [])
@@ -540,25 +589,71 @@ Programează o consultație dacă simptomele persistă`
       })
 
       if (!response.ok) {
-        console.error('OpenAI API Error:', response.status, response.statusText)
-        return []
+        const errorText = await response.text()
+        console.error('❌ OpenAI API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        
+        // Dacă este o eroare de autentificare, oferă un mesaj mai clar
+        if (response.status === 401 || response.status === 403) {
+          advice.push({ 
+            icon: '⚠️', 
+            text: 'Cheia API OpenAI nu este configurată sau este invalidă. Verifică fișierul .env' 
+          })
+        } else {
+          advice.push({ 
+            icon: '❌', 
+            text: `Eroare la conectarea la serviciul AI: ${response.status} ${response.statusText}` 
+          })
+        }
+        return advice
       }
 
       const data = await response.json()
+      
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        console.error('❌ Format răspuns OpenAI invalid:', data)
+        advice.push({ icon: '❌', text: 'Format răspuns invalid de la serviciul AI' })
+        return advice
+      }
+      
       const aiResponse = data.choices[0].message.content
+      console.log('✅ AI Response primit:', aiResponse.substring(0, 200))
       
       // Parsează răspunsul AI în sfaturi individuale
       const lines = aiResponse.split('\n').filter(line => line.trim())
       lines.forEach(line => {
         const trimmedLine = line.trim()
-        if (trimmedLine && trimmedLine.length > 0) {
+        // Elimină numerotarea și prefixele (1., 2., -, *, etc.)
+        const cleanedLine = trimmedLine.replace(/^[\d\s\.\-\*\+\)]+/, '').trim()
+        if (cleanedLine && cleanedLine.length > 0) {
           // Adaugă sfatul fără emoji-uri
-          advice.push({ icon: '', text: trimmedLine })
+          advice.push({ icon: '', text: cleanedLine })
         }
       })
 
     } catch (error) {
-      console.error('Error calling OpenAI for medical advice:', error)
+      console.error('❌ Error calling OpenAI for medical advice:', error)
+      
+      // Gestionare specifică pentru diferite tipuri de erori
+      let errorMessage = 'Nu s-a putut conecta la serviciul AI'
+      
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        errorMessage = 'Serverul de dezvoltare nu este disponibil. Asigură-te că rulează "npm run dev" și că serverul Vite este pornit pe portul 5546.'
+      } else if (error.message.includes('NetworkError') || error.message.includes('network')) {
+        errorMessage = 'Eroare de rețea. Verifică conexiunea la internet.'
+      } else if (error.message.includes('CORS')) {
+        errorMessage = 'Eroare CORS. Verifică configurația proxy-ului în vite.config.js.'
+      } else {
+        errorMessage = `Eroare: ${error.message || 'Eroare necunoscută'}`
+      }
+      
+      advice.push({ 
+        icon: '❌', 
+        text: errorMessage
+      })
     }
 
     console.log('✅ AI: Sfaturi finale generate:', advice.slice(0, 6))
@@ -1318,11 +1413,66 @@ Programează o consultație dacă simptomele persistă`
     }
   }, [selectedProducts, medicinePlans, patientNotes, doctorNotes])
 
-  const handleFinalize = useCallback(() => {
+  const handleFinalize = useCallback(async () => {
+    // Verifică dacă utilizatorul este autentificat
+    if (!currentUser) {
+      // Afișează modalul de autentificare necesară
+      setShowLoginRequiredModal(true)
+      return
+    }
+    
+    // Salvează rețeta în backend și baza de date
+    try {
+      console.log('💾 [FRONTEND] Salvare rețetă în backend...')
+      console.log('📦 [FRONTEND] Date trimise:', {
+        userId: currentUser.id,
+        numePacient: null,
+        medicamenteCount: selectedProducts.length,
+        medicamente: selectedProducts,
+        planuriTratament: medicinePlans,
+        indicatiiPacient: patientNotes || null,
+        indicatiiMedic: doctorNotes || null
+      })
+      
+      // Verifică dacă există medicamente selectate
+      if (!selectedProducts || selectedProducts.length === 0) {
+        console.warn('⚠️ [FRONTEND] Nu există medicamente selectate pentru salvare')
+        alert('Nu există medicamente selectate pentru a salva rețeta.')
+        return
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/prescriptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          numePacient: null, // Poți adăuga un câmp pentru nume pacient dacă vrei
+          medicamente: selectedProducts,
+          planuriTratament: medicinePlans,
+          indicatiiPacient: patientNotes || null,
+          indicatiiMedic: doctorNotes || null
+        })
+      })
+
+      const data = await response.json()
+      if (response.ok && data.success) {
+        console.log('✅ [FRONTEND] Rețetă salvată cu succes:', data.prescription)
+        alert('Rețetă salvată cu succes în istoric!')
+      } else {
+        console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', data.error)
+        alert(`Eroare la salvarea rețetei: ${data.error || 'Eroare necunoscută'}`)
+      }
+    } catch (error) {
+      console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', error)
+      alert(`Eroare de conexiune la salvarea rețetei: ${error.message}`)
+    }
+    
     // Deschide pagina de checkout în aplicație (fără pop-up)
     console.log('🧾 Deschid pagina de checkout (setIsCheckoutOpen(true))')
     setIsCheckoutOpen(true)
-  }, [])
+  }, [currentUser, selectedProducts, medicinePlans, patientNotes, doctorNotes])
 
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
@@ -1572,6 +1722,64 @@ Programează o consultație dacă simptomele persistă`
 
   return (
     <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
+      {/* Butoane Login/Sign Up - în colțul din dreapta sus */}
+      <div className="auth-buttons-container">
+        {currentUser ? (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            padding: '8px 16px',
+            background: 'rgba(26, 60, 124, 0.1)',
+            borderRadius: '6px',
+            border: '1px solid rgba(26, 60, 124, 0.3)'
+          }}>
+            <span style={{ fontSize: '12px', color: '#1a3c7c', fontWeight: '500' }}>
+              👤 {currentUser.nume}
+            </span>
+            <button 
+              className="auth-button"
+              onClick={() => {
+                localStorage.removeItem('currentUser')
+                setCurrentUser(null)
+              }}
+              style={{
+                padding: '4px 12px',
+                fontSize: '11px',
+                background: '#dc2626',
+                color: 'white',
+                border: '1px solid #dc2626'
+              }}
+            >
+              Deconectare
+            </button>
+          </div>
+        ) : (
+          <>
+            <button 
+              className="auth-button login-button"
+              onClick={() => {
+                setShowLoginModal(true)
+                setShowSignUpModal(false)
+                setLoginError('')
+              }}
+            >
+              Autentificare
+            </button>
+            <button 
+              className="auth-button signup-button"
+              onClick={() => {
+                setShowSignUpModal(true)
+                setShowLoginModal(false)
+                setSignUpError('')
+              }}
+            >
+              Înregistrare
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Buton Pacient Nou - în colțul din dreapta sus */}
       <div className="new-patient-button-container">
         <button
@@ -1584,53 +1792,79 @@ Programează o consultație dacă simptomele persistă`
           <span className={`theme-icon ${isNightMode ? 'theme-icon--moon' : 'theme-icon--sun'}`}></span>
         </button>
         <button 
-          className="new-patient-button"
-          onClick={openNewPatientModal}
+          className="stats-button"
+          onClick={() => setShowStatsModal(true)}
+          title="Stări aplicație"
+          aria-label="Stări aplicație"
         >
-          🆕 Pacient nou
+          ⚙️
         </button>
+        {currentUser && (
+          <button 
+            className="new-patient-button"
+            onClick={openNewPatientModal}
+          >
+            🆕 Pacient nou
+          </button>
+        )}
       </div>
 
-      {/* Butoane Indicații */}
-      <div className="notes-buttons-container">
-        <button 
-          className="patient-notes-button"
-          onClick={() => setShowPatientNotes(!showPatientNotes)}
-        >
-          📝 Indicații Pacient
-        </button>
-        <button 
-          className="doctor-notes-button"
-          onClick={async () => {
-            // Deschide modalul direct
-            setShowDoctorNotes(!showDoctorNotes)
-            
-            // Verifică dacă există indicații pacient și generează sfaturi AI
-            if (patientNotes && patientNotes.trim() !== '') {
-              console.log('🔍 Verifică indicațiile pacientului:', patientNotes)
-              setIsLoadingAI(true)
-              setAiAdvice([]) // Șterge sfaturile vechi
+      {/* Butoane Indicații - doar pentru utilizatori autentificați */}
+      {currentUser && (
+        <div className="notes-buttons-container">
+          <button 
+            className="patient-notes-button"
+            onClick={() => setShowPatientNotes(!showPatientNotes)}
+          >
+            📝 Indicații Pacient
+          </button>
+          <button 
+            className="doctor-notes-button"
+            onClick={async () => {
+              // Deschide modalul direct
+              setShowDoctorNotes(!showDoctorNotes)
               
-              try {
-                const newAdvice = await generateAIAdvice(patientNotes)
-                console.log('🤖 Generez sfaturi AI bazate pe indicațiile pacientului:', newAdvice)
-                setAiAdvice(newAdvice)
-              } catch (error) {
-                console.error('Eroare la generarea sfaturilor AI:', error)
-                setAiAdvice([{ icon: '❌', text: 'Eroare la generarea sfaturilor AI' }])
-              } finally {
+              // Verifică dacă există indicații pacient și generează sfaturi AI
+              if (patientNotes && patientNotes.trim() !== '') {
+                console.log('🔍 Verifică indicațiile pacientului:', patientNotes)
+                setIsLoadingAI(true)
+                setAiAdvice([]) // Șterge sfaturile vechi
+                
+                try {
+                  console.log('🤖 Încep generarea sfaturilor AI...')
+                  const newAdvice = await generateAIAdvice(patientNotes)
+                  console.log('✅ Sfaturi AI generate:', newAdvice)
+                  
+                  if (newAdvice && newAdvice.length > 0) {
+                    setAiAdvice(newAdvice)
+                    console.log(`✅ ${newAdvice.length} sfaturi AI afișate`)
+                  } else {
+                    console.warn('⚠️ Nu s-au generat sfaturi AI (array gol)')
+                    setAiAdvice([{ 
+                      icon: '⚠️', 
+                      text: 'Nu s-au putut genera sfaturi AI. Verifică configurația API sau încearcă din nou.' 
+                    }])
+                  }
+                } catch (error) {
+                  console.error('❌ Eroare la generarea sfaturilor AI:', error)
+                  setAiAdvice([{ 
+                    icon: '❌', 
+                    text: `Eroare la generarea sfaturilor AI: ${error.message || 'Eroare necunoscută'}` 
+                  }])
+                } finally {
+                  setIsLoadingAI(false)
+                }
+              } else {
+                console.log('⚠️ Nu există indicații pacient - afișez mesaj informativ')
+                setAiAdvice([])
                 setIsLoadingAI(false)
               }
-            } else {
-              console.log('⚠️ Nu există indicații pacient - afișez mesaj informativ')
-              setAiAdvice([])
-              setIsLoadingAI(false)
-            }
-          }}
-        >
-          👨‍⚕️ Indicații Medic
-        </button>
-      </div>
+            }}
+          >
+            👨‍⚕️ Indicații Medic
+          </button>
+        </div>
+      )}
 
 
       {/* Zona de notițe pentru pacient */}
@@ -2595,6 +2829,729 @@ etc.`
               >
                 🆕 Da, începe cu pacient nou
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru Stări */}
+      {showStatsModal && (
+        <div className="new-patient-modal-overlay" onClick={() => setShowStatsModal(false)}>
+          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">📊</div>
+              <h3>Stări aplicație</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowStatsModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body">
+              <div style={{ padding: '20px' }}>
+                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>👥 Utilizatori</h4>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                  Informații despre utilizatorii aplicației vor fi afișate aici.
+                </p>
+                {currentUser && (
+                  <div style={{ marginTop: '20px' }}>
+                    <button
+                      onClick={async () => {
+                        setShowStatsModal(false)
+                        setShowHistoryModal(true)
+                        setLoadingHistory(true)
+                        try {
+                          const response = await fetch(`${API_BASE_URL}/api/prescriptions?userId=${currentUser.id}`)
+                          const data = await response.json()
+                          if (response.ok) {
+                            setPrescriptionHistory(data.prescriptions || [])
+                          } else {
+                            console.error('Eroare la încărcarea istoricului:', data.error)
+                          }
+                        } catch (error) {
+                          console.error('Eroare la încărcarea istoricului:', error)
+                        } finally {
+                          setLoadingHistory(false)
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        marginTop: '10px'
+                      }}
+                    >
+                      📋 Vizualizare istoric
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={() => setShowStatsModal(false)}
+                style={{ width: '100%' }}
+              >
+                Închide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru Login */}
+      {showLoginModal && (
+        <div className="new-patient-modal-overlay" onClick={() => setShowLoginModal(false)}>
+          <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">🔐</div>
+              <h3>Autentificare</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowLoginModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body">
+              <div style={{ padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Introduceți email-ul"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--background-light)',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Parolă
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Introduceți parola"
+                      style={{
+                        width: '100%',
+                        padding: '12px' + (loginPassword ? ' 45px 12px 12px' : ''),
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--background-light)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {loginPassword && (
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '5px',
+                          fontSize: '18px',
+                          color: 'var(--text-secondary)'
+                        }}
+                        title={showLoginPassword ? 'Ascunde parola' : 'Afișează parola'}
+                      >
+                        {showLoginPassword ? '🙈' : '👁️'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {loginError && (
+              <div style={{
+                padding: '12px',
+                margin: '0 20px 15px 20px',
+                background: '#fee2e2',
+                border: '1px solid #fca5a5',
+                borderRadius: '8px',
+                color: '#dc2626',
+                fontSize: '14px'
+              }}>
+                {loginError}
+              </div>
+            )}
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={async () => {
+                  setLoginError('')
+                  if (!loginEmail || !loginPassword) {
+                    setLoginError('Te rugăm să completezi toate câmpurile')
+                    return
+                  }
+
+                  try {
+                    console.log('🔐 [FRONTEND] Trimite cerere de login la backend...')
+                    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        email: loginEmail,
+                        parola: loginPassword
+                      })
+                    })
+
+                    console.log('📥 [FRONTEND] Răspuns primit de la backend:', response.status)
+                    const data = await response.json()
+                    console.log('📦 [FRONTEND] Date primite:', data)
+
+                    if (response.ok && data.success) {
+                      // Salvează utilizatorul în localStorage
+                      console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
+                      localStorage.setItem('currentUser', JSON.stringify(data.user))
+                      setCurrentUser(data.user)
+                      setShowLoginModal(false)
+                      setLoginEmail('')
+                      setLoginPassword('')
+                      console.log('✅ [FRONTEND] Login reușit!')
+                    } else {
+                      console.log('❌ [FRONTEND] Eroare la login:', data.error)
+                      setLoginError(data.error || 'Eroare la autentificare')
+                    }
+                  } catch (error) {
+                    console.error('❌ [FRONTEND] Eroare la login:', error)
+                    setLoginError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
+                  }
+                }}
+                style={{ width: '100%', marginBottom: '15px' }}
+              >
+                Autentificare
+              </button>
+              <div style={{ 
+                textAlign: 'center', 
+                paddingTop: '15px',
+                borderTop: '1px solid var(--border-color)'
+              }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                  Nu ai cont?
+                </p>
+                <button
+                  onClick={() => {
+                    setShowLoginModal(false)
+                    setShowSignUpModal(true)
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary-color)',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Înregistrează-te
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru autentificare necesară */}
+      {showLoginRequiredModal && (
+        <div className="new-patient-modal-overlay" onClick={() => setShowLoginRequiredModal(false)}>
+          <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">🔒</div>
+              <h3>Autentificare necesară</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowLoginRequiredModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body">
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                <p style={{ 
+                  color: 'var(--text-primary)', 
+                  marginBottom: '20px',
+                  fontSize: '16px'
+                }}>
+                  Pentru a finaliza și a descărca rețeta, trebuie să te autentifici sau să-ți creezi un cont.
+                </p>
+                <div style={{
+                  background: 'var(--background-light)',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  marginBottom: '20px'
+                }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px' }}>
+                    După autentificare vei putea:
+                  </p>
+                  <ul style={{ 
+                    color: 'var(--text-secondary)', 
+                    fontSize: '14px',
+                    textAlign: 'left',
+                    marginTop: '10px',
+                    paddingLeft: '20px'
+                  }}>
+                    <li>Finaliza și descărca rețeta</li>
+                    <li>Adăuga indicații pentru pacienți</li>
+                    <li>Adăuga indicații pentru medici</li>
+                    <li>Crea pacienți noi</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={() => {
+                  setShowLoginRequiredModal(false)
+                  setShowLoginModal(true)
+                }}
+                style={{ width: '100%', marginBottom: '10px' }}
+              >
+                Autentificare
+              </button>
+              <button 
+                className="new-patient-cancel-button"
+                onClick={() => {
+                  setShowLoginRequiredModal(false)
+                  setShowSignUpModal(true)
+                }}
+                style={{ width: '100%' }}
+              >
+                Creează cont nou
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru Istoric Rețete */}
+      {showHistoryModal && (
+        <div className="new-patient-modal-overlay" onClick={() => setShowHistoryModal(false)}>
+          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '90vh' }}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">📋</div>
+              <h3>Istoric Rețete</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {loadingHistory ? (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-secondary)' }}>Se încarcă istoricul...</p>
+                </div>
+              ) : prescriptionHistory.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-secondary)' }}>Nu ai rețete salvate încă.</p>
+                </div>
+              ) : (
+                <div style={{ padding: '20px' }}>
+                  {prescriptionHistory.map((prescription, index) => (
+                    <div
+                      key={prescription.id}
+                      style={{
+                        background: 'var(--background-light)',
+                        padding: '20px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        marginBottom: '15px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '15px' }}>
+                        <div>
+                          <h4 style={{ color: 'var(--text-primary)', marginBottom: '5px' }}>
+                            Rețetă #{prescriptionHistory.length - index}
+                          </h4>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            {new Date(prescription.data_creare).toLocaleString('ro-RO')}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {prescription.nume_pacient && (
+                        <p style={{ color: 'var(--text-primary)', marginBottom: '10px', fontWeight: '500' }}>
+                          Pacient: {prescription.nume_pacient}
+                        </p>
+                      )}
+                      
+                      <div style={{ marginBottom: '10px' }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>Medicamente ({prescription.medicamente.length}):</strong>
+                        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                          {prescription.medicamente.map((med, idx) => (
+                            <li key={idx} style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '5px' }}>
+                              {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
+                              {prescription.planuri_tratament && prescription.planuri_tratament[med['Cod medicament'] || med.cod_medicament] && (
+                                <span style={{ fontSize: '12px', marginLeft: '10px', color: 'var(--text-secondary)' }}>
+                                  ({Object.values(prescription.planuri_tratament[med['Cod medicament'] || med.cod_medicament]).filter(v => v).join(', ')})
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      {prescription.indicatii_pacient && (
+                        <div style={{ marginBottom: '10px', padding: '10px', background: 'rgba(26, 60, 124, 0.05)', borderRadius: '6px' }}>
+                          <strong style={{ color: 'var(--text-primary)' }}>📝 Indicații Pacient:</strong>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '5px', whiteSpace: 'pre-line' }}>
+                            {prescription.indicatii_pacient}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {prescription.indicatii_medic && (
+                        <div style={{ padding: '10px', background: 'rgba(26, 60, 124, 0.05)', borderRadius: '6px' }}>
+                          <strong style={{ color: 'var(--text-primary)' }}>👨‍⚕️ Indicații Medic:</strong>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '5px', whiteSpace: 'pre-line' }}>
+                            {prescription.indicatii_medic}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={() => setShowHistoryModal(false)}
+                style={{ width: '100%' }}
+              >
+                Închide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru Sign Up */}
+      {showSignUpModal && (
+        <div className="new-patient-modal-overlay" onClick={() => setShowSignUpModal(false)}>
+          <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">📝</div>
+              <h3>Înregistrare</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowSignUpModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body">
+              <div style={{ padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Nume complet
+                  </label>
+                  <input
+                    type="text"
+                    value={signUpName}
+                    onChange={(e) => setSignUpName(e.target.value)}
+                    placeholder="Introduceți numele complet"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--background-light)',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    placeholder="Introduceți email-ul"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--background-light)',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Parolă
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showSignUpPassword ? 'text' : 'password'}
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
+                      placeholder="Introduceți parola"
+                      style={{
+                        width: '100%',
+                        padding: '12px' + (signUpPassword ? ' 45px 12px 12px' : ''),
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--background-light)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {signUpPassword && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '5px',
+                          fontSize: '18px',
+                          color: 'var(--text-secondary)'
+                        }}
+                        title={showSignUpPassword ? 'Ascunde parola' : 'Afișează parola'}
+                      >
+                        {showSignUpPassword ? '🙈' : '👁️'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '500'
+                  }}>
+                    Confirmă parola
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showSignUpConfirmPassword ? 'text' : 'password'}
+                      value={signUpConfirmPassword}
+                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+                      placeholder="Confirmați parola"
+                      style={{
+                        width: '100%',
+                        padding: '12px' + (signUpConfirmPassword ? ' 45px 12px 12px' : ''),
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--background-light)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {signUpConfirmPassword && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '5px',
+                          fontSize: '18px',
+                          color: 'var(--text-secondary)'
+                        }}
+                        title={showSignUpConfirmPassword ? 'Ascunde parola' : 'Afișează parola'}
+                      >
+                        {showSignUpConfirmPassword ? '🙈' : '👁️'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {signUpError && (
+              <div style={{
+                padding: '12px',
+                margin: '0 20px 15px 20px',
+                background: '#fee2e2',
+                border: '1px solid #fca5a5',
+                borderRadius: '8px',
+                color: '#dc2626',
+                fontSize: '14px'
+              }}>
+                {signUpError}
+              </div>
+            )}
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={async () => {
+                  setSignUpError('')
+                  
+                  // Validare
+                  if (!signUpName || !signUpEmail || !signUpPassword || !signUpConfirmPassword) {
+                    setSignUpError('Te rugăm să completezi toate câmpurile')
+                    return
+                  }
+
+                  if (signUpPassword.length < 6) {
+                    setSignUpError('Parola trebuie să aibă cel puțin 6 caractere')
+                    return
+                  }
+
+                  if (signUpPassword !== signUpConfirmPassword) {
+                    setSignUpError('Parolele nu coincid')
+                    return
+                  }
+
+                  try {
+                    console.log('📝 [FRONTEND] Trimite cerere de signup la backend...')
+                    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        nume: signUpName,
+                        email: signUpEmail,
+                        parola: signUpPassword
+                      })
+                    })
+
+                    console.log('📥 [FRONTEND] Răspuns primit de la backend:', response.status)
+                    const data = await response.json()
+                    console.log('📦 [FRONTEND] Date primite:', data)
+
+                    if (response.ok && data.success) {
+                      // Salvează utilizatorul în localStorage
+                      console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
+                      localStorage.setItem('currentUser', JSON.stringify(data.user))
+                      setCurrentUser(data.user)
+                      setShowSignUpModal(false)
+                      setSignUpName('')
+                      setSignUpEmail('')
+                      setSignUpPassword('')
+                      setSignUpConfirmPassword('')
+                      console.log('✅ [FRONTEND] Signup reușit!')
+                    } else {
+                      console.log('❌ [FRONTEND] Eroare la signup:', data.error)
+                      setSignUpError(data.error || 'Eroare la crearea contului')
+                    }
+                  } catch (error) {
+                    console.error('❌ [FRONTEND] Eroare la signup:', error)
+                    setSignUpError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
+                  }
+                }}
+                style={{ width: '100%', marginBottom: '15px' }}
+              >
+                Înregistrează-te
+              </button>
+              <div style={{ 
+                textAlign: 'center', 
+                paddingTop: '15px',
+                borderTop: '1px solid var(--border-color)'
+              }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                  Ai deja cont?
+                </p>
+                <button
+                  onClick={() => {
+                    setShowSignUpModal(false)
+                    setShowLoginModal(true)
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary-color)',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Autentifică-te
+                </button>
+              </div>
             </div>
           </div>
         </div>

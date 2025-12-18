@@ -103,6 +103,18 @@ body.med-ai-dark {
   color: var(--text-primary);
 }
 
+.medicines-container.dark-mode .stats-button {
+  background: rgba(11, 16, 30, 0.8);
+  border-color: rgba(125, 211, 252, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.medicines-container.dark-mode .stats-button:hover {
+  background: rgba(11, 16, 30, 0.95);
+  border-color: rgba(125, 211, 252, 0.6);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
 .medicines-container.dark-mode .new-patient-button,
 .medicines-container.dark-mode .patient-notes-button,
 .medicines-container.dark-mode .doctor-notes-button {
@@ -369,6 +381,35 @@ body.med-ai-dark {
   background: rgba(8, 13, 27, 0.95);
   border: 1px solid rgba(148, 163, 184, 0.25);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.medicines-container.dark-mode .auth-button {
+  border-color: rgba(125, 211, 252, 0.3);
+}
+
+.medicines-container.dark-mode .login-button {
+  background: rgba(125, 211, 252, 0.1);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .login-button:hover {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.5);
+}
+
+.medicines-container.dark-mode .signup-button {
+  background: rgba(125, 211, 252, 0.25);
+  color: var(--text-primary);
+  border-color: rgba(125, 211, 252, 0.5);
+}
+
+.medicines-container.dark-mode .signup-button:hover {
+  background: rgba(125, 211, 252, 0.35);
+  border-color: rgba(125, 211, 252, 0.7);
+}
+
+.auth-modal-content {
+  max-width: 420px;
 }
 
 .medicines-container.dark-mode .new-patient-modal-header {
@@ -3140,14 +3181,82 @@ body.med-ai-dark {
 }
 
 /* Stiluri pentru butonul Pacient Nou */
+.auth-buttons-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(26, 60, 124, 0.3);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.login-button {
+  background: rgba(26, 60, 124, 0.1);
+  color: #1a3c7c;
+}
+
+.login-button:hover {
+  background: rgba(26, 60, 124, 0.2);
+  border-color: #1a3c7c;
+  transform: translateY(-1px);
+}
+
+.signup-button {
+  background: #1a3c7c;
+  color: white;
+}
+
+.signup-button:hover {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  transform: translateY(-1px);
+}
+
 .new-patient-button-container {
   position: absolute;
-  top: var(--spacing-2xl);
-  right: var(--spacing-2xl);
+  top: 80px;
+  right: 20px;
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 12px;
+}
+
+.stats-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(26, 60, 124, 0.4);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(26, 60, 124, 0.15);
+  padding: 0;
+  font-size: 20px;
+}
+
+.stats-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(26, 60, 124, 0.2);
+}
+
+.stats-button:active {
+  transform: translateY(0);
 }
 
 .new-patient-button {

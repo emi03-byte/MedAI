@@ -71,6 +71,32 @@ const ensureTable = async () => {
       contributie_max_pensionari_90 TEXT
     )`
   );
+  
+  // Tabelă pentru utilizatori
+  await runAsync(
+    `CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nume TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      parola TEXT NOT NULL,
+      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+  
+  // Tabelă pentru rețete
+  await runAsync(
+    `CREATE TABLE IF NOT EXISTS retete (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      nume_pacient TEXT,
+      medicamente TEXT NOT NULL,
+      planuri_tratament TEXT,
+      indicatii_pacient TEXT,
+      indicatii_medic TEXT,
+      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`
+  );
 };
 
 const normalizeField = (row, key) => (row[key] ?? '').toString().trim();
@@ -245,14 +271,225 @@ app.get('/api/medications/:id', async (req, res) => {
   }
 });
 
+// Endpoint pentru înregistrare (sign up)
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    console.log('📝 [SIGNUP] Cerere primită:', { nume: req.body.nume, email: req.body.email });
+    const { nume, email, parola } = req.body;
+
+    // Validare
+    if (!nume || !email || !parola) {
+      console.log('❌ [SIGNUP] Validare eșuată: câmpuri lipsă');
+      return res.status(400).json({ error: 'Toate câmpurile sunt obligatorii' });
+    }
+
+    if (parola.length < 6) {
+      console.log('❌ [SIGNUP] Validare eșuată: parolă prea scurtă');
+      return res.status(400).json({ error: 'Parola trebuie să aibă cel puțin 6 caractere' });
+    }
+
+    // Verifică dacă email-ul există deja
+    const existingUser = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
+    if (existingUser) {
+      console.log('❌ [SIGNUP] Email deja folosit:', email);
+      return res.status(400).json({ error: 'Acest email este deja folosit. Te rugăm să folosești alt email.' });
+    }
+
+    // Inserează utilizatorul nou în baza de date
+    console.log('💾 [SIGNUP] Inserare utilizator în baza de date...');
+    const result = await runAsync(
+      'INSERT INTO users (nume, email, parola) VALUES (?, ?, ?)',
+      [nume, email, parola]
+    );
+
+    // Returnează datele utilizatorului (fără parolă)
+    const newUser = await getAsync('SELECT id, nume, email, data_creare FROM users WHERE id = ?', [result.lastID]);
+    console.log('✅ [SIGNUP] Utilizator creat cu succes:', { id: newUser.id, email: newUser.email });
+    
+    res.status(201).json({ 
+      success: true,
+      message: 'Cont creat cu succes!',
+      user: newUser
+    });
+  } catch (error) {
+    if (error.message.includes('UNIQUE constraint failed')) {
+      console.log('❌ [SIGNUP] Constraint UNIQUE eșuat:', error.message);
+      return res.status(400).json({ error: 'Acest email este deja folosit. Te rugăm să folosești alt email.' });
+    }
+    console.error('❌ [SIGNUP] Eroare la înregistrare:', error);
+    res.status(500).json({ error: 'Eroare la crearea contului' });
+  }
+});
+
+// Endpoint pentru autentificare (login)
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    console.log('🔐 [LOGIN] Cerere primită pentru email:', req.body.email);
+    const { email, parola } = req.body;
+
+    // Validare
+    if (!email || !parola) {
+      console.log('❌ [LOGIN] Validare eșuată: câmpuri lipsă');
+      return res.status(400).json({ error: 'Email și parola sunt obligatorii' });
+    }
+
+    // Caută utilizatorul în baza de date
+    console.log('🔍 [LOGIN] Căutare utilizator în baza de date...');
+    const user = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
+    
+    if (!user) {
+      console.log('❌ [LOGIN] Utilizator negăsit pentru email:', email);
+      return res.status(401).json({ error: 'Email sau parolă incorectă' });
+    }
+
+    // Verifică parola (în producție ar trebui să fie hash-uită)
+    if (user.parola !== parola) {
+      console.log('❌ [LOGIN] Parolă incorectă pentru email:', email);
+      return res.status(401).json({ error: 'Email sau parolă incorectă' });
+    }
+
+    // Returnează datele utilizatorului (fără parolă)
+    const { parola: _, ...userWithoutPassword } = user;
+    console.log('✅ [LOGIN] Autentificare reușită pentru:', { id: userWithoutPassword.id, email: userWithoutPassword.email });
+    
+    res.json({ 
+      success: true,
+      message: 'Autentificare reușită!',
+      user: userWithoutPassword
+    });
+  } catch (error) {
+    console.error('❌ [LOGIN] Eroare la autentificare:', error);
+    res.status(500).json({ error: 'Eroare la autentificare' });
+  }
+});
+
+// Endpoint pentru verificare utilizator curent
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    console.log('👤 [ME] Verificare utilizator cu ID:', userId);
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const user = await getAsync('SELECT id, nume, email, data_creare FROM users WHERE id = ?', [userId]);
+    
+    if (!user) {
+      console.log('❌ [ME] Utilizator negăsit pentru ID:', userId);
+      return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+
+    console.log('✅ [ME] Utilizator găsit:', { id: user.id, email: user.email });
+    res.json({ user });
+  } catch (error) {
+    console.error('❌ [ME] Eroare la verificare utilizator:', error);
+    res.status(500).json({ error: 'Eroare la verificare' });
+  }
+});
+
+// Endpoint pentru salvarea unei rețete
+app.post('/api/prescriptions', async (req, res) => {
+  try {
+    console.log('💾 [PRESCRIPTION] Cerere de salvare rețetă primită');
+    console.log('📦 [PRESCRIPTION] Body primit:', JSON.stringify(req.body, null, 2));
+    const { userId, numePacient, medicamente, planuriTratament, indicatiiPacient, indicatiiMedic } = req.body;
+
+    // Validare
+    if (!userId) {
+      console.error('❌ [PRESCRIPTION] ID utilizator lipsă');
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    console.log(`📋 [PRESCRIPTION] Validare: userId=${userId}, medicamente type=${typeof medicamente}, isArray=${Array.isArray(medicamente)}, length=${medicamente?.length || 0}`);
+
+    if (!medicamente || !Array.isArray(medicamente) || medicamente.length === 0) {
+      console.error('❌ [PRESCRIPTION] Lista de medicamente invalidă sau goală');
+      return res.status(400).json({ error: 'Lista de medicamente este obligatorie' });
+    }
+
+    // Verifică dacă utilizatorul există
+    const user = await getAsync('SELECT id FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+
+    // Salvează rețeta în baza de date
+    const result = await runAsync(
+      `INSERT INTO retete (user_id, nume_pacient, medicamente, planuri_tratament, indicatii_pacient, indicatii_medic) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        numePacient || null,
+        JSON.stringify(medicamente),
+        planuriTratament ? JSON.stringify(planuriTratament) : null,
+        indicatiiPacient || null,
+        indicatiiMedic || null
+      ]
+    );
+
+    const newPrescription = await getAsync(
+      'SELECT * FROM retete WHERE id = ?',
+      [result.lastID]
+    );
+
+    console.log('✅ [PRESCRIPTION] Rețetă salvată cu succes:', { id: newPrescription.id, userId });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Rețetă salvată cu succes!',
+      prescription: newPrescription
+    });
+  } catch (error) {
+    console.error('❌ [PRESCRIPTION] Eroare la salvarea rețetei:', error);
+    res.status(500).json({ error: 'Eroare la salvarea rețetei' });
+  }
+});
+
+// Endpoint pentru obținerea istoricului rețetelor unui utilizator
+app.get('/api/prescriptions', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    console.log('📋 [PRESCRIPTIONS] Cerere istoric rețete pentru utilizator:', userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const prescriptions = await allAsync(
+      `SELECT id, nume_pacient, medicamente, planuri_tratament, indicatii_pacient, indicatii_medic, data_creare 
+       FROM retete 
+       WHERE user_id = ? 
+       ORDER BY data_creare DESC`,
+      [userId]
+    );
+
+    // Parsează JSON-urile din baza de date
+    const parsedPrescriptions = prescriptions.map(prescription => ({
+      ...prescription,
+      medicamente: JSON.parse(prescription.medicamente || '[]'),
+      planuri_tratament: prescription.planuri_tratament ? JSON.parse(prescription.planuri_tratament) : null
+    }));
+
+    console.log(`✅ [PRESCRIPTIONS] Găsite ${parsedPrescriptions.length} rețete pentru utilizator ${userId}`);
+    res.json({ prescriptions: parsedPrescriptions });
+  } catch (error) {
+    console.error('❌ [PRESCRIPTIONS] Eroare la obținerea rețetelor:', error);
+    res.status(500).json({ error: 'Eroare la obținerea rețetelor' });
+  }
+});
+
 const start = async () => {
   try {
+    console.log('🔄 Inițializare backend...');
     await ensureTable();
+    console.log('✅ Tabele verificate/create');
+    
     const seeded = await seedIfEmpty();
     if (seeded.skipped) {
-      console.log(`Database already populated (${seeded.rows} înregistrări).`);
+      console.log(`✅ Database already populated (${seeded.rows} înregistrări).`);
     } else {
-      console.log(`Am importat ${seeded.rows} înregistrări din CSV.`);
+      console.log(`✅ Am importat ${seeded.rows} înregistrări din CSV.`);
     }
 
     if (process.argv.includes('--seed-only')) {
@@ -260,11 +497,20 @@ const start = async () => {
       return;
     }
 
-    app.listen(PORT, () => {
-      console.log(`Backend ascultă pe portul ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`\n✅✅✅ Backend ascultă pe portul ${PORT} ✅✅✅\n`);
+      console.log(`✅ Rute disponibile:`);
+      console.log(`   GET  /health`);
+      console.log(`   GET  /api/medications`);
+      console.log(`   POST /api/auth/signup`);
+      console.log(`   POST /api/auth/login`);
+      console.log(`   GET  /api/auth/me`);
+      console.log(`   POST /api/prescriptions`);
+      console.log(`   GET  /api/prescriptions\n`);
     });
   } catch (error) {
-    console.error('Eroare la inițializare:', error);
+    console.error('❌ Eroare la inițializare:', error);
+    console.error('Stack:', error.stack);
     process.exit(1);
   }
 };
