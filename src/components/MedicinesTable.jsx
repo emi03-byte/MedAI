@@ -22,6 +22,30 @@ const hospitalFaviconDataUrl = `data:image/svg+xml,${encodeURIComponent(hospital
 // Baza URL pentru backend-ul Node/Express cu SQLite
 const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
+// Funcții helper pentru localStorage per user
+const getStorageKey = (key, userId) => {
+  return userId ? `${key}_user_${userId}` : key
+}
+
+const getStorageItem = (key, userId) => {
+  const storageKey = getStorageKey(key, userId)
+  return localStorage.getItem(storageKey)
+}
+
+const setStorageItem = (key, value, userId) => {
+  const storageKey = getStorageKey(key, userId)
+  if (value !== null && value !== undefined && value !== '') {
+    localStorage.setItem(storageKey, value)
+  } else {
+    localStorage.removeItem(storageKey)
+  }
+}
+
+const removeStorageItem = (key, userId) => {
+  const storageKey = getStorageKey(key, userId)
+  localStorage.removeItem(storageKey)
+}
+
 const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {}, onHistoryPageChange = () => {} }) => {
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -115,6 +139,54 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     }
   }, [])
 
+  // Funcție pentru încărcarea datelor utilizatorului din localStorage
+  const loadUserData = useCallback((userId) => {
+    if (!userId) return
+    
+    // Încarcă notițele salvate din localStorage
+    const savedPatientNotes = getStorageItem('patientNotes', userId)
+    if (savedPatientNotes) {
+      setPatientNotes(savedPatientNotes)
+    }
+    
+    // Încarcă numele pacientului salvat din localStorage
+    const savedPatientName = getStorageItem('patientName', userId)
+    if (savedPatientName) {
+      setPatientName(savedPatientName)
+    }
+    
+    const savedDoctorNotes = getStorageItem('doctorNotes', userId)
+    if (savedDoctorNotes) {
+      setDoctorNotes(savedDoctorNotes)
+    }
+    
+    // Încarcă produsele selectate salvate
+    const savedSelectedProducts = getStorageItem('selectedProducts', userId)
+    if (savedSelectedProducts) {
+      try {
+        const parsedProducts = JSON.parse(savedSelectedProducts)
+        setSelectedProducts(parsedProducts)
+        console.log('✅ Produse selectate încărcate din localStorage:', parsedProducts.length)
+      } catch (error) {
+        console.error('❌ Eroare la încărcarea produselor selectate:', error)
+        removeStorageItem('selectedProducts', userId)
+      }
+    }
+
+    // Încarcă planurile de medicamente salvate
+    const savedMedicinePlans = getStorageItem('medicinePlans', userId)
+    if (savedMedicinePlans) {
+      try {
+        const parsedPlans = JSON.parse(savedMedicinePlans)
+        setMedicinePlans(parsedPlans)
+        console.log('✅ Planuri medicamente încărcate din localStorage:', Object.keys(parsedPlans).length)
+      } catch (error) {
+        console.error('❌ Eroare la încărcarea planurilor de medicamente:', error)
+        removeStorageItem('medicinePlans', userId)
+      }
+    }
+  }, [])
+
   // Verifică dacă există un utilizator autentificat la încărcarea paginii
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser')
@@ -129,6 +201,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
             if (data.user) {
               setCurrentUser(data.user)
               localStorage.setItem('currentUser', JSON.stringify(data.user))
+              // Încarcă datele utilizatorului din localStorage
+              loadUserData(data.user.id)
             } else {
               // Utilizatorul nu mai există, șterge din localStorage
               localStorage.removeItem('currentUser')
@@ -137,13 +211,29 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
           })
           .catch(() => {
             // Eroare la verificare, păstrează utilizatorul din localStorage
+            // Încarcă datele utilizatorului din localStorage
+            loadUserData(user.id)
           })
       } catch (error) {
         console.error('Eroare la parsarea utilizatorului:', error)
         localStorage.removeItem('currentUser')
       }
     }
-  }, [])
+  }, [loadUserData])
+
+  // Când se schimbă utilizatorul, încarcă datele noului utilizator
+  useEffect(() => {
+    if (currentUser?.id) {
+      loadUserData(currentUser.id)
+    } else {
+      // Dacă nu este autentificat, șterge datele din state
+      setPatientNotes('')
+      setPatientName('')
+      setDoctorNotes('')
+      setSelectedProducts([])
+      setMedicinePlans({})
+    }
+  }, [currentUser, loadUserData])
 
   useEffect(() => {
     const body = document.body
@@ -471,94 +561,55 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [medicines.length])
 
-  // useEffect pentru încărcarea inițială
+
   useEffect(() => {
     fetchDiseases()
     fetchMedicines()
-    // Încarcă notițele salvate din localStorage
-    const savedPatientNotes = localStorage.getItem('patientNotes')
-    if (savedPatientNotes) {
-      setPatientNotes(savedPatientNotes)
-    }
-    
-    // Încarcă numele pacientului salvat din localStorage
-    const savedPatientName = localStorage.getItem('patientName')
-    if (savedPatientName) {
-      setPatientName(savedPatientName)
-    }
-    
-    const savedDoctorNotes = localStorage.getItem('doctorNotes')
-    if (savedDoctorNotes) {
-      setDoctorNotes(savedDoctorNotes)
-    }
-    
-    // Încarcă produsele selectate salvate
-    const savedSelectedProducts = localStorage.getItem('selectedProducts')
-    if (savedSelectedProducts) {
-      try {
-        const parsedProducts = JSON.parse(savedSelectedProducts)
-        setSelectedProducts(parsedProducts)
-        console.log('✅ Produse selectate încărcate din localStorage:', parsedProducts.length)
-      } catch (error) {
-        console.error('❌ Eroare la încărcarea produselor selectate:', error)
-        localStorage.removeItem('selectedProducts')
-      }
-    }
-
-    // Încarcă planurile de medicamente salvate
-    const savedMedicinePlans = localStorage.getItem('medicinePlans')
-    if (savedMedicinePlans) {
-      try {
-        const parsedPlans = JSON.parse(savedMedicinePlans)
-        setMedicinePlans(parsedPlans)
-        console.log('✅ Planuri medicamente încărcate din localStorage:', Object.keys(parsedPlans).length)
-      } catch (error) {
-        console.error('❌ Eroare la încărcarea planurilor de medicamente:', error)
-        localStorage.removeItem('medicinePlans')
-      }
-    }
+    // Datele utilizatorului se vor încărca când se autentifică (vezi useEffect pentru currentUser)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Salvează notițele în localStorage când se schimbă
   useEffect(() => {
-    if (patientNotes !== '') {
-      localStorage.setItem('patientNotes', patientNotes)
+    if (currentUser?.id) {
+      setStorageItem('patientNotes', patientNotes, currentUser.id)
     }
-  }, [patientNotes])
+  }, [patientNotes, currentUser])
 
   // Salvează numele pacientului în localStorage când se schimbă
   useEffect(() => {
-    if (patientName !== '') {
-      localStorage.setItem('patientName', patientName)
-    } else {
-      localStorage.removeItem('patientName')
+    if (currentUser?.id) {
+      setStorageItem('patientName', patientName, currentUser.id)
     }
-  }, [patientName])
+  }, [patientName, currentUser])
 
   useEffect(() => {
-    if (doctorNotes !== '') {
-      localStorage.setItem('doctorNotes', doctorNotes)
+    if (currentUser?.id) {
+      setStorageItem('doctorNotes', doctorNotes, currentUser.id)
     }
-  }, [doctorNotes])
+  }, [doctorNotes, currentUser])
 
   // Salvează produsele selectate în localStorage când se schimbă
   useEffect(() => {
-    if (selectedProducts.length > 0) {
-      localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts))
-    } else {
-      localStorage.removeItem('selectedProducts')
+    if (currentUser?.id) {
+      if (selectedProducts.length > 0) {
+        setStorageItem('selectedProducts', JSON.stringify(selectedProducts), currentUser.id)
+      } else {
+        removeStorageItem('selectedProducts', currentUser.id)
+      }
     }
-  }, [selectedProducts])
+  }, [selectedProducts, currentUser])
 
   // Salvează planurile de medicamente în localStorage când se schimbă
   useEffect(() => {
-    if (Object.keys(medicinePlans).length > 0) {
-      localStorage.setItem('medicinePlans', JSON.stringify(medicinePlans))
-    } else {
-      localStorage.removeItem('medicinePlans')
+    if (currentUser?.id) {
+      if (Object.keys(medicinePlans).length > 0) {
+        setStorageItem('medicinePlans', JSON.stringify(medicinePlans), currentUser.id)
+      } else {
+        removeStorageItem('medicinePlans', currentUser.id)
+      }
     }
-  }, [medicinePlans])
+  }, [medicinePlans, currentUser])
 
   // Funcția AI Medic - analizează indicațiile pacientului și generează sfaturi
   const generateAIAdvice = useCallback(async (patientNotesText) => {
@@ -1072,26 +1123,28 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcție pentru ștergerea tuturor datelor (pacient nou)
   const clearAllPatientData = useCallback(() => {
+    if (!currentUser?.id) return
+    
     // Șterge indicatiile pacientului
     setPatientNotes('')
-    localStorage.removeItem('patientNotes')
+    removeStorageItem('patientNotes', currentUser.id)
     
     // Șterge numele pacientului
     setPatientName('')
     setPatientNameError('')
-    localStorage.removeItem('patientName')
+    removeStorageItem('patientName', currentUser.id)
     
     // Șterge indicatiile medicului
     setDoctorNotes('')
-    localStorage.removeItem('doctorNotes')
+    removeStorageItem('doctorNotes', currentUser.id)
     
     // Șterge medicamentele selectate
     setSelectedProducts([])
-    localStorage.removeItem('selectedProducts')
+    removeStorageItem('selectedProducts', currentUser.id)
     
     // Șterge planurile de medicamente
     setMedicinePlans({})
-    localStorage.removeItem('medicinePlans')
+    removeStorageItem('medicinePlans', currentUser.id)
     
     // Șterge sfaturile AI
     setAiAdvice([])
@@ -1102,7 +1155,7 @@ Programează o consultație dacă simptomele persistă`
     setShowNewPatientModal(false)
     
     console.log('✅ Toate datele pacientului au fost șterse')
-  }, [])
+  }, [currentUser])
 
 
   const removeSelectedProduct = useCallback((medicineCode) => {
@@ -2575,6 +2628,12 @@ Programează o consultație dacă simptomele persistă`
             <button 
               className="auth-button"
               onClick={() => {
+                // Șterge datele din state când se deconectează
+                setPatientNotes('')
+                setPatientName('')
+                setDoctorNotes('')
+                setSelectedProducts([])
+                setMedicinePlans({})
                 localStorage.removeItem('currentUser')
                 setCurrentUser(null)
               }}
@@ -3924,6 +3983,8 @@ etc.`
                       console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
                       localStorage.setItem('currentUser', JSON.stringify(data.user))
                       setCurrentUser(data.user)
+                      // Încarcă datele utilizatorului din localStorage
+                      loadUserData(data.user.id)
                       setShowLoginModal(false)
                       setLoginEmail('')
                       setLoginPassword('')
@@ -4276,6 +4337,8 @@ etc.`
                       console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
                       localStorage.setItem('currentUser', JSON.stringify(data.user))
                       setCurrentUser(data.user)
+                      // Încarcă datele utilizatorului din localStorage (pentru utilizatori noi va fi gol)
+                      loadUserData(data.user.id)
                       setShowSignUpModal(false)
                       setSignUpName('')
                       setSignUpEmail('')
