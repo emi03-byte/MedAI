@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import csv from 'csv-parser';
 import sqlite3 from 'sqlite3';
+import bcrypt from 'bcryptjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -295,11 +296,16 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'Acest email este deja folosit. Te rugăm să folosești alt email.' });
     }
 
+    // Hash-ui parola înainte de salvare
+    console.log('🔐 [SIGNUP] Hash-ui parola...');
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(parola, saltRounds);
+
     // Inserează utilizatorul nou în baza de date
     console.log('💾 [SIGNUP] Inserare utilizator în baza de date...');
     const result = await runAsync(
       'INSERT INTO users (nume, email, parola) VALUES (?, ?, ?)',
-      [nume, email, parola]
+      [nume, email, hashedPassword]
     );
 
     // Returnează datele utilizatorului (fără parolă)
@@ -342,8 +348,34 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Email sau parolă incorectă' });
     }
 
-    // Verifică parola (în producție ar trebui să fie hash-uită)
-    if (user.parola !== parola) {
+    // Verifică parola (suportă atât parole hash-uite cât și parole în clar pentru compatibilitate)
+    console.log('🔐 [LOGIN] Verificare parolă...');
+    let isPasswordValid = false;
+    
+    // Verifică dacă parola este hash-uită (bcrypt hash-urile încep cu $2b$)
+    if (user.parola.startsWith('$2b$') || user.parola.startsWith('$2a$') || user.parola.startsWith('$2y$')) {
+      // Parola este hash-uită, folosește bcrypt.compare
+      isPasswordValid = await bcrypt.compare(parola, user.parola);
+      
+      // Dacă parola este corectă și nu este hash-uită, hash-ui-o și actualizează în baza de date
+      if (isPasswordValid) {
+        console.log('✅ [LOGIN] Parolă hash-uită verificată cu succes');
+      }
+    } else {
+      // Parola este în clar (pentru utilizatori existenți), compară direct
+      isPasswordValid = user.parola === parola;
+      
+      // Dacă parola este corectă, hash-ui-o și actualizează în baza de date
+      if (isPasswordValid) {
+        console.log('🔄 [LOGIN] Parolă în clar detectată, hash-ui și actualizează...');
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(parola, saltRounds);
+        await runAsync('UPDATE users SET parola = ? WHERE id = ?', [hashedPassword, user.id]);
+        console.log('✅ [LOGIN] Parolă hash-uită și actualizată în baza de date');
+      }
+    }
+    
+    if (!isPasswordValid) {
       console.log('❌ [LOGIN] Parolă incorectă pentru email:', email);
       return res.status(401).json({ error: 'Email sau parolă incorectă' });
     }
