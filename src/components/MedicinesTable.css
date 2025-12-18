@@ -5230,6 +5230,43 @@ body.medai-dark-mode .chat-send-button:disabled {
   flex: 1;
 }
 
+.history-card-header-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.history-card-pdf-button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.history-card-pdf-button:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+  box-shadow: 0 3px 6px rgba(220, 38, 38, 0.3);
+}
+
+.history-card-pdf-button:active {
+  transform: scale(0.95);
+}
+
+.history-card-compact .history-card-pdf-button {
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
 .history-card-view-button {
   background: var(--primary-color);
   color: white;
