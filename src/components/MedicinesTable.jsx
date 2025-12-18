@@ -22,7 +22,7 @@ const hospitalFaviconDataUrl = `data:image/svg+xml,${encodeURIComponent(hospital
 // Baza URL pentru backend-ul Node/Express cu SQLite
 const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
-const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {} }) => {
+const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {}, onHistoryPageChange = () => {} }) => {
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -85,6 +85,14 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [showHistoryPage, setShowHistoryPage] = useState(false)
   const [prescriptionHistory, setPrescriptionHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [expandedCardId, setExpandedCardId] = useState(null)
+  const [historyViewMode, setHistoryViewMode] = useState('compact') // 'list', 'compact', 'large'
+  const [selectedPrescriptions, setSelectedPrescriptions] = useState([])
+  const [isDeleteMode, setIsDeleteMode] = useState(false)
+  // Filtre pentru istoric
+  const [historyDateFilter, setHistoryDateFilter] = useState('toate') // 'toate', 'azi', 'saptamana', 'luna', 'anul', 'specifica'
+  const [historySpecificDate, setHistorySpecificDate] = useState('')
+  const [historyNameFilter, setHistoryNameFilter] = useState('')
 
   useEffect(() => {
     document.body.classList.toggle('med-ai-dark', isNightMode)
@@ -1774,19 +1782,203 @@ Programează o consultație dacă simptomele persistă`
     <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
       {/* Pagina de istoric rețete */}
       {showHistoryPage && (
-        <div className="history-page-container">
+        <div className={`history-page-container ${expandedCardId ? 'blurred' : ''}`}>
           <div className="history-page-header">
             <button 
               className="history-back-button"
-              onClick={() => setShowHistoryPage(false)}
+              onClick={() => {
+                setShowHistoryPage(false)
+                onHistoryPageChange(false)
+              }}
             >
               ← Înapoi
             </button>
             <h2 className="history-page-title">📋 Istoric Rețete</h2>
-            <div style={{ width: '100px' }}></div> {/* Spacer pentru centrare */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {isDeleteMode ? (
+                <>
+                  <button
+                    className="history-select-all-button"
+                    onClick={() => {
+                      if (selectedPrescriptions.length === prescriptionHistory.length) {
+                        setSelectedPrescriptions([])
+                      } else {
+                        setSelectedPrescriptions(prescriptionHistory.map(p => p.id))
+                      }
+                    }}
+                    title={selectedPrescriptions.length === prescriptionHistory.length ? 'Deselectează toate' : 'Selectează toate'}
+                  >
+                    {selectedPrescriptions.length === prescriptionHistory.length ? '☑ Selectate toate' : '☐ Selectează toate'}
+                  </button>
+                  <button
+                    className="history-delete-selected-button"
+                    onClick={async () => {
+                      if (selectedPrescriptions.length === 0) {
+                        alert('Te rugăm să selectezi cel puțin o rețetă de șters')
+                        return
+                      }
+                      
+                      if (!confirm(`Ești sigur că vrei să ștergi ${selectedPrescriptions.length} rețete?`)) {
+                        return
+                      }
+                      
+                      try {
+                        const deletePromises = selectedPrescriptions.map(id =>
+                          fetch(`${API_BASE_URL}/api/prescriptions/${id}?userId=${currentUser.id}`, {
+                            method: 'DELETE'
+                          })
+                        )
+                        
+                        const results = await Promise.all(deletePromises)
+                        const allSuccess = results.every(r => r.ok)
+                        
+                        if (allSuccess) {
+                          setPrescriptionHistory(prescriptionHistory.filter(p => !selectedPrescriptions.includes(p.id)))
+                          setSelectedPrescriptions([])
+                          setIsDeleteMode(false)
+                          alert(`${selectedPrescriptions.length} rețete au fost șterse cu succes!`)
+                        } else {
+                          const errorData = await Promise.all(results.map(r => r.ok ? null : r.json().catch(() => ({ error: 'Eroare necunoscută' }))))
+                          console.error('Eroare la ștergerea rețetelor:', errorData)
+                          alert('Eroare la ștergerea unor rețete. Verifică consola pentru detalii.')
+                        }
+                      } catch (error) {
+                        console.error('Eroare la ștergerea rețetelor:', error)
+                        alert(`Eroare la ștergerea rețetelor: ${error.message}`)
+                      }
+                    }}
+                    disabled={selectedPrescriptions.length === 0}
+                    title="Șterge rețetele selectate"
+                  >
+                    🗑️ Șterge ({selectedPrescriptions.length})
+                  </button>
+                  <button
+                    className="history-cancel-delete-button"
+                    onClick={() => {
+                      setIsDeleteMode(false)
+                      setSelectedPrescriptions([])
+                    }}
+                    title="Anulează"
+                  >
+                    ✕ Anulează
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="history-delete-button"
+                  onClick={() => setIsDeleteMode(true)}
+                  title="Șterge rețete"
+                >
+                  🗑️ Șterge
+                </button>
+              )}
+              <button
+                className="history-view-mode-toggle"
+                onClick={() => {
+                  if (historyViewMode === 'list') {
+                    setHistoryViewMode('compact')
+                  } else if (historyViewMode === 'compact') {
+                    setHistoryViewMode('large')
+                  } else {
+                    setHistoryViewMode('list')
+                  }
+                }}
+                title={`Mod vizualizare: ${historyViewMode === 'list' ? 'Listă' : historyViewMode === 'compact' ? 'Compact' : 'Mare'}`}
+              >
+              {historyViewMode === 'list' ? (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="3" y1="5" x2="17" y2="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="3" y1="15" x2="17" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              ) : historyViewMode === 'compact' ? (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <rect x="11" y="2" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <rect x="2" y="11" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <rect x="11" y="11" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <line x1="2" y1="6" x2="18" y2="6" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="2" y1="10" x2="18" y2="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="2" y1="14" x2="18" y2="14" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              )}
+            </button>
+            </div>
           </div>
           
+          {/* Filtre pentru istoric */}
+          <div className="history-filters-container">
+            <div className="history-filters-row">
+              <div className="history-filter-group">
+                <label htmlFor="history-date-filter" className="history-filter-label">Filtrare după dată:</label>
+                <select
+                  id="history-date-filter"
+                  className="history-filter-select"
+                  value={historyDateFilter}
+                  onChange={(e) => {
+                    setHistoryDateFilter(e.target.value)
+                    if (e.target.value !== 'specifica') {
+                      setHistorySpecificDate('')
+                    }
+                  }}
+                >
+                  <option value="toate">Toate</option>
+                  <option value="azi">Astăzi</option>
+                  <option value="saptamana">Ultima săptămână</option>
+                  <option value="luna">Ultima lună</option>
+                  <option value="anul">Ultimul an</option>
+                  <option value="specifica">Dată specifică</option>
+                </select>
+              </div>
+              {historyDateFilter === 'specifica' && (
+                <div className="history-filter-group">
+                  <label htmlFor="history-specific-date" className="history-filter-label">Selectează dată:</label>
+                  <input
+                    id="history-specific-date"
+                    type="date"
+                    className="history-filter-date-input"
+                    value={historySpecificDate}
+                    onChange={(e) => setHistorySpecificDate(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="history-filter-group">
+                <label htmlFor="history-name-filter" className="history-filter-label">Filtrare după nume:</label>
+                <input
+                  id="history-name-filter"
+                  type="text"
+                  className="history-filter-input"
+                  placeholder="Caută după nume pacient..."
+                  value={historyNameFilter}
+                  onChange={(e) => setHistoryNameFilter(e.target.value)}
+                />
+              </div>
+              {(historyDateFilter !== 'toate' || historySpecificDate || historyNameFilter) && (
+                <button
+                  className="history-filter-clear-button"
+                  onClick={() => {
+                    setHistoryDateFilter('toate')
+                    setHistorySpecificDate('')
+                    setHistoryNameFilter('')
+                  }}
+                  title="Șterge filtrele"
+                >
+                  ✕ Șterge filtrele
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="history-page-content">
+            {isDeleteMode && (
+              <div className="history-selection-info">
+                <span>{selectedPrescriptions.length} rețete selectate</span>
+              </div>
+            )}
             {loadingHistory ? (
               <div className="history-loading">
                 <p>Se încarcă istoricul...</p>
@@ -1795,70 +1987,246 @@ Programează o consultație dacă simptomele persistă`
               <div className="history-empty">
                 <p>Nu ai rețete salvate încă.</p>
               </div>
-            ) : (
-              <div className="history-cards-grid">
-                {prescriptionHistory.map((prescription, index) => (
-                  <div key={prescription.id} className="history-card">
-                    <div className="history-card-header">
-                      <h4 className="history-card-title">
-                        Rețetă #{prescriptionHistory.length - index}
-                        {prescription.nume_pacient && (
-                          <span className="history-card-patient-name">
-                            {' '}- {prescription.nume_pacient}
-                          </span>
+            ) : (() => {
+              // Filtrare rețete
+              let filteredHistory = prescriptionHistory
+              
+              // Filtrare după dată
+              if (historyDateFilter !== 'toate' || historySpecificDate) {
+                const now = new Date()
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                
+                filteredHistory = filteredHistory.filter(prescription => {
+                  const prescriptionDate = new Date(prescription.data_creare)
+                  const prescriptionDateOnly = new Date(prescriptionDate.getFullYear(), prescriptionDate.getMonth(), prescriptionDate.getDate())
+                  
+                  if (historyDateFilter === 'specifica' && historySpecificDate) {
+                    const selectedDate = new Date(historySpecificDate)
+                    const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+                    return prescriptionDateOnly.getTime() === selectedDateOnly.getTime()
+                  } else if (historyDateFilter === 'azi') {
+                    return prescriptionDateOnly.getTime() === today.getTime()
+                  } else if (historyDateFilter === 'saptamana') {
+                    const weekAgo = new Date(today)
+                    weekAgo.setDate(weekAgo.getDate() - 7)
+                    return prescriptionDate >= weekAgo
+                  } else if (historyDateFilter === 'luna') {
+                    const monthAgo = new Date(today)
+                    monthAgo.setMonth(monthAgo.getMonth() - 1)
+                    return prescriptionDate >= monthAgo
+                  } else if (historyDateFilter === 'anul') {
+                    const yearAgo = new Date(today)
+                    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+                    return prescriptionDate >= yearAgo
+                  }
+                  return true
+                })
+              }
+              
+              // Filtrare după nume
+              if (historyNameFilter) {
+                const nameFilterLower = historyNameFilter.toLowerCase().trim()
+                filteredHistory = filteredHistory.filter(prescription => {
+                  const patientName = (prescription.nume_pacient || '').toLowerCase()
+                  return patientName.includes(nameFilterLower)
+                })
+              }
+              
+              if (filteredHistory.length === 0) {
+                return (
+                  <div className="history-empty">
+                    <p>Nu s-au găsit rețete care să corespundă filtrelor.</p>
+                  </div>
+                )
+              }
+              
+              return (
+                <div className={`history-cards-grid history-view-${historyViewMode} ${isDeleteMode ? 'delete-mode-active' : ''}`}>
+                  {filteredHistory.map((prescription, index) => {
+                    const isSelected = selectedPrescriptions.includes(prescription.id)
+                    return (
+                    <div 
+                      key={prescription.id} 
+                      className={`history-card history-card-${historyViewMode} ${isSelected ? 'history-card-selected' : ''}`}
+                      onClick={(e) => {
+                        // Permite selecția doar dacă suntem în modul de ștergere și click-ul nu este pe butonul "Arată"
+                        if (isDeleteMode && !e.target.closest('.history-card-view-button')) {
+                          if (isSelected) {
+                            setSelectedPrescriptions(selectedPrescriptions.filter(id => id !== prescription.id))
+                          } else {
+                            setSelectedPrescriptions([...selectedPrescriptions, prescription.id])
+                          }
+                        }
+                      }}
+                      style={{ cursor: isDeleteMode ? 'pointer' : 'default', position: 'relative' }}
+                    >
+                      {isDeleteMode && (
+                        <div className="history-card-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              if (e.target.checked) {
+                                setSelectedPrescriptions([...selectedPrescriptions, prescription.id])
+                              } else {
+                                setSelectedPrescriptions(selectedPrescriptions.filter(id => id !== prescription.id))
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      )}
+                      <div className="history-card-header">
+                        <div className="history-card-header-content">
+                          <h4 className="history-card-title">
+                            Rețetă #{prescriptionHistory.length - index}
+                            {prescription.nume_pacient && (
+                              <span className="history-card-patient-name">
+                                {' '}- {prescription.nume_pacient}
+                              </span>
+                            )}
+                          </h4>
+                          <p className="history-card-date">
+                            {new Date(prescription.data_creare).toLocaleString('ro-RO')}
+                          </p>
+                        </div>
+                        {historyViewMode !== 'list' && (
+                          <button
+                            className="history-card-view-button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log('Buton Arată apăsat pentru rețeta:', prescription.id)
+                              setExpandedCardId(prescription.id)
+                            }}
+                            title="Arată"
+                            style={{ zIndex: 10, position: 'relative' }}
+                          >
+                            Arată
+                          </button>
                         )}
-                      </h4>
-                      <p className="history-card-date">
+                      </div>
+                      
+                      {prescription.medicamente && prescription.medicamente.length > 0 && (
+                        <div className="history-card-section">
+                          <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
+                          <ul className="history-card-list">
+                            {prescription.medicamente.slice(0, historyViewMode === 'large' ? prescription.medicamente.length : (historyViewMode === 'list' ? 5 : 3)).map((med, idx) => (
+                              <li key={idx} className="history-card-list-item">
+                                {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
+                              </li>
+                            ))}
+                            {historyViewMode !== 'large' && prescription.medicamente.length > (historyViewMode === 'list' ? 5 : 3) && (
+                              <li className="history-card-list-item" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                                ... și încă {prescription.medicamente.length - (historyViewMode === 'list' ? 5 : 3)} medicamente
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {(historyViewMode === 'large' || historyViewMode === 'list') && (
+                        <>
+                          {prescription.indicatii_pacient && (
+                            <div className="history-card-section history-card-indications">
+                              <strong className="history-card-label">📝 Indicații Pacient:</strong>
+                              <p className="history-card-text">
+                                {prescription.indicatii_pacient}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {prescription.indicatii_medic && (
+                            <div className="history-card-section history-card-indications">
+                              <strong className="history-card-label">👨‍⚕️ Indicații Medic:</strong>
+                              <p className="history-card-text">
+                                {prescription.indicatii_medic}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modal pentru vizualizare detaliată rețetă */}
+      {expandedCardId && showHistoryPage && (
+        <div className="history-card-modal-overlay" onClick={() => setExpandedCardId(null)}>
+          <div className="history-card-modal-content" onClick={(e) => e.stopPropagation()}>
+            {prescriptionHistory.find(p => p.id === expandedCardId) && (() => {
+              const prescription = prescriptionHistory.find(p => p.id === expandedCardId)
+              const index = prescriptionHistory.findIndex(p => p.id === expandedCardId)
+              return (
+                <>
+                  <div className="history-card-modal-header">
+                    <h3>
+                      Rețetă #{prescriptionHistory.length - index}
+                      {prescription.nume_pacient && (
+                        <span className="history-card-patient-name">
+                          {' '}- {prescription.nume_pacient}
+                        </span>
+                      )}
+                    </h3>
+                    <button
+                      className="history-card-modal-close"
+                      onClick={() => setExpandedCardId(null)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="history-card-modal-body">
+                    <div className="history-card-modal-section">
+                      <p className="history-card-modal-date">
                         {new Date(prescription.data_creare).toLocaleString('ro-RO')}
                       </p>
                     </div>
                     
-                    {prescription.medicamente && prescription.medicamente.length > 0 && (
-                      <div className="history-card-section">
-                        <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
-                        <ul className="history-card-list">
-                          {prescription.medicamente.slice(0, 3).map((med, idx) => (
-                            <li key={idx} className="history-card-list-item">
-                              {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
-                            </li>
-                          ))}
-                          {prescription.medicamente.length > 3 && (
-                            <li className="history-card-list-item" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                              ... și încă {prescription.medicamente.length - 3} medicamente
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                    
                     {prescription.indicatii_pacient && (
-                      <div className="history-card-section history-card-indications">
+                      <div className="history-card-modal-section history-card-indications">
                         <strong className="history-card-label">📝 Indicații Pacient:</strong>
                         <p className="history-card-text">
-                          {prescription.indicatii_pacient.length > 100 
-                            ? `${prescription.indicatii_pacient.substring(0, 100)}...` 
-                            : prescription.indicatii_pacient}
+                          {prescription.indicatii_pacient}
                         </p>
                       </div>
                     )}
                     
                     {prescription.indicatii_medic && (
-                      <div className="history-card-section history-card-indications">
+                      <div className="history-card-modal-section history-card-indications">
                         <strong className="history-card-label">👨‍⚕️ Indicații Medic:</strong>
                         <p className="history-card-text">
-                          {prescription.indicatii_medic.length > 100 
-                            ? `${prescription.indicatii_medic.substring(0, 100)}...` 
-                            : prescription.indicatii_medic}
+                          {prescription.indicatii_medic}
                         </p>
                       </div>
                     )}
+                    
+                    {prescription.medicamente && prescription.medicamente.length > 0 && (
+                      <div className="history-card-modal-section">
+                        <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
+                        <ul className="history-card-list">
+                          {prescription.medicamente.map((med, idx) => (
+                            <li key={idx} className="history-card-list-item">
+                              {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
+                </>
+              )
+            })()}
           </div>
         </div>
       )}
+
 
       {/* Conținut principal - ascuns când este deschisă pagina de istoric */}
       {!showHistoryPage && (
@@ -3041,6 +3409,7 @@ etc.`
                       onClick={async () => {
                         setShowStatsModal(false)
                         setShowHistoryPage(true)
+                        onHistoryPageChange(true)
                         setLoadingHistory(true)
                         try {
                           const response = await fetch(`${API_BASE_URL}/api/prescriptions?userId=${currentUser.id}`)

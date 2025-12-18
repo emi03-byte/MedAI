@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 function App() {
   const [medicinesData, setMedicinesData] = useState([])
   const [selectedAgeCategory, setSelectedAgeCategory] = useState('toate')
+  const [showHistoryPage, setShowHistoryPage] = useState(false)
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
@@ -74,8 +75,9 @@ function App() {
         ageCategoryData={ageCategories.find(c => c.id === selectedAgeCategory)}
         ageCategories={ageCategories}
         onCategoryChange={setSelectedAgeCategory}
+        onHistoryPageChange={setShowHistoryPage}
       />
-      <ChatBot medicinesData={medicinesData} />
+      {!showHistoryPage && <ChatBot medicinesData={medicinesData} />}
     </div>
   )
 }

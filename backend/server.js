@@ -403,10 +403,8 @@ app.post('/api/prescriptions', async (req, res) => {
 
     console.log(`📋 [PRESCRIPTION] Validare: userId=${userId}, medicamente type=${typeof medicamente}, isArray=${Array.isArray(medicamente)}, length=${medicamente?.length || 0}`);
 
-    if (!medicamente || !Array.isArray(medicamente) || medicamente.length === 0) {
-      console.error('❌ [PRESCRIPTION] Lista de medicamente invalidă sau goală');
-      return res.status(400).json({ error: 'Lista de medicamente este obligatorie' });
-    }
+    // Permite salvarea fără medicamente (pentru notițe medicale)
+    const medicamenteArray = medicamente && Array.isArray(medicamente) ? medicamente : [];
 
     // Verifică dacă utilizatorul există
     const user = await getAsync('SELECT id FROM users WHERE id = ?', [userId]);
@@ -421,7 +419,7 @@ app.post('/api/prescriptions', async (req, res) => {
       [
         userId,
         numePacient || null,
-        JSON.stringify(medicamente),
+        medicamenteArray.length > 0 ? JSON.stringify(medicamenteArray) : JSON.stringify([]),
         planuriTratament ? JSON.stringify(planuriTratament) : null,
         indicatiiPacient || null,
         indicatiiMedic || null
@@ -479,6 +477,73 @@ app.get('/api/prescriptions', async (req, res) => {
   }
 });
 
+// Endpoint pentru ștergerea unei rețete individuale
+app.delete('/api/prescriptions/:id', async (req, res) => {
+  try {
+    const prescriptionId = req.params.id;
+    const userId = req.query.userId;
+    
+    console.log('🗑️ [DELETE PRESCRIPTION] Cerere ștergere rețetă:', { prescriptionId, userId });
+
+    if (!prescriptionId) {
+      return res.status(400).json({ error: 'ID rețetă lipsă' });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Verifică dacă rețeta există și aparține utilizatorului
+    const prescription = await getAsync(
+      'SELECT * FROM retete WHERE id = ? AND user_id = ?',
+      [prescriptionId, userId]
+    );
+
+    if (!prescription) {
+      console.log('❌ [DELETE PRESCRIPTION] Rețetă negăsită sau nu aparține utilizatorului');
+      return res.status(404).json({ error: 'Rețetă negăsită sau nu ai permisiunea de a o șterge' });
+    }
+
+    // Șterge rețeta
+    await runAsync('DELETE FROM retete WHERE id = ? AND user_id = ?', [prescriptionId, userId]);
+
+    console.log('✅ [DELETE PRESCRIPTION] Rețetă ștearsă cu succes:', prescriptionId);
+    res.json({ 
+      success: true,
+      message: 'Rețetă ștearsă cu succes'
+    });
+  } catch (error) {
+    console.error('❌ [DELETE PRESCRIPTION] Eroare la ștergerea rețetei:', error);
+    res.status(500).json({ error: 'Eroare la ștergerea rețetei' });
+  }
+});
+
+// Endpoint pentru ștergerea tuturor rețetelor unui utilizator
+app.delete('/api/prescriptions', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    
+    console.log('🗑️ [DELETE ALL PRESCRIPTIONS] Cerere ștergere toate rețetele pentru utilizator:', userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Șterge toate rețetele utilizatorului
+    const result = await runAsync('DELETE FROM retete WHERE user_id = ?', [userId]);
+
+    console.log('✅ [DELETE ALL PRESCRIPTIONS] Toate rețetele au fost șterse pentru utilizator:', userId);
+    res.json({ 
+      success: true,
+      message: 'Toate rețetele au fost șterse cu succes',
+      deletedCount: result.changes || 0
+    });
+  } catch (error) {
+    console.error('❌ [DELETE ALL PRESCRIPTIONS] Eroare la ștergerea rețetelor:', error);
+    res.status(500).json({ error: 'Eroare la ștergerea rețetelor' });
+  }
+});
+
 const start = async () => {
   try {
     console.log('🔄 Inițializare backend...');
@@ -506,7 +571,9 @@ const start = async () => {
       console.log(`   POST /api/auth/login`);
       console.log(`   GET  /api/auth/me`);
       console.log(`   POST /api/prescriptions`);
-      console.log(`   GET  /api/prescriptions\n`);
+      console.log(`   GET  /api/prescriptions`);
+      console.log(`   DELETE /api/prescriptions/:id`);
+      console.log(`   DELETE /api/prescriptions?userId=X\n`);
     });
   } catch (error) {
     console.error('❌ Eroare la inițializare:', error);
