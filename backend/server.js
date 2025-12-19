@@ -528,7 +528,25 @@ const checkAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'ID utilizator lipsă' });
     }
 
-    const user = await getAsync('SELECT is_admin FROM users WHERE id = ?', [userId]);
+    // Verifică dacă utilizatorul este admin (inclusiv dacă este șters, pentru a permite accesul la date)
+    // Nu verificăm deleted_at pentru că vrem să permitem adminului să vadă datele chiar dacă conturile sunt șterse
+    let user = await getAsync('SELECT is_admin, deleted_at FROM users WHERE id = ?', [userId]);
+    
+    // Dacă nu găsește cu ID-ul direct, încercă cu integer
+    if (!user) {
+      const userIdInt = parseInt(userId, 10);
+      if (!isNaN(userIdInt)) {
+        user = await getAsync('SELECT is_admin, deleted_at FROM users WHERE id = ?', [userIdInt]);
+      }
+    }
+    
+    console.log('🔐 [ADMIN CHECK] Verificare admin:', { 
+      userId, 
+      found: !!user, 
+      is_admin: user?.is_admin,
+      deleted_at: user?.deleted_at 
+    });
+    
     if (!user || !user.is_admin) {
       return res.status(403).json({ error: 'Acces interzis. Doar administratorii pot accesa această resursă.' });
     }
@@ -572,12 +590,18 @@ app.get('/api/admin/requests', checkAdmin, async (req, res) => {
     const requests = await allAsync(query, params);
     
     // Log pentru debugging
+    console.log('📋 [ADMIN] Query executat:', { query, params, showDeleted });
     if (requests.length > 0) {
       console.log('📋 [ADMIN] Exemplu request:', {
         id: requests[0].id,
+        idType: typeof requests[0].id,
         email: requests[0].email,
-        is_admin: requests[0].is_admin
+        is_admin: requests[0].is_admin,
+        deleted_at: requests[0].deleted_at
       });
+      // Log toate ID-urile pentru debugging
+      const ids = requests.map(r => ({ id: r.id, idType: typeof r.id, email: r.email, deleted_at: r.deleted_at }));
+      console.log('📋 [ADMIN] Toate ID-urile returnate:', ids);
     }
     
     console.log(`✅ [ADMIN] Găsite ${requests.length} cereri`);
@@ -723,9 +747,26 @@ app.delete('/api/admin/delete-user/:userId', checkAdmin, async (req, res) => {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
     }
 
-    // Verifică dacă utilizatorul există
-    const user = await getAsync('SELECT id, email FROM users WHERE id = ?', [targetUserId]);
+    // Verifică dacă utilizatorul există (inclusiv dacă e deja șters, pentru a putea fi restaurat)
+    let user = await getAsync('SELECT id, email, deleted_at FROM users WHERE id = ?', [targetUserId]);
+    
+    // Dacă nu găsește cu ID-ul direct, încercă cu integer
     if (!user) {
+      const targetUserIdInt = parseInt(targetUserId, 10);
+      if (!isNaN(targetUserIdInt)) {
+        user = await getAsync('SELECT id, email, deleted_at FROM users WHERE id = ?', [targetUserIdInt]);
+      }
+    }
+    
+    console.log('🗑️ [ADMIN] Utilizator găsit pentru ștergere:', { 
+      found: !!user, 
+      id: user?.id, 
+      email: user?.email, 
+      alreadyDeleted: !!user?.deleted_at 
+    });
+    
+    if (!user) {
+      console.error('❌ [ADMIN] Utilizatorul nu a fost găsit pentru ștergere:', targetUserId);
       return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
     }
 
@@ -739,10 +780,18 @@ app.delete('/api/admin/delete-user/:userId', checkAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Nu poți șterge contul principal de administrator' });
     }
 
-    // Soft delete: marchează contul ca șters
-    await runAsync('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [targetUserId]);
+    // Soft delete: marchează contul ca șters (dacă nu este deja șters)
+    const updateResult = await runAsync('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
     
-    console.log('✅ [ADMIN] Cont marcat ca șters:', { id: user.id, email: user.email });
+    // Verifică că update-ul a fost reușit
+    const updatedUser = await getAsync('SELECT id, email, deleted_at FROM users WHERE id = ?', [user.id]);
+    
+    console.log('✅ [ADMIN] Cont marcat ca șters:', { 
+      id: user.id, 
+      email: user.email,
+      deleted_at: updatedUser?.deleted_at,
+      updateSuccess: !!updatedUser?.deleted_at
+    });
     res.json({ 
       success: true,
       message: 'Cont șters cu succes'
@@ -795,35 +844,83 @@ app.get('/api/admin/user-prescriptions/:userId', checkAdmin, async (req, res) =>
     const targetUserId = req.params.userId;
     const adminUserId = req.query.userId || req.body.userId;
     
-    console.log('📋 [ADMIN] Cerere rețete pentru utilizator:', { targetUserId, adminUserId });
+    console.log('📋 [ADMIN] Cerere rețete pentru utilizator:', { targetUserId, adminUserId, targetUserIdType: typeof targetUserId });
     
     if (!targetUserId) {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
     }
 
-    // Verifică dacă utilizatorul există
-    const user = await getAsync('SELECT id, nume, email FROM users WHERE id = ? AND deleted_at IS NULL', [targetUserId]);
+    // Verifică dacă utilizatorul există (inclusiv conturile șterse, pentru admin)
+    // IMPORTANT: NU verificăm deleted_at pentru că vrem să permitem accesul la rețete și pentru conturile șterse
+    
+    console.log('📋 [ADMIN] Căutare utilizator cu ID:', { 
+      original: targetUserId, 
+      type: typeof targetUserId
+    });
+    
+    // Convertim ID-ul la integer pentru a se potrivi cu tipul coloanei PRIMARY KEY INTEGER
+    const targetUserIdInt = parseInt(targetUserId, 10);
+    if (isNaN(targetUserIdInt)) {
+      console.error('❌ [ADMIN] ID utilizator invalid (nu este număr):', targetUserId);
+      return res.status(400).json({ error: 'ID utilizator invalid' });
+    }
+    
+    // Query simplu - NU verificăm deleted_at pentru a permite accesul și la conturile șterse
+    const user = await getAsync('SELECT id, nume, email, deleted_at FROM users WHERE id = ?', [targetUserIdInt]);
+    
+    console.log('📋 [ADMIN] Rezultat query utilizator:', { 
+      found: !!user, 
+      searchedId: targetUserIdInt,
+      userId: user?.id, 
+      email: user?.email, 
+      deleted_at: user?.deleted_at,
+      isDeleted: !!user?.deleted_at
+    });
+    
     if (!user) {
-      return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
+      // Verifică dacă există utilizatori în baza de date pentru debugging
+      const allUsers = await allAsync('SELECT id, email, deleted_at FROM users ORDER BY id DESC LIMIT 10');
+      console.error('❌ [ADMIN] Utilizatorul nu a fost găsit în baza de date pentru ID:', targetUserId);
+      console.error('❌ [ADMIN] Ultimii 10 utilizatori din baza de date:', allUsers);
+      
+      // Verifică dacă există utilizatori cu deleted_at
+      const deletedUsers = await allAsync('SELECT id, email, deleted_at FROM users WHERE deleted_at IS NOT NULL ORDER BY id DESC LIMIT 10');
+      console.error('❌ [ADMIN] Utilizatori șterși din baza de date:', deletedUsers);
+      
+      return res.status(404).json({ error: `Utilizatorul nu a fost găsit (ID: ${targetUserId}). Verifică console-ul serverului pentru detalii.` });
     }
 
-    // Obține toate rețetele utilizatorului
+    // Obține toate rețetele utilizatorului (rețetele rămân în baza de date chiar dacă contul este șters)
+    // Folosim ID-ul utilizatorului găsit pentru a ne asigura că avem cel corect
     const prescriptions = await allAsync(
       `SELECT id, nume_pacient, medicamente, planuri_tratament, indicatii_pacient, indicatii_medic, data_creare 
        FROM retete 
        WHERE user_id = ? 
        ORDER BY data_creare DESC`,
-      [targetUserId]
+      [user.id]
     );
 
-    // Parsează JSON-urile din baza de date
-    const parsedPrescriptions = prescriptions.map(prescription => ({
-      ...prescription,
-      medicamente: JSON.parse(prescription.medicamente || '[]'),
-      planuri_tratament: prescription.planuri_tratament ? JSON.parse(prescription.planuri_tratament) : null
-    }));
+    console.log(`📋 [ADMIN] Găsite ${prescriptions.length} rețete în baza de date pentru utilizator ${targetUserId}`);
 
-    console.log(`✅ [ADMIN] Găsite ${parsedPrescriptions.length} rețete pentru utilizator ${targetUserId}`);
+    // Parsează JSON-urile din baza de date
+    const parsedPrescriptions = prescriptions.map(prescription => {
+      try {
+        return {
+          ...prescription,
+          medicamente: JSON.parse(prescription.medicamente || '[]'),
+          planuri_tratament: prescription.planuri_tratament ? JSON.parse(prescription.planuri_tratament) : null
+        };
+      } catch (parseError) {
+        console.error('❌ [ADMIN] Eroare la parsarea JSON pentru rețetă:', prescription.id, parseError);
+        return {
+          ...prescription,
+          medicamente: [],
+          planuri_tratament: null
+        };
+      }
+    });
+
+    console.log(`✅ [ADMIN] Rețete parseate cu succes pentru utilizator ${targetUserId}: ${parsedPrescriptions.length} rețete`);
     res.json({ 
       success: true,
       user: { id: user.id, nume: user.nume, email: user.email },
@@ -831,7 +928,8 @@ app.get('/api/admin/user-prescriptions/:userId', checkAdmin, async (req, res) =>
     });
   } catch (error) {
     console.error('❌ [ADMIN] Eroare la obținerea rețetelor:', error);
-    res.status(500).json({ error: 'Eroare la obținerea rețetelor' });
+    console.error('❌ [ADMIN] Stack trace:', error.stack);
+    res.status(500).json({ error: 'Eroare la obținerea rețetelor: ' + error.message });
   }
 });
 

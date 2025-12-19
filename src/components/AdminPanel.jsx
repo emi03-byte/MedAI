@@ -22,6 +22,8 @@ const AdminPanel = ({ currentUser, onClose }) => {
       const showDeleted = activeTab === 'istoric' ? 'true' : 'false'
       const url = `${API_BASE_URL}/api/admin/requests?userId=${currentUser.id}${status ? `&status=${status}` : ''}&showDeleted=${showDeleted}`
       
+      console.log('📋 [FRONTEND] Fetching requests:', { activeTab, showDeleted, url })
+      
       const response = await fetch(url)
       const data = await response.json()
       
@@ -29,9 +31,19 @@ const AdminPanel = ({ currentUser, onClose }) => {
         throw new Error(data.error || 'Eroare la încărcarea cererilor')
       }
       
+      console.log('📋 [FRONTEND] Requests primite:', { count: data.requests?.length, requests: data.requests })
+      if (data.requests && data.requests.length > 0) {
+        console.log('📋 [FRONTEND] Primul request:', { 
+          id: data.requests[0].id, 
+          idType: typeof data.requests[0].id,
+          email: data.requests[0].email,
+          deleted_at: data.requests[0].deleted_at
+        })
+      }
+      
       setRequests(data.requests || [])
     } catch (err) {
-      console.error('Eroare la încărcarea cererilor:', err)
+      console.error('❌ [FRONTEND] Eroare la încărcarea cererilor:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -229,10 +241,14 @@ const AdminPanel = ({ currentUser, onClose }) => {
 
   const handleViewPrescriptions = async (userId, userName, userEmail) => {
     try {
+      console.log('📋 [FRONTEND] Deschidere rețete pentru utilizator:', { userId, userName, userEmail, userIdType: typeof userId })
       setLoadingPrescriptions(true)
       setSelectedUser({ id: userId, nume: userName, email: userEmail })
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/user-prescriptions/${userId}?userId=${currentUser.id}`)
+      const url = `${API_BASE_URL}/api/admin/user-prescriptions/${userId}?userId=${currentUser.id}`
+      console.log('📋 [FRONTEND] URL cerere:', url)
+      
+      const response = await fetch(url)
       
       // Verifică dacă răspunsul este JSON înainte de a-l parsa
       const contentType = response.headers.get('content-type')
@@ -240,20 +256,23 @@ const AdminPanel = ({ currentUser, onClose }) => {
       
       if (contentType && contentType.includes('application/json')) {
         data = await response.json()
+        console.log('📋 [FRONTEND] Răspuns primit:', { status: response.status, ok: response.ok, data })
       } else {
         // Dacă nu este JSON, încercă să citești textul pentru debugging
         const text = await response.text()
-        console.error('Răspuns non-JSON primit:', text)
+        console.error('❌ [FRONTEND] Răspuns non-JSON primit:', text)
         throw new Error(`Eroare server: ${response.status} ${response.statusText}`)
       }
       
       if (!response.ok) {
+        console.error('❌ [FRONTEND] Răspuns negativ:', { status: response.status, error: data.error })
         throw new Error(data.error || `Eroare la încărcarea rețetelor: ${response.status}`)
       }
       
+      console.log('✅ [FRONTEND] Rețete încărcate cu succes:', data.prescriptions?.length || 0)
       setUserPrescriptions(data.prescriptions || [])
     } catch (err) {
-      console.error('Eroare la încărcarea rețetelor:', err)
+      console.error('❌ [FRONTEND] Eroare la încărcarea rețetelor:', err)
       alert(`Eroare: ${err.message}`)
       setSelectedUser(null)
     } finally {
@@ -424,7 +443,7 @@ const AdminPanel = ({ currentUser, onClose }) => {
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                         {/* Pentru conturile șterse, afișează buton de restaurare */}
-                        {activeTab === 'istoric' && request.deleted_at ? (
+                        {activeTab === 'istoric' && request.deleted_at && (
                           <button
                             onClick={() => handleRestoreUser(request.id)}
                             disabled={actionLoading === request.id}
@@ -442,9 +461,8 @@ const AdminPanel = ({ currentUser, onClose }) => {
                           >
                             {actionLoading === request.id ? '⏳' : '♻️'} Restaurează
                           </button>
-                        ) : (
-                          <>
-                        {/* Buton pentru aprobare */}
+                        )}
+                        {/* Buton pentru aprobare - doar pentru conturile active */}
                         {request.status !== 'approved' && activeTab !== 'istoric' && (
                           <button
                             onClick={() => handleChangeStatus(request.id, 'approved')}
@@ -464,7 +482,7 @@ const AdminPanel = ({ currentUser, onClose }) => {
                             {actionLoading === request.id ? '⏳' : '✅'} Aprobă
                           </button>
                         )}
-                        {/* Buton pentru respingere */}
+                        {/* Buton pentru respingere - doar pentru conturile active */}
                         {request.status !== 'rejected' && activeTab !== 'istoric' && (
                           <button
                             onClick={() => handleChangeStatus(request.id, 'rejected')}
@@ -484,7 +502,7 @@ const AdminPanel = ({ currentUser, onClose }) => {
                             {actionLoading === request.id ? '⏳' : '❌'} Respinge
                           </button>
                         )}
-                        {/* Buton pentru pending */}
+                        {/* Buton pentru pending - doar pentru conturile active */}
                         {request.status !== 'pending' && activeTab !== 'istoric' && (
                           <button
                             onClick={() => handleChangeStatus(request.id, 'pending')}
@@ -504,21 +522,34 @@ const AdminPanel = ({ currentUser, onClose }) => {
                             {actionLoading === request.id ? '⏳' : '⏳'} În așteptare
                           </button>
                         )}
-                        {/* Buton pentru vizualizare rețete */}
+                        {/* Buton pentru vizualizare rețete - disponibil pentru toate conturile (active și șterse) */}
                         <button
-                          onClick={() => handleViewPrescriptions(request.id, request.nume, request.email)}
-                          disabled={actionLoading === request.id}
+                          onClick={() => {
+                            console.log('🔵 [FRONTEND] Click pe buton Rețete:', { 
+                              requestId: request.id, 
+                              requestIdType: typeof request.id,
+                              requestNume: request.nume,
+                              requestEmail: request.email,
+                              fullRequest: request
+                            })
+                            if (!request.id) {
+                              alert('Eroare: ID utilizator lipsă. Te rugăm să reîmprospătezi pagina.')
+                              return
+                            }
+                            handleViewPrescriptions(request.id, request.nume, request.email)
+                          }}
+                          disabled={actionLoading === request.id || !request.id}
                           style={{
                             padding: '6px 12px',
                             background: '#2196F3',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                            opacity: actionLoading === request.id ? 0.6 : 1,
+                            cursor: (actionLoading === request.id || !request.id) ? 'wait' : 'pointer',
+                            opacity: (actionLoading === request.id || !request.id) ? 0.6 : 1,
                             fontSize: '12px'
                           }}
-                          title="Vezi rețete"
+                          title={!request.id ? "ID utilizator lipsă" : "Vezi rețete"}
                         >
                           📋 Rețete
                         </button>
@@ -541,8 +572,6 @@ const AdminPanel = ({ currentUser, onClose }) => {
                           >
                             {actionLoading === request.id ? '⏳' : '🗑️'} Șterge
                           </button>
-                        )}
-                          </>
                         )}
                       </div>
                       {request.status === 'approved' && request.data_aprobare && (
@@ -634,11 +663,20 @@ const AdminPanel = ({ currentUser, onClose }) => {
                       <div style={{ marginBottom: '12px' }}>
                         <strong style={{ color: '#1a3c7c' }}>Medicamente ({prescription.medicamente.length}):</strong>
                         <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                          {prescription.medicamente.map((med, idx) => (
-                            <li key={idx} style={{ marginBottom: '4px' }}>
-                              {med.denumire || med.Denumire_medicament || 'Medicament necunoscut'}
-                            </li>
-                          ))}
+                          {prescription.medicamente.map((med, idx) => {
+                            // Caută denumirea medicamentului în toate variantele posibile
+                            const denumire = med['Denumire medicament'] || 
+                                           med.denumire_medicament || 
+                                           med.denumire || 
+                                           med.Denumire_medicament ||
+                                           med.denumireMedicament ||
+                                           (typeof med === 'string' ? med : 'Medicament necunoscut')
+                            return (
+                              <li key={idx} style={{ marginBottom: '4px' }}>
+                                {denumire}
+                              </li>
+                            )
+                          })}
                         </ul>
                       </div>
                     )}
@@ -661,14 +699,50 @@ const AdminPanel = ({ currentUser, onClose }) => {
                       </div>
                     )}
 
-                    {prescription.planuri_tratament && (
-                      <div style={{ marginBottom: '12px' }}>
-                        <strong style={{ color: '#1a3c7c' }}>📅 Planuri Tratament:</strong>
-                        <pre style={{ margin: '8px 0', padding: '8px', background: '#fff', borderRadius: '4px', overflow: 'auto', fontSize: '12px' }}>
-                          {JSON.stringify(prescription.planuri_tratament, null, 2)}
-                        </pre>
-                      </div>
-                    )}
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong style={{ color: '#1a3c7c' }}>📅 Planuri Tratament:</strong>
+                      {prescription.planuri_tratament && 
+                       prescription.planuri_tratament !== null && 
+                       typeof prescription.planuri_tratament === 'object' &&
+                       Object.keys(prescription.planuri_tratament).length > 0 ? (
+                        <div style={{ margin: '8px 0', padding: '12px', background: '#fff', borderRadius: '4px', border: '1px solid #e0e0e0' }}>
+                          {Object.values(prescription.planuri_tratament).map((plan, idx) => (
+                            <div key={idx} style={{ 
+                              marginBottom: idx < Object.values(prescription.planuri_tratament).length - 1 ? '16px' : '0',
+                              paddingBottom: idx < Object.values(prescription.planuri_tratament).length - 1 ? '16px' : '0',
+                              borderBottom: idx < Object.values(prescription.planuri_tratament).length - 1 ? '1px solid #e0e0e0' : 'none'
+                            }}>
+                              <div style={{ fontWeight: 'bold', color: '#1a3c7c', marginBottom: '8px', fontSize: '14px' }}>
+                                💊 {plan.medicineName || plan.medicine_name || 'Medicament necunoscut'}
+                                {plan.medicineCode && (
+                                  <span style={{ fontSize: '11px', color: '#666', fontWeight: 'normal', marginLeft: '8px' }}>
+                                    (Cod: {plan.medicineCode || plan.medicine_code})
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#333' }}>
+                                {plan.duration && (
+                                  <div><strong>Durată:</strong> {plan.duration} {plan.customDuration ? plan.customDuration : 'zile'}</div>
+                                )}
+                                {plan.frequency && (
+                                  <div><strong>Frecvență:</strong> {plan.frequency} {plan.customFrequency ? plan.customFrequency : 'ori pe zi'}</div>
+                                )}
+                                {plan.times && Array.isArray(plan.times) && plan.times.length > 0 && (
+                                  <div><strong>Ore de administrare:</strong> {plan.times.join(', ')}</div>
+                                )}
+                                {plan.customTime && (
+                                  <div><strong>Orar personalizat:</strong> {plan.customTime}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ margin: '8px 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px', color: '#666', fontStyle: 'italic' }}>
+                          Nu există planuri de tratament
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
