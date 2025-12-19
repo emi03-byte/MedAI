@@ -283,6 +283,11 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     return currentUser && currentUser.is_admin === 1
   }, [currentUser])
 
+  // Funcție helper pentru a verifica dacă este contul special de management
+  const isManagementAccount = useCallback(() => {
+    return currentUser && currentUser.email && currentUser.email.toLowerCase() === 'caruntu.emanuel@gmail.com'
+  }, [currentUser])
+
   // Funcție helper pentru a afișa mesaje despre statusul contului
   const showAccountStatusMessage = useCallback(() => {
     if (!currentUser) {
@@ -307,6 +312,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   useEffect(() => {
     if (currentUser?.id) {
       loadUserData(currentUser.id)
+      // Asigură-te că panoul nu se deschide automat
+      setShowAdminPanel(false)
     } else {
       // Dacă nu este autentificat, șterge datele din state
       setPatientNotes('')
@@ -314,6 +321,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       setDoctorNotes('')
       setSelectedProducts([])
       setMedicinePlans({})
+      setShowAdminPanel(false)
     }
   }, [currentUser, loadUserData])
 
@@ -4427,7 +4435,10 @@ etc.`
                   }
 
                   try {
-                    console.log('📝 [FRONTEND] Trimite cerere de signup la backend...')
+                    console.log('📝 [FRONTEND] Trimite cerere de signup la backend...', { 
+                      nume: signUpName, 
+                      email: signUpEmail
+                    })
                     const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                       method: 'POST',
                       headers: {
