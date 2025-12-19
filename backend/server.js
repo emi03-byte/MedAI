@@ -83,7 +83,8 @@ const ensureTable = async () => {
       data_creare DATETIME DEFAULT CURRENT_TIMESTAMP,
       status TEXT DEFAULT 'pending',
       is_admin INTEGER DEFAULT 0,
-      data_aprobare DATETIME
+      data_aprobare DATETIME,
+      deleted_at DATETIME
     )`
   );
   
@@ -100,6 +101,11 @@ const ensureTable = async () => {
   }
   try {
     await runAsync(`ALTER TABLE users ADD COLUMN data_aprobare DATETIME`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  try {
+    await runAsync(`ALTER TABLE users ADD COLUMN deleted_at DATETIME`);
   } catch (e) {
     // Coloana există deja, ignoră eroarea
   }
@@ -316,7 +322,10 @@ app.get('/api/medications/:id', async (req, res) => {
 // Endpoint pentru înregistrare (sign up)
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    console.log('📝 [SIGNUP] Cerere primită:', { nume: req.body.nume, email: req.body.email });
+    console.log('📝 [SIGNUP] Cerere primită:', { 
+      nume: req.body.nume, 
+      email: req.body.email
+    });
     const { nume, email, parola } = req.body;
 
     // Validare
@@ -331,7 +340,7 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     // Verifică dacă email-ul există deja
-    const existingUser = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
+    const existingUser = await getAsync('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
     if (existingUser) {
       console.log('❌ [SIGNUP] Email deja folosit:', email);
       return res.status(400).json({ error: 'Acest email este deja folosit. Te rugăm să folosești alt email.' });
@@ -350,6 +359,13 @@ app.post('/api/auth/signup', async (req, res) => {
 
     // Inserează utilizatorul nou în baza de date
     console.log('💾 [SIGNUP] Inserare utilizator în baza de date...');
+    console.log('💾 [SIGNUP] Valori pentru inserare:', { 
+      nume, 
+      email, 
+      status, 
+      adminFlag, 
+      dataAprobare
+    });
     const result = await runAsync(
       'INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) VALUES (?, ?, ?, ?, ?, ?)',
       [nume, email, hashedPassword, status, adminFlag, dataAprobare]
@@ -357,7 +373,12 @@ app.post('/api/auth/signup', async (req, res) => {
 
     // Returnează datele utilizatorului (fără parolă)
     const newUser = await getAsync('SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?', [result.lastID]);
-    console.log('✅ [SIGNUP] Utilizator creat cu succes:', { id: newUser.id, email: newUser.email, status: newUser.status, is_admin: newUser.is_admin });
+    console.log('✅ [SIGNUP] Utilizator creat cu succes:', { 
+      id: newUser.id, 
+      email: newUser.email, 
+      status: newUser.status, 
+      is_admin: newUser.is_admin
+    });
     
     res.status(201).json({ 
       success: true,
@@ -388,7 +409,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Caută utilizatorul în baza de date
     console.log('🔍 [LOGIN] Căutare utilizator în baza de date...');
-    const user = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
+    const user = await getAsync('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
     
     if (!user) {
       console.log('❌ [LOGIN] Utilizator negăsit pentru email:', email);
@@ -461,7 +482,7 @@ app.get('/api/auth/me', async (req, res) => {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
     }
 
-    const user = await getAsync('SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?', [userId]);
+    const user = await getAsync('SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ? AND deleted_at IS NULL', [userId]);
     
     if (!user) {
       console.log('❌ [ME] Utilizator negăsit pentru ID:', userId);
@@ -524,17 +545,40 @@ app.get('/api/admin/requests', checkAdmin, async (req, res) => {
     console.log('📋 [ADMIN] Listare cereri...');
     const { status } = req.query;
     
-    let query = 'SELECT id, nume, email, data_creare, status, data_aprobare FROM users';
+    const { showDeleted } = req.query;
+    let query = 'SELECT id, nume, email, data_creare, status, data_aprobare, is_admin, deleted_at FROM users';
     const params = [];
+    const conditions = [];
+    
+    // Dacă nu se cere explicit istoricul, exclude conturile șterse
+    if (!showDeleted || showDeleted !== 'true') {
+      conditions.push('deleted_at IS NULL');
+    } else {
+      // Dacă se cere istoricul, afișează doar conturile șterse
+      conditions.push('deleted_at IS NOT NULL');
+    }
     
     if (status && status !== 'toate') {
-      query += ' WHERE status = ?';
+      conditions.push('status = ?');
       params.push(status);
+    }
+    
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
     }
     
     query += ' ORDER BY data_creare DESC';
     
     const requests = await allAsync(query, params);
+    
+    // Log pentru debugging
+    if (requests.length > 0) {
+      console.log('📋 [ADMIN] Exemplu request:', {
+        id: requests[0].id,
+        email: requests[0].email,
+        is_admin: requests[0].is_admin
+      });
+    }
     
     console.log(`✅ [ADMIN] Găsite ${requests.length} cereri`);
     res.json({ requests });
@@ -607,14 +651,14 @@ app.post('/api/admin/reject/:userId', checkAdmin, async (req, res) => {
   }
 });
 
-// Endpoint pentru schimbare status cont (admin only) - permite orice status
+// Endpoint pentru schimbare status cont (admin only) - permite orice status și schimbarea tipului
 app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
-    const { status } = req.body;
+    const { status, is_admin } = req.body;
     const adminUserId = req.query.userId || req.body.userId;
     
-    console.log('🔄 [ADMIN] Schimbare status cont:', { targetUserId, status, adminUserId });
+    console.log('🔄 [ADMIN] Schimbare status cont:', { targetUserId, status, is_admin, adminUserId });
     
     if (!targetUserId) {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
@@ -624,13 +668,22 @@ app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Status invalid. Trebuie să fie: pending, approved sau rejected' });
     }
 
-    // Dacă se aprobă, setează data_aprobare, altfel o șterge
+    // Dacă se aprobă, setează data_aprobare și tipul (is_admin), altfel o șterge
     if (status === 'approved') {
       const dataAprobare = new Date().toISOString();
-      await runAsync(
-        'UPDATE users SET status = ?, data_aprobare = ? WHERE id = ?',
-        [status, dataAprobare, targetUserId]
-      );
+      // Dacă este specificat is_admin în body, îl folosim, altfel păstrăm valoarea existentă
+      if (is_admin !== undefined && is_admin !== null) {
+        const adminFlag = is_admin === true || is_admin === 1 || is_admin === '1' ? 1 : 0;
+        await runAsync(
+          'UPDATE users SET status = ?, data_aprobare = ?, is_admin = ? WHERE id = ?',
+          [status, dataAprobare, adminFlag, targetUserId]
+        );
+      } else {
+        await runAsync(
+          'UPDATE users SET status = ?, data_aprobare = ? WHERE id = ?',
+          [status, dataAprobare, targetUserId]
+        );
+      }
     } else {
       await runAsync(
         'UPDATE users SET status = ?, data_aprobare = NULL WHERE id = ?',
@@ -638,9 +691,9 @@ app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
       );
     }
 
-    const updatedUser = await getAsync('SELECT id, nume, email, status, data_aprobare FROM users WHERE id = ?', [targetUserId]);
+    const updatedUser = await getAsync('SELECT id, nume, email, status, data_aprobare, is_admin FROM users WHERE id = ?', [targetUserId]);
     
-    console.log('✅ [ADMIN] Status cont schimbat:', { id: updatedUser.id, email: updatedUser.email, status: updatedUser.status });
+    console.log('✅ [ADMIN] Status cont schimbat:', { id: updatedUser.id, email: updatedUser.email, status: updatedUser.status, is_admin: updatedUser.is_admin });
     res.json({ 
       success: true,
       message: `Status cont schimbat la: ${status}`,
@@ -649,6 +702,168 @@ app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
   } catch (error) {
     console.error('❌ [ADMIN] Eroare la schimbare status:', error);
     res.status(500).json({ error: 'Eroare la schimbare status cont' });
+  }
+});
+
+// Endpoint pentru ștergerea unui cont (admin only)
+app.delete('/api/admin/delete-user/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('🗑️ [ADMIN] Ștergere cont - Route hit:', { 
+      targetUserId, 
+      adminUserId,
+      method: req.method,
+      path: req.path,
+      url: req.url
+    });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Verifică dacă utilizatorul există
+    const user = await getAsync('SELECT id, email FROM users WHERE id = ?', [targetUserId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
+    }
+
+    // Nu permite ștergerea propriului cont
+    if (parseInt(targetUserId) === parseInt(adminUserId)) {
+      return res.status(400).json({ error: 'Nu poți șterge propriul cont' });
+    }
+
+    // Nu permite ștergerea contului principal de admin
+    if (user.email.toLowerCase() === 'caruntu.emanuel@gmail.com') {
+      return res.status(400).json({ error: 'Nu poți șterge contul principal de administrator' });
+    }
+
+    // Soft delete: marchează contul ca șters
+    await runAsync('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [targetUserId]);
+    
+    console.log('✅ [ADMIN] Cont marcat ca șters:', { id: user.id, email: user.email });
+    res.json({ 
+      success: true,
+      message: 'Cont șters cu succes'
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la ștergere cont:', error);
+    res.status(500).json({ error: 'Eroare la ștergere cont' });
+  }
+});
+
+// Endpoint pentru restaurarea unui cont șters (admin only)
+app.post('/api/admin/restore-user/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('♻️ [ADMIN] Restaurare cont:', { targetUserId, adminUserId });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Verifică dacă utilizatorul există și este șters
+    const user = await getAsync('SELECT id, email, deleted_at FROM users WHERE id = ?', [targetUserId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
+    }
+
+    if (!user.deleted_at) {
+      return res.status(400).json({ error: 'Contul nu este șters' });
+    }
+
+    // Restaurează contul (șterge deleted_at)
+    await runAsync('UPDATE users SET deleted_at = NULL WHERE id = ?', [targetUserId]);
+    
+    console.log('✅ [ADMIN] Cont restaurat:', { id: user.id, email: user.email });
+    res.json({ 
+      success: true,
+      message: 'Cont restaurat cu succes'
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la restaurare cont:', error);
+    res.status(500).json({ error: 'Eroare la restaurare cont' });
+  }
+});
+
+// Endpoint pentru obținerea rețetelor unui utilizator (admin only)
+app.get('/api/admin/user-prescriptions/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('📋 [ADMIN] Cerere rețete pentru utilizator:', { targetUserId, adminUserId });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Verifică dacă utilizatorul există
+    const user = await getAsync('SELECT id, nume, email FROM users WHERE id = ? AND deleted_at IS NULL', [targetUserId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
+    }
+
+    // Obține toate rețetele utilizatorului
+    const prescriptions = await allAsync(
+      `SELECT id, nume_pacient, medicamente, planuri_tratament, indicatii_pacient, indicatii_medic, data_creare 
+       FROM retete 
+       WHERE user_id = ? 
+       ORDER BY data_creare DESC`,
+      [targetUserId]
+    );
+
+    // Parsează JSON-urile din baza de date
+    const parsedPrescriptions = prescriptions.map(prescription => ({
+      ...prescription,
+      medicamente: JSON.parse(prescription.medicamente || '[]'),
+      planuri_tratament: prescription.planuri_tratament ? JSON.parse(prescription.planuri_tratament) : null
+    }));
+
+    console.log(`✅ [ADMIN] Găsite ${parsedPrescriptions.length} rețete pentru utilizator ${targetUserId}`);
+    res.json({ 
+      success: true,
+      user: { id: user.id, nume: user.nume, email: user.email },
+      prescriptions: parsedPrescriptions 
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la obținerea rețetelor:', error);
+    res.status(500).json({ error: 'Eroare la obținerea rețetelor' });
+  }
+});
+
+// Endpoint pentru ștergerea unei rețete (admin only)
+app.delete('/api/admin/prescriptions/:prescriptionId', checkAdmin, async (req, res) => {
+  try {
+    const prescriptionId = req.params.prescriptionId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('🗑️ [ADMIN] Ștergere rețetă:', { prescriptionId, adminUserId });
+    
+    if (!prescriptionId) {
+      return res.status(400).json({ error: 'ID rețetă lipsă' });
+    }
+
+    // Verifică dacă rețeta există
+    const prescription = await getAsync('SELECT id, user_id FROM retete WHERE id = ?', [prescriptionId]);
+    if (!prescription) {
+      return res.status(404).json({ error: 'Rețetă negăsită' });
+    }
+
+    // Șterge rețeta
+    await runAsync('DELETE FROM retete WHERE id = ?', [prescriptionId]);
+    
+    console.log('✅ [ADMIN] Rețetă ștearsă:', prescriptionId);
+    res.json({ 
+      success: true,
+      message: 'Rețetă ștearsă cu succes'
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la ștergerea rețetei:', error);
+    res.status(500).json({ error: 'Eroare la ștergerea rețetei' });
   }
 });
 
