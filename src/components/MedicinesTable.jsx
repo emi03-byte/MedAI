@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import html2pdf from 'html2pdf.js'
 import './MedicinesTable.css'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:4',message:'Before AdminPanel import',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+// #endregion
+import AdminPanel from './AdminPanel'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:6',message:'After AdminPanel import',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+// #endregion
 
 const hospitalFaviconSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Hospital icon">
@@ -47,6 +54,9 @@ const removeStorageItem = (key, userId) => {
 }
 
 const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {}, onHistoryPageChange = () => {} }) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:50',message:'MedicinesTable component starting',data:{ageCategory},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -107,6 +117,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [showHistoryPage, setShowHistoryPage] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [prescriptionHistory, setPrescriptionHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [expandedCardId, setExpandedCardId] = useState(null)
@@ -118,7 +129,42 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [historySpecificDate, setHistorySpecificDate] = useState('')
   const [historyNameFilter, setHistoryNameFilter] = useState('')
 
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:131',message:'All state declarations completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  } catch (e) {
+    console.error('Log error:', e);
+  }
+  // #endregion
+
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:139',message:'Before first useEffect',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  } catch (e) {
+    console.error('Log error before useEffect:', e);
+  }
+  // #endregion
+
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:148',message:'About to declare useEffect',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  } catch (e) {
+    console.error('Log error before useEffect declaration:', e);
+  }
+  // #endregion
+
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:156',message:'useEffect declared, about to execute',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  } catch (e) {
+    console.error('Log error after useEffect declaration:', e);
+  }
+  // #endregion
+
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:163',message:'useEffect isNightMode started',data:{isNightMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     document.body.classList.toggle('med-ai-dark', isNightMode)
 
     return () => {
@@ -127,6 +173,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   }, [isNightMode])
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:142',message:'useEffect cleanup started',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort()
@@ -189,6 +238,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
   // Verifică dacă există un utilizator autentificat la încărcarea paginii
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:212',message:'useEffect currentUser check started',data:{loadUserDataType:typeof loadUserData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     const savedUser = localStorage.getItem('currentUser')
     if (savedUser) {
       try {
@@ -220,6 +272,36 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       }
     }
   }, [loadUserData])
+
+  // Funcție helper pentru a verifica dacă utilizatorul este aprobat
+  const isUserApproved = useCallback(() => {
+    return currentUser && currentUser.status === 'approved'
+  }, [currentUser])
+
+  // Funcție helper pentru a verifica dacă utilizatorul este admin
+  const isUserAdmin = useCallback(() => {
+    return currentUser && currentUser.is_admin === 1
+  }, [currentUser])
+
+  // Funcție helper pentru a afișa mesaje despre statusul contului
+  const showAccountStatusMessage = useCallback(() => {
+    if (!currentUser) {
+      alert('Te rugăm să te autentifici pentru a folosi această funcție.')
+      return false
+    }
+    
+    if (currentUser.status === 'pending') {
+      alert('⏳ Contul tău este în așteptare aprobare\n\nÎți mulțumim pentru interesul arătat! Contul tău a fost creat cu succes și este în curs de verificare de către echipa noastră.\n\nVei primi acces la toate funcțiile aplicației imediat ce contul tău va fi aprobat. Te rugăm să ai puțină răbdare.\n\nDacă ai întrebări, poți verifica statusul contului în setări (⚙️).')
+      return false
+    }
+    
+    if (currentUser.status === 'rejected') {
+      alert('❌ Contul tău nu a fost aprobat\n\nNe pare rău, dar contul tău nu a putut fi aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări (⚙️).')
+      return false
+    }
+    
+    return true
+  }, [currentUser])
 
   // Când se schimbă utilizatorul, încarcă datele noului utilizator
   useEffect(() => {
@@ -563,6 +645,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:616',message:'useEffect fetchDiseases/fetchMedicines started',data:{fetchDiseasesType:typeof fetchDiseases,fetchMedicinesType:typeof fetchMedicines},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     fetchDiseases()
     fetchMedicines()
     // Datele utilizatorului se vor încărca când se autentifică (vezi useEffect pentru currentUser)
@@ -961,309 +1046,6 @@ Programează o consultație dacă simptomele persistă`
     setIsCheckoutOpen(false)
   }
 
-  const handleCheckoutConfirm = async () => {
-    // Verifică dacă există cel puțin unul dintre: medicamente, nume pacient, indicații pacient, indicații medic
-    const hasMedicines = selectedProducts && selectedProducts.length > 0
-    const hasPatientName = patientName && patientName.trim() !== ''
-    const hasPatientNotes = patientNotes && patientNotes.trim() !== ''
-    const hasDoctorNotes = doctorNotes && doctorNotes.trim() !== ''
-    
-    const hasAnyData = hasMedicines || hasPatientName || hasPatientNotes || hasDoctorNotes
-
-    // Salvează rețeta în backend și baza de date DOAR dacă există cel puțin unul dintre datele de mai sus
-    if (hasAnyData && currentUser) {
-      try {
-        console.log('💾 [FRONTEND] Salvare rețetă în backend...')
-        console.log('📦 [FRONTEND] Date trimise:', {
-          userId: currentUser.id,
-          numePacient: patientName || null,
-          medicamenteCount: selectedProducts?.length || 0,
-          medicamente: selectedProducts || [],
-          planuriTratament: medicinePlans,
-          indicatiiPacient: patientNotes || null,
-          indicatiiMedic: doctorNotes || null
-        })
-        
-        const response = await fetch(`${API_BASE_URL}/api/prescriptions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.id,
-            numePacient: patientName || null,
-            medicamente: selectedProducts || [],
-            planuriTratament: medicinePlans,
-            indicatiiPacient: patientNotes || null,
-            indicatiiMedic: doctorNotes || null
-          })
-        })
-
-        const data = await response.json()
-        if (response.ok && data.success) {
-          console.log('✅ [FRONTEND] Rețetă salvată cu succes:', data.prescription)
-          // Nu afișăm alert aici, continuăm cu generarea PDF-ului
-        } else {
-          console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', data.error)
-          alert(`Eroare la salvarea rețetei: ${data.error || 'Eroare necunoscută'}`)
-          return
-        }
-      } catch (error) {
-        console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', error)
-        alert(`Eroare de conexiune la salvarea rețetei: ${error.message}`)
-        return
-      }
-    } else {
-      console.log('ℹ️ [FRONTEND] Nu există date pentru salvare - se generează doar PDF-ul')
-    }
-
-    // Generează PDF-ul exact ca înainte, apoi șterge datele și închide checkout-ul
-    await downloadSelectedProducts()
-    clearAllPatientData()
-    setIsCheckoutOpen(false)
-  }
-
-  // Toate hook-urile TREBUIE să fie înainte de orice return condiționat!
-  const handleColumnToggle = useCallback((columnName) => {
-    setVisibleColumns(prev => ({
-      ...prev,
-      [columnName]: !prev[columnName]
-    }))
-  }, [])
-
-  const handleItemsPerPageChange = useCallback((value) => {
-    setItemsPerPage(value)
-  }, [])
-
-  // Funcții generice pentru filtre
-  const handleFilterToggle = useCallback((filterKey, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterKey]: {
-        ...prev[filterKey],
-        [value]: !prev[filterKey][value]
-      }
-    }))
-  }, [])
-
-  const clearFilters = useCallback((filterKey) => {
-    const clearedFilters = {}
-    Object.keys(filters[filterKey] || {}).forEach(value => {
-      clearedFilters[value] = false
-    })
-    setFilters(prev => ({
-      ...prev,
-      [filterKey]: clearedFilters
-    }))
-  }, [filters])
-
-  const clearAllFilters = useCallback(() => {
-    const clearedFilters = {}
-    Object.keys(filters).forEach(column => {
-      clearedFilters[column] = {}
-      Object.keys(filters[column] || {}).forEach(value => {
-        clearedFilters[column][value] = false
-      })
-    })
-    setFilters(clearedFilters)
-  }, [filters])
-
-  const handleContextMenuClick = useCallback((e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const rect = e.currentTarget.getBoundingClientRect()
-    setContextMenuPosition({
-      x: rect.left,
-      y: rect.bottom + 5
-    })
-    setSkipFadeAnimation(false) // Permite animația pentru deschiderea normală
-    setShowContextMenu(true)
-  }, [])
-
-  const handleContextMenuClose = useCallback(() => {
-    setShowContextMenu(false)
-    setSkipFadeAnimation(false)
-  }, [])
-
-  const handleFilterClick = useCallback((filterKey) => {
-    setShowFilters(prev => ({
-      ...prev,
-      [filterKey]: true
-    }))
-    setShowContextMenu(false)
-  }, [])
-
-  const handleSearchTermChange = useCallback((filterKey, value) => {
-    setSearchTerms(prev => ({
-      ...prev,
-      [filterKey]: value
-    }))
-  }, [])
-
-  // Funcții pentru gestionarea produselor selectate
-  const handleProductSelect = useCallback((medicine) => {
-    setSelectedProducts(prev => {
-      const isSelected = prev.some(selected => selected['Cod medicament'] === medicine['Cod medicament'])
-      if (isSelected) {
-        return prev.filter(selected => selected['Cod medicament'] !== medicine['Cod medicament'])
-      } else {
-        return [...prev, medicine]
-      }
-    })
-  }, [])
-
-  const clearSelectedProducts = useCallback(() => {
-    setSelectedProducts([])
-  }, [])
-
-  // Funcție pentru deschiderea modalului de confirmare
-  const openNewPatientModal = useCallback(() => {
-    setShowNewPatientModal(true)
-  }, [])
-
-  // Funcție pentru ștergerea tuturor datelor (pacient nou)
-  const clearAllPatientData = useCallback(() => {
-    if (!currentUser?.id) return
-    
-    // Șterge indicatiile pacientului
-    setPatientNotes('')
-    removeStorageItem('patientNotes', currentUser.id)
-    
-    // Șterge numele pacientului
-    setPatientName('')
-    setPatientNameError('')
-    removeStorageItem('patientName', currentUser.id)
-    
-    // Șterge indicatiile medicului
-    setDoctorNotes('')
-    removeStorageItem('doctorNotes', currentUser.id)
-    
-    // Șterge medicamentele selectate
-    setSelectedProducts([])
-    removeStorageItem('selectedProducts', currentUser.id)
-    
-    // Șterge planurile de medicamente
-    setMedicinePlans({})
-    removeStorageItem('medicinePlans', currentUser.id)
-    
-    // Șterge sfaturile AI
-    setAiAdvice([])
-    
-    // Închide modalele deschise
-    setShowPatientNotes(false)
-    setShowDoctorNotes(false)
-    setShowNewPatientModal(false)
-    
-    console.log('✅ Toate datele pacientului au fost șterse')
-  }, [currentUser])
-
-
-  const removeSelectedProduct = useCallback((medicineCode) => {
-    setSelectedProducts(prev => prev.filter(selected => selected['Cod medicament'] !== medicineCode))
-  }, [])
-
-  // Funcție pentru a obține procentul de compensare
-  const getCompensationPercentage = useCallback((compensationCategory) => {
-    const category = compensationCategories.find(cat => cat.id === compensationCategory)
-    return category ? category.percentage : compensationCategory
-  }, [])
-
-  // Funcție helper pentru a converti frecvența în text lizibil
-  const getFrequencyText = useCallback((frequency) => {
-    const frequencyMap = {
-      '1': 'o dată pe zi',
-      '2': 'de două ori pe zi',
-      '3': 'de trei ori pe zi',
-      '4': 'de patru ori pe zi',
-      '6': 'la 4 ore',
-      '8': 'de opt ori pe zi',
-      '12': 'la 12 ore'
-    }
-    return frequencyMap[frequency] || `${frequency} ori pe zi`
-  }, [])
-
-  const getTimeText = useCallback((time) => {
-    const timeMap = {
-      'dimineata': 'dimineața',
-      'amiaza': 'amiaza',
-      'seara': 'seara',
-      'noaptea': 'noaptea',
-      'la4ore': 'la 4 ore',
-      'la6ore': 'la 6 ore',
-      'la8ore': 'la 8 ore',
-      'la12ore': 'la 12 ore'
-    }
-    return timeMap[time] || time
-  }, [])
-
-  // Funcție pentru validarea și închiderea modalului Indicații Pacient
-  const handleClosePatientNotes = useCallback(() => {
-    if (!patientName || patientName.trim() === '') {
-      setPatientNameError('Te rugăm să introduci numele pacientului')
-      return
-    }
-    setPatientNameError('')
-    setShowPatientNotes(false)
-  }, [patientName])
-
-  // Funcții pentru gestionarea planurilor de medicamente
-  const openPlanModal = useCallback((medicine) => {
-    setSelectedMedicineForPlan(medicine)
-    setShowPlanModal(true)
-  }, [])
-
-  const closePlanModal = useCallback(() => {
-    setShowPlanModal(false)
-    setSelectedMedicineForPlan(null)
-  }, [])
-
-  const saveMedicinePlan = useCallback((medicineCode, plan) => {
-    setMedicinePlans(prev => ({
-      ...prev,
-      [medicineCode]: plan
-    }))
-    closePlanModal()
-  }, [closePlanModal])
-
-  const removeMedicinePlan = useCallback((medicineCode) => {
-    setMedicinePlans(prev => {
-      const newPlans = { ...prev }
-      delete newPlans[medicineCode]
-      return newPlans
-    })
-  }, [])
-
-  // Funcții pentru gestionarea medicamentelor personalizate
-  const openAddMedicineModal = useCallback(() => {
-    setShowAddMedicineModal(true)
-    setNewMedicineName('')
-  }, [])
-
-  const closeAddMedicineModal = useCallback(() => {
-    setShowAddMedicineModal(false)
-    setNewMedicineName('')
-  }, [])
-
-  const addCustomMedicine = useCallback(() => {
-    if (!newMedicineName.trim()) {
-      alert('Te rog introdu numele medicamentului!')
-      return
-    }
-
-    const customMedicine = {
-      'Denumire medicament': newMedicineName.trim().toUpperCase(),
-      'Cod medicament': 'N/A',
-      'Substanta activa': 'Personalizat',
-      'Lista de compensare': 'Personalizat',
-      'CategorieVarsta': 'Toate',
-      'Coduri_Boli': '',
-      'isCustom': true // Flag pentru a identifica medicamentele personalizate
-    }
-
-    setSelectedProducts(prev => [...prev, customMedicine])
-    closeAddMedicineModal()
-  }, [newMedicineName, closeAddMedicineModal])
-
   // Funcție pentru deschiderea produselor selectate într-o pagină de checkout (HTML, fără PDF)
   const downloadSelectedProducts = useCallback(async () => {
     console.log('🔄 Pregătesc pagina de checkout...')
@@ -1455,57 +1237,14 @@ Programează o consultație dacă simptomele persistă`
               </thead>
               <tbody>
                 ${selectedProducts.map((product, index) => {
-                  const medicineCode = product['Cod medicament']
-                  const plan = medicinePlans[medicineCode]
-                  let planDescription = 'Fără plan'
-                  
-                  if (plan) {
-                    const parts = []
-                    
-                    if (plan.duration) {
-                      parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
-                    }
-                    
-                    if (plan.frequency) {
-                      if (plan.isCustomFrequency) {
-                        parts.push(`${plan.frequency} ori pe zi`)
-                      } else {
-                        const frequencyMap = {
-                          '1': 'o dată pe zi',
-                          '2': 'de două ori pe zi',
-                          '3': 'de trei ori pe zi',
-                          '4': 'de patru ori pe zi'
-                        }
-                        parts.push(frequencyMap[plan.frequency] || `${plan.frequency} ori pe zi`)
-                      }
-                    }
-                    
-                    if (plan.times && plan.times.length > 0) {
-                      const timesText = plan.times.map(time => {
-                        const timeMap = {
-                          'dimineata': 'dimineața',
-                          'amiaza': 'amiaza',
-                          'seara': 'seara',
-                          'noaptea': 'noaptea',
-                          'la4ore': 'la 4 ore',
-                          'la6ore': 'la 6 ore',
-                          'la8ore': 'la 8 ore',
-                          'la12ore': 'la 12 ore'
-                        }
-                        return timeMap[time] || time
-                      }).join(', ')
-                      parts.push(timesText)
-                    }
-                    
-                    planDescription = parts.join(', ')
-                  }
-                  
+                  const plan = medicinePlans[product['Cod medicament']] || {}
+                  const planText = plan.duration ? `${plan.duration} ${plan.unit || 'zile'}, ${plan.frequency || '1x/zi'}` : 'N/A'
                   return `
                     <tr>
                       <td>${index + 1}</td>
                       <td>${product['Denumire medicament'] || 'N/A'}</td>
                       <td>${product['Cod medicament'] || 'N/A'}</td>
-                      <td>${planDescription}</td>
+                      <td>${planText}</td>
                     </tr>
                   `
                 }).join('')}
@@ -1513,7 +1252,7 @@ Programează o consultație dacă simptomele persistă`
             </table>
             ` : ''}
             
-            ${patientNotes && patientNotes.trim() ? `
+            ${hasPatientNotes ? `
             <div class="patient-indications-section">
               <h2>Indicații Pacient</h2>
               <div class="patient-indications-content">
@@ -1522,7 +1261,7 @@ Programează o consultație dacă simptomele persistă`
             </div>
             ` : ''}
             
-            ${doctorNotes && doctorNotes.trim() ? `
+            ${hasDoctorNotes ? `
             <div class="doctor-indications-section">
               <h2>Indicații Medic</h2>
               <div class="doctor-indications-content">
@@ -1539,28 +1278,9 @@ Programează o consultație dacă simptomele persistă`
       </html>
     `
 
-    const filename = `reteta-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.pdf`
-
     try {
-      const worker = html2pdf()
-        .set({
-          margin: 0,
-          filename,
-          html2canvas: { scale: 2, dpi: 192, letterRendering: true, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(htmlContent)
-        .toPdf()
-
-      await worker.save()
-
-      const pdfBlob = await worker.output('blob')
-      const blobUrl = URL.createObjectURL(pdfBlob)
-
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      link.click()
+      const blob = new Blob([htmlContent], { type: 'text/html' })
+      const blobUrl = URL.createObjectURL(blob)
 
       window.open(blobUrl, '_blank', 'noopener,noreferrer')
 
@@ -1569,7 +1289,329 @@ Programează o consultație dacă simptomele persistă`
       console.error('❌ Eroare la generarea PDF-ului:', error)
       alert('A apărut o eroare la generarea PDF-ului. Încearcă din nou.')
     }
-  }, [selectedProducts, medicinePlans, patientNotes, doctorNotes])
+  }, [selectedProducts, medicinePlans, patientNotes, doctorNotes, patientName])
+
+  // Funcție pentru ștergerea tuturor datelor (pacient nou) - MUTATĂ AICI PENTRU A FI DISPONIBILĂ ÎNAINTE DE handleCheckoutConfirm
+  const clearAllPatientData = useCallback(() => {
+    if (!showAccountStatusMessage()) return
+    
+    // Șterge indicatiile pacientului
+    setPatientNotes('')
+    if (currentUser?.id) {
+      removeStorageItem('patientNotes', currentUser.id)
+    }
+    
+    // Șterge numele pacientului
+    setPatientName('')
+    setPatientNameError('')
+    if (currentUser?.id) {
+      removeStorageItem('patientName', currentUser.id)
+    }
+    
+    // Șterge indicatiile medicului
+    setDoctorNotes('')
+    if (currentUser?.id) {
+      removeStorageItem('doctorNotes', currentUser.id)
+    }
+    
+    // Șterge medicamentele selectate
+    setSelectedProducts([])
+    if (currentUser?.id) {
+      removeStorageItem('selectedProducts', currentUser.id)
+    }
+    
+    // Șterge planurile de medicamente
+    setMedicinePlans({})
+    if (currentUser?.id) {
+      removeStorageItem('medicinePlans', currentUser.id)
+    }
+    
+    // Șterge sfaturile AI
+    setAiAdvice([])
+  }, [currentUser, showAccountStatusMessage])
+
+  const handleCheckoutConfirm = useCallback(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1307',message:'handleCheckoutConfirm called',data:{downloadSelectedProductsType:typeof downloadSelectedProducts,hasDownloadSelectedProducts:!!downloadSelectedProducts},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    // Verifică dacă există cel puțin unul dintre: medicamente, nume pacient, indicații pacient, indicații medic
+    const hasMedicines = selectedProducts && selectedProducts.length > 0
+    const hasPatientName = patientName && patientName.trim() !== ''
+    const hasPatientNotes = patientNotes && patientNotes.trim() !== ''
+    const hasDoctorNotes = doctorNotes && doctorNotes.trim() !== ''
+    
+    const hasAnyData = hasMedicines || hasPatientName || hasPatientNotes || hasDoctorNotes
+
+    // Salvează rețeta în backend și baza de date DOAR dacă există cel puțin unul dintre datele de mai sus
+    if (hasAnyData && currentUser) {
+      // Verifică statusul contului înainte de salvare
+      if (!showAccountStatusMessage()) {
+        return
+      }
+      try {
+        console.log('💾 [FRONTEND] Salvare rețetă în backend...')
+        console.log('📦 [FRONTEND] Date trimise:', {
+          userId: currentUser.id,
+          numePacient: patientName || null,
+          medicamenteCount: selectedProducts?.length || 0,
+          medicamente: selectedProducts || [],
+          planuriTratament: medicinePlans,
+          indicatiiPacient: patientNotes || null,
+          indicatiiMedic: doctorNotes || null
+        })
+        
+        const response = await fetch(`${API_BASE_URL}/api/prescriptions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            numePacient: patientName || null,
+            medicamente: selectedProducts || [],
+            planuriTratament: medicinePlans,
+            indicatiiPacient: patientNotes || null,
+            indicatiiMedic: doctorNotes || null
+          })
+        })
+
+        const data = await response.json()
+        if (response.ok && data.success) {
+          console.log('✅ [FRONTEND] Rețetă salvată cu succes:', data.prescription)
+          // Nu afișăm alert aici, continuăm cu generarea PDF-ului
+        } else {
+          console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', data.error)
+          alert(`Eroare la salvarea rețetei: ${data.error || 'Eroare necunoscută'}`)
+          return
+        }
+      } catch (error) {
+        console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', error)
+        alert(`Eroare de conexiune la salvarea rețetei: ${error.message}`)
+        return
+      }
+    } else {
+      console.log('ℹ️ [FRONTEND] Nu există date pentru salvare - se generează doar PDF-ul')
+    }
+
+    // Generează PDF-ul exact ca înainte, apoi șterge datele și închide checkout-ul
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1313',message:'Before calling downloadSelectedProducts',data:{downloadSelectedProductsType:typeof downloadSelectedProducts,hasDownloadSelectedProducts:!!downloadSelectedProducts},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    await downloadSelectedProducts()
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1316',message:'After calling downloadSelectedProducts',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    clearAllPatientData()
+    setIsCheckoutOpen(false)
+  }, [selectedProducts, patientName, patientNotes, doctorNotes, currentUser, showAccountStatusMessage, medicinePlans, downloadSelectedProducts, clearAllPatientData])
+
+  // Toate hook-urile TREBUIE să fie înainte de orice return condiționat!
+  const handleColumnToggle = useCallback((columnName) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [columnName]: !prev[columnName]
+    }))
+  }, [])
+
+  const handleItemsPerPageChange = useCallback((value) => {
+    setItemsPerPage(value)
+  }, [])
+
+  // Funcții generice pentru filtre
+  const handleFilterToggle = useCallback((filterKey, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterKey]: {
+        ...prev[filterKey],
+        [value]: !prev[filterKey][value]
+      }
+    }))
+  }, [])
+
+  const clearFilters = useCallback((filterKey) => {
+    const clearedFilters = {}
+    Object.keys(filters[filterKey] || {}).forEach(value => {
+      clearedFilters[value] = false
+    })
+    setFilters(prev => ({
+      ...prev,
+      [filterKey]: clearedFilters
+    }))
+  }, [filters])
+
+  const clearAllFilters = useCallback(() => {
+    const clearedFilters = {}
+    Object.keys(filters).forEach(column => {
+      clearedFilters[column] = {}
+      Object.keys(filters[column] || {}).forEach(value => {
+        clearedFilters[column][value] = false
+      })
+    })
+    setFilters(clearedFilters)
+  }, [filters])
+
+  const handleContextMenuClick = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setContextMenuPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    })
+    setSkipFadeAnimation(false) // Permite animația pentru deschiderea normală
+    setShowContextMenu(true)
+  }, [])
+
+  const handleContextMenuClose = useCallback(() => {
+    setShowContextMenu(false)
+    setSkipFadeAnimation(false)
+  }, [])
+
+  const handleFilterClick = useCallback((filterKey) => {
+    setShowFilters(prev => ({
+      ...prev,
+      [filterKey]: true
+    }))
+    setShowContextMenu(false)
+  }, [])
+
+  const handleSearchTermChange = useCallback((filterKey, value) => {
+    setSearchTerms(prev => ({
+      ...prev,
+      [filterKey]: value
+    }))
+  }, [])
+
+  // Funcții pentru gestionarea produselor selectate
+  const handleProductSelect = useCallback((medicine) => {
+    setSelectedProducts(prev => {
+      const isSelected = prev.some(selected => selected['Cod medicament'] === medicine['Cod medicament'])
+      if (isSelected) {
+        return prev.filter(selected => selected['Cod medicament'] !== medicine['Cod medicament'])
+      } else {
+        return [...prev, medicine]
+      }
+    })
+  }, [])
+
+  const clearSelectedProducts = useCallback(() => {
+    setSelectedProducts([])
+  }, [])
+
+  // Funcție pentru deschiderea modalului de confirmare
+  const openNewPatientModal = useCallback(() => {
+    if (!showAccountStatusMessage()) {
+      return
+    }
+    setShowNewPatientModal(true)
+  }, [showAccountStatusMessage])
+
+
+  const removeSelectedProduct = useCallback((medicineCode) => {
+    setSelectedProducts(prev => prev.filter(selected => selected['Cod medicament'] !== medicineCode))
+  }, [])
+
+  // Funcție pentru a obține procentul de compensare
+  const getCompensationPercentage = useCallback((compensationCategory) => {
+    const category = compensationCategories.find(cat => cat.id === compensationCategory)
+    return category ? category.percentage : compensationCategory
+  }, [])
+
+  // Funcție helper pentru a converti frecvența în text lizibil
+  const getFrequencyText = useCallback((frequency) => {
+    const frequencyMap = {
+      '1': 'o dată pe zi',
+      '2': 'de două ori pe zi',
+      '3': 'de trei ori pe zi',
+      '4': 'de patru ori pe zi',
+      '6': 'la 4 ore',
+      '8': 'de opt ori pe zi',
+      '12': 'la 12 ore'
+    }
+    return frequencyMap[frequency] || `${frequency} ori pe zi`
+  }, [])
+
+  const getTimeText = useCallback((time) => {
+    const timeMap = {
+      'dimineata': 'dimineața',
+      'amiaza': 'amiaza',
+      'seara': 'seara',
+      'noaptea': 'noaptea',
+      'la4ore': 'la 4 ore',
+      'la6ore': 'la 6 ore',
+      'la8ore': 'la 8 ore',
+      'la12ore': 'la 12 ore'
+    }
+    return timeMap[time] || time
+  }, [])
+
+  // Funcție pentru validarea și închiderea modalului Indicații Pacient
+  const handleClosePatientNotes = useCallback(() => {
+    if (!patientName || patientName.trim() === '') {
+      setPatientNameError('Te rugăm să introduci numele pacientului')
+      return
+    }
+    setPatientNameError('')
+    setShowPatientNotes(false)
+  }, [patientName])
+
+  // Funcții pentru gestionarea planurilor de medicamente
+  const openPlanModal = useCallback((medicine) => {
+    setSelectedMedicineForPlan(medicine)
+    setShowPlanModal(true)
+  }, [])
+
+  const closePlanModal = useCallback(() => {
+    setShowPlanModal(false)
+    setSelectedMedicineForPlan(null)
+  }, [])
+
+  const saveMedicinePlan = useCallback((medicineCode, plan) => {
+    setMedicinePlans(prev => ({
+      ...prev,
+      [medicineCode]: plan
+    }))
+    closePlanModal()
+  }, [closePlanModal])
+
+  const removeMedicinePlan = useCallback((medicineCode) => {
+    setMedicinePlans(prev => {
+      const newPlans = { ...prev }
+      delete newPlans[medicineCode]
+      return newPlans
+    })
+  }, [])
+
+  // Funcții pentru gestionarea medicamentelor personalizate
+  const openAddMedicineModal = useCallback(() => {
+    setShowAddMedicineModal(true)
+    setNewMedicineName('')
+  }, [])
+
+  const closeAddMedicineModal = useCallback(() => {
+    setShowAddMedicineModal(false)
+    setNewMedicineName('')
+  }, [])
+
+  const addCustomMedicine = useCallback(() => {
+    if (!newMedicineName.trim()) {
+      alert('Te rog introdu numele medicamentului!')
+      return
+    }
+
+    const customMedicine = {
+      'Denumire medicament': newMedicineName.trim().toUpperCase(),
+      'Cod medicament': 'N/A',
+      'Substanta activa': 'Personalizat',
+      'Lista de compensare': 'Personalizat',
+      'CategorieVarsta': 'Toate',
+      'Coduri_Boli': '',
+      'isCustom': true // Flag pentru a identifica medicamentele personalizate
+    }
+
+    setSelectedProducts(prev => [...prev, customMedicine])
+    closeAddMedicineModal()
+  }, [newMedicineName, closeAddMedicineModal])
 
   // Funcție pentru generarea PDF-ului unei rețete din istoric
   const downloadPrescriptionPDF = useCallback(async (prescription) => {
@@ -1887,8 +1929,12 @@ Programează o consultație dacă simptomele persistă`
   const handleFinalize = useCallback(async () => {
     // Verifică dacă utilizatorul este autentificat
     if (!currentUser) {
-      // Afișează modalul de autentificare necesară
       setShowLoginRequiredModal(true)
+      return
+    }
+    
+    // Verifică statusul contului
+    if (!showAccountStatusMessage()) {
       return
     }
     
@@ -1896,7 +1942,7 @@ Programează o consultație dacă simptomele persistă`
     // Salvarea rețetei se va face când utilizatorul dă click pe "Finalizează rețeta" în checkout
     console.log('🧾 Deschid pagina de checkout (setIsCheckoutOpen(true))')
     setIsCheckoutOpen(true)
-  }, [currentUser])
+  }, [currentUser, showAccountStatusMessage])
 
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
@@ -2126,17 +2172,26 @@ Programează o consultație dacă simptomele persistă`
 
   const allColumns = getAllColumns()
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2155',message:'Before return checks',data:{loading,error:!!error,currentUser:!!currentUser},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   // Loading și Error states DUPĂ toate hook-urile
   if (loading) {
-  return (
-    <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2158',message:'Returning loading state',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    return (
+      <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
         <div className="loading">Se încarcă datele...</div>
       </div>
     )
   }
 
   if (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2166',message:'Returning error state',data:{error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     return (
       <div className="medicines-container">
         <div className="error">Eroare: {error}</div>
@@ -2144,6 +2199,9 @@ Programează o consultație dacă simptomele persistă`
     )
   }
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2174',message:'Starting main return',data:{showHistoryPage},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   return (
     <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
       {/* Pagina de istoric rețete */}
@@ -2612,6 +2670,15 @@ Programează o consultație dacă simptomele persistă`
         <>
           {/* Butoane Login/Sign Up - în colțul din dreapta sus */}
           <div className="auth-buttons-container">
+            {isUserAdmin() && (
+              <button
+                className="auth-button admin-button"
+                onClick={() => setShowAdminPanel(true)}
+                title="Panou Management"
+              >
+                🔐 Management
+              </button>
+            )}
             {currentUser ? (
               <div style={{ 
             display: 'flex', 
@@ -2703,18 +2770,27 @@ Programează o consultație dacă simptomele persistă`
         )}
           </div>
 
-          {/* Butoane Indicații - doar pentru utilizatori autentificați */}
+          {/* Butoane Indicații - vizibile pentru toți utilizatorii autentificați */}
           {currentUser && (
             <div className="notes-buttons-container">
           <button 
             className="patient-notes-button"
-            onClick={() => setShowPatientNotes(!showPatientNotes)}
+            onClick={() => {
+              if (!showAccountStatusMessage()) {
+                return
+              }
+              setShowPatientNotes(!showPatientNotes)
+            }}
           >
             📝 Indicații Pacient
           </button>
           <button 
             className="doctor-notes-button"
             onClick={async () => {
+              // Verifică statusul contului
+              if (!showAccountStatusMessage()) {
+                return
+              }
               // Deschide modalul direct
               setShowDoctorNotes(!showDoctorNotes)
               
@@ -3784,6 +3860,39 @@ etc.`
             
             <div className="new-patient-modal-body">
               <div style={{ padding: '20px' }}>
+                {/* Status cont */}
+                {currentUser && (
+                  <div style={{ marginBottom: '30px', padding: '15px', background: 'rgba(26, 60, 124, 0.05)', borderRadius: '8px', border: '1px solid rgba(26, 60, 124, 0.1)' }}>
+                    <h4 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>📋 Status Cont</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                      {currentUser.status === 'pending' && (
+                        <span className="status-badge status-pending">⏳ În așteptare</span>
+                      )}
+                      {currentUser.status === 'approved' && (
+                        <span className="status-badge status-approved">✅ Aprobat</span>
+                      )}
+                      {currentUser.status === 'rejected' && (
+                        <span className="status-badge status-rejected">❌ Respinse</span>
+                      )}
+                    </div>
+                    {currentUser.status === 'pending' && (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
+                        Contul tău este în așteptare aprobare. Vei primi acces la toate funcțiile după aprobare.
+                      </p>
+                    )}
+                    {currentUser.status === 'approved' && (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
+                        Contul tău a fost aprobat. Ai acces la toate funcțiile aplicației.
+                      </p>
+                    )}
+                    {currentUser.status === 'rejected' && (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
+                        Contul tău a fost respins. Contactează administratorul pentru mai multe informații.
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>👥 Utilizatori</h4>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
                   Informații despre utilizatorii aplicației vor fi afișate aici.
@@ -3792,6 +3901,9 @@ etc.`
                   <div style={{ marginTop: '20px' }}>
                     <button
                       onClick={async () => {
+                        if (!showAccountStatusMessage()) {
+                          return
+                        }
                         setShowStatsModal(false)
                         setShowHistoryPage(true)
                         onHistoryPageChange(true)
@@ -4345,6 +4457,12 @@ etc.`
                       setSignUpPassword('')
                       setSignUpConfirmPassword('')
                       console.log('✅ [FRONTEND] Signup reușit!')
+                      // Dacă contul este în așteptare, deschide setările pentru a vedea statusul
+                      if (data.user.status === 'pending') {
+                        setTimeout(() => {
+                          setShowStatsModal(true)
+                        }, 500)
+                      }
                     } else {
                       console.log('❌ [FRONTEND] Eroare la signup:', data.error)
                       setSignUpError(data.error || 'Eroare la crearea contului')
@@ -4388,8 +4506,19 @@ etc.`
                 </div>
               </div>
           )}
-          </>
-        )}
+
+          {/* Admin Panel */}
+          {showAdminPanel && (
+            <AdminPanel 
+              currentUser={currentUser} 
+              onClose={() => setShowAdminPanel(false)} 
+            />
+          )}
+        </>
+      )}
+      {/* #region agent log */}
+      {(() => { fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:4514',message:'MedicinesTable return completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{}); return null; })()}
+      {/* #endregion */}
     </div>
   )
 }

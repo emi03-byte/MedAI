@@ -6,11 +6,17 @@ import './App.css'
 const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
 function App() {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:8',message:'App component starting',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const [medicinesData, setMedicinesData] = useState([])
   const [selectedAgeCategory, setSelectedAgeCategory] = useState('toate')
   const [showHistoryPage, setShowHistoryPage] = useState(false)
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:14',message:'Initializing darkMode state',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     const saved = localStorage.getItem('darkMode')
     return saved ? JSON.parse(saved) : false
   })
@@ -51,8 +57,14 @@ function App() {
 
   // Încarcă datele din backend (SQLite) pentru a le trimite la ChatBot
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:53',message:'useEffect started',data:{apiBaseUrl:API_BASE_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     const fetchFromBackend = async () => {
       try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:56',message:'Fetching medications',data:{url:`${API_BASE_URL}/api/medications?limit=all`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
@@ -60,26 +72,52 @@ function App() {
         const data = await response.json()
         const items = Array.isArray(data.items) ? data.items : []
         const mapped = items.map(mapMedicationRowToUi)
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:63',message:'Medications loaded',data:{itemsCount:items.length,mappedCount:mapped.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         setMedicinesData(mapped)
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:65',message:'Error loading medications',data:{errorMessage:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         console.error('Error loading medications for chatbot from backend:', error)
       }
     }
     fetchFromBackend()
   }, [])
 
-  return (
-    <div className="App">
-      <MedicinesTable 
-        ageCategory={selectedAgeCategory}
-        ageCategoryData={ageCategories.find(c => c.id === selectedAgeCategory)}
-        ageCategories={ageCategories}
-        onCategoryChange={setSelectedAgeCategory}
-        onHistoryPageChange={setShowHistoryPage}
-      />
-      {!showHistoryPage && <ChatBot medicinesData={medicinesData} />}
-    </div>
-  )
+  try {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:71',message:'App render starting',data:{selectedAgeCategory,showHistoryPage,medicinesDataCount:medicinesData.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    return (
+      <div className="App">
+        {/* #region agent log */}
+        {(() => { fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:74',message:'Rendering MedicinesTable',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{}); return null; })()}
+        {/* #endregion */}
+        <MedicinesTable 
+          ageCategory={selectedAgeCategory}
+          ageCategoryData={ageCategories.find(c => c.id === selectedAgeCategory)}
+          ageCategories={ageCategories}
+          onCategoryChange={setSelectedAgeCategory}
+          onHistoryPageChange={setShowHistoryPage}
+        />
+        {!showHistoryPage && <ChatBot medicinesData={medicinesData} />}
+      </div>
+    )
+  } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:85',message:'Error in App render',data:{errorMessage:error.message,errorStack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    console.error('Error in App component:', error)
+    return (
+      <div style={{ padding: '20px', color: 'red' }}>
+        <h1>Eroare în componenta App</h1>
+        <p>{error.message}</p>
+        <pre>{error.stack}</pre>
+      </div>
+    )
+  }
 }
 
 export default App

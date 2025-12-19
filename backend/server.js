@@ -80,9 +80,50 @@ const ensureTable = async () => {
       nume TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       parola TEXT NOT NULL,
-      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP
+      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'pending',
+      is_admin INTEGER DEFAULT 0,
+      data_aprobare DATETIME
     )`
   );
+  
+  // Migrare: adăugare coloane pentru utilizatori existenți (dacă nu există deja)
+  try {
+    await runAsync(`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'pending'`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  try {
+    await runAsync(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  try {
+    await runAsync(`ALTER TABLE users ADD COLUMN data_aprobare DATETIME`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  
+  // Setare status 'approved' pentru utilizatori existenți (migrare)
+  await runAsync(`UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''`);
+  
+  // Setare automată contul caruntu.emanuel@gmail.com ca admin (dacă există deja)
+  const adminEmail = 'caruntu.emanuel@gmail.com';
+  const adminUser = await getAsync('SELECT id, is_admin, status FROM users WHERE email = ?', [adminEmail]);
+  if (adminUser) {
+    if (!adminUser.is_admin || adminUser.is_admin === 0) {
+      console.log(`🔐 [SETUP] Setare cont ${adminEmail} ca admin...`);
+      await runAsync(
+        'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ? WHERE email = ?',
+        ['approved', new Date().toISOString(), adminEmail]
+      );
+      console.log(`✅ [SETUP] Cont ${adminEmail} setat ca admin`);
+    } else {
+      console.log(`✅ [SETUP] Cont ${adminEmail} este deja admin`);
+    }
+  } else {
+    console.log(`ℹ️ [SETUP] Contul ${adminEmail} nu există încă. Va fi creat automat ca admin la primul signup.`);
+  }
   
   // Tabelă pentru rețete
   await runAsync(
@@ -301,20 +342,26 @@ app.post('/api/auth/signup', async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(parola, saltRounds);
 
+    // Verifică dacă este contul de admin
+    const isAdmin = email.toLowerCase() === 'caruntu.emanuel@gmail.com';
+    const status = isAdmin ? 'approved' : 'pending';
+    const adminFlag = isAdmin ? 1 : 0;
+    const dataAprobare = isAdmin ? new Date().toISOString() : null;
+
     // Inserează utilizatorul nou în baza de date
     console.log('💾 [SIGNUP] Inserare utilizator în baza de date...');
     const result = await runAsync(
-      'INSERT INTO users (nume, email, parola) VALUES (?, ?, ?)',
-      [nume, email, hashedPassword]
+      'INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) VALUES (?, ?, ?, ?, ?, ?)',
+      [nume, email, hashedPassword, status, adminFlag, dataAprobare]
     );
 
     // Returnează datele utilizatorului (fără parolă)
-    const newUser = await getAsync('SELECT id, nume, email, data_creare FROM users WHERE id = ?', [result.lastID]);
-    console.log('✅ [SIGNUP] Utilizator creat cu succes:', { id: newUser.id, email: newUser.email });
+    const newUser = await getAsync('SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?', [result.lastID]);
+    console.log('✅ [SIGNUP] Utilizator creat cu succes:', { id: newUser.id, email: newUser.email, status: newUser.status, is_admin: newUser.is_admin });
     
     res.status(201).json({ 
       success: true,
-      message: 'Cont creat cu succes!',
+      message: isAdmin ? 'Cont creat cu succes! (Admin)' : 'Cont creat cu succes! Contul tău este în așteptare aprobare.',
       user: newUser
     });
   } catch (error) {
@@ -382,12 +429,21 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Returnează datele utilizatorului (fără parolă)
     const { parola: _, ...userWithoutPassword } = user;
-    console.log('✅ [LOGIN] Autentificare reușită pentru:', { id: userWithoutPassword.id, email: userWithoutPassword.email });
+    // Asigură-te că status și is_admin sunt incluse
+    const userResponse = {
+      id: userWithoutPassword.id,
+      nume: userWithoutPassword.nume,
+      email: userWithoutPassword.email,
+      data_creare: userWithoutPassword.data_creare,
+      status: userWithoutPassword.status || 'pending',
+      is_admin: userWithoutPassword.is_admin || 0
+    };
+    console.log('✅ [LOGIN] Autentificare reușită pentru:', { id: userResponse.id, email: userResponse.email, status: userResponse.status });
     
     res.json({ 
       success: true,
       message: 'Autentificare reușită!',
-      user: userWithoutPassword
+      user: userResponse
     });
   } catch (error) {
     console.error('❌ [LOGIN] Eroare la autentificare:', error);
@@ -405,18 +461,194 @@ app.get('/api/auth/me', async (req, res) => {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
     }
 
-    const user = await getAsync('SELECT id, nume, email, data_creare FROM users WHERE id = ?', [userId]);
+    const user = await getAsync('SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?', [userId]);
     
     if (!user) {
       console.log('❌ [ME] Utilizator negăsit pentru ID:', userId);
       return res.status(404).json({ error: 'Utilizator negăsit' });
     }
 
-    console.log('✅ [ME] Utilizator găsit:', { id: user.id, email: user.email });
+    console.log('✅ [ME] Utilizator găsit:', { id: user.id, email: user.email, status: user.status });
     res.json({ user });
   } catch (error) {
     console.error('❌ [ME] Eroare la verificare utilizator:', error);
     res.status(500).json({ error: 'Eroare la verificare' });
+  }
+});
+
+// Endpoint pentru verificare status cont
+app.get('/api/auth/status', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    console.log('📊 [STATUS] Verificare status pentru ID:', userId);
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const user = await getAsync('SELECT id, status, is_admin FROM users WHERE id = ?', [userId]);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+
+    res.json({ status: user.status || 'pending', is_admin: user.is_admin || 0 });
+  } catch (error) {
+    console.error('❌ [STATUS] Eroare la verificare status:', error);
+    res.status(500).json({ error: 'Eroare la verificare status' });
+  }
+});
+
+// Middleware pentru verificare admin
+const checkAdmin = async (req, res, next) => {
+  try {
+    const userId = req.query.userId || req.body.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const user = await getAsync('SELECT is_admin FROM users WHERE id = ?', [userId]);
+    if (!user || !user.is_admin) {
+      return res.status(403).json({ error: 'Acces interzis. Doar administratorii pot accesa această resursă.' });
+    }
+    next();
+  } catch (error) {
+    console.error('❌ [ADMIN CHECK] Eroare:', error);
+    res.status(500).json({ error: 'Eroare la verificare permisiuni' });
+  }
+};
+
+// Endpoint pentru listarea tuturor cererilor (admin only)
+app.get('/api/admin/requests', checkAdmin, async (req, res) => {
+  try {
+    console.log('📋 [ADMIN] Listare cereri...');
+    const { status } = req.query;
+    
+    let query = 'SELECT id, nume, email, data_creare, status, data_aprobare FROM users';
+    const params = [];
+    
+    if (status && status !== 'toate') {
+      query += ' WHERE status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY data_creare DESC';
+    
+    const requests = await allAsync(query, params);
+    
+    console.log(`✅ [ADMIN] Găsite ${requests.length} cereri`);
+    res.json({ requests });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la listare cereri:', error);
+    res.status(500).json({ error: 'Eroare la listare cereri' });
+  }
+});
+
+// Endpoint pentru aprobare cont (admin only)
+app.post('/api/admin/approve/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('✅ [ADMIN] Aprobare cont:', { targetUserId, adminUserId });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const dataAprobare = new Date().toISOString();
+    await runAsync(
+      'UPDATE users SET status = ?, data_aprobare = ? WHERE id = ?',
+      ['approved', dataAprobare, targetUserId]
+    );
+
+    const updatedUser = await getAsync('SELECT id, nume, email, status, data_aprobare FROM users WHERE id = ?', [targetUserId]);
+    
+    console.log('✅ [ADMIN] Cont aprobat:', { id: updatedUser.id, email: updatedUser.email });
+    res.json({ 
+      success: true,
+      message: 'Cont aprobat cu succes',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la aprobare:', error);
+    res.status(500).json({ error: 'Eroare la aprobare cont' });
+  }
+});
+
+// Endpoint pentru respingere cont (admin only)
+app.post('/api/admin/reject/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('❌ [ADMIN] Respingere cont:', { targetUserId, adminUserId });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    await runAsync(
+      'UPDATE users SET status = ?, data_aprobare = NULL WHERE id = ?',
+      ['rejected', targetUserId]
+    );
+
+    const updatedUser = await getAsync('SELECT id, nume, email, status FROM users WHERE id = ?', [targetUserId]);
+    
+    console.log('✅ [ADMIN] Cont respins:', { id: updatedUser.id, email: updatedUser.email });
+    res.json({ 
+      success: true,
+      message: 'Cont respins',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la respingere:', error);
+    res.status(500).json({ error: 'Eroare la respingere cont' });
+  }
+});
+
+// Endpoint pentru schimbare status cont (admin only) - permite orice status
+app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    const { status } = req.body;
+    const adminUserId = req.query.userId || req.body.userId;
+    
+    console.log('🔄 [ADMIN] Schimbare status cont:', { targetUserId, status, adminUserId });
+    
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Status invalid. Trebuie să fie: pending, approved sau rejected' });
+    }
+
+    // Dacă se aprobă, setează data_aprobare, altfel o șterge
+    if (status === 'approved') {
+      const dataAprobare = new Date().toISOString();
+      await runAsync(
+        'UPDATE users SET status = ?, data_aprobare = ? WHERE id = ?',
+        [status, dataAprobare, targetUserId]
+      );
+    } else {
+      await runAsync(
+        'UPDATE users SET status = ?, data_aprobare = NULL WHERE id = ?',
+        [status, targetUserId]
+      );
+    }
+
+    const updatedUser = await getAsync('SELECT id, nume, email, status, data_aprobare FROM users WHERE id = ?', [targetUserId]);
+    
+    console.log('✅ [ADMIN] Status cont schimbat:', { id: updatedUser.id, email: updatedUser.email, status: updatedUser.status });
+    res.json({ 
+      success: true,
+      message: `Status cont schimbat la: ${status}`,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN] Eroare la schimbare status:', error);
+    res.status(500).json({ error: 'Eroare la schimbare status cont' });
   }
 });
 
@@ -438,10 +670,13 @@ app.post('/api/prescriptions', async (req, res) => {
     // Permite salvarea fără medicamente (pentru notițe medicale)
     const medicamenteArray = medicamente && Array.isArray(medicamente) ? medicamente : [];
 
-    // Verifică dacă utilizatorul există
-    const user = await getAsync('SELECT id FROM users WHERE id = ?', [userId]);
+    // Verifică dacă utilizatorul există și este aprobat
+    const user = await getAsync('SELECT id, status FROM users WHERE id = ?', [userId]);
     if (!user) {
       return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+    if (user.status !== 'approved') {
+      return res.status(403).json({ error: 'Contul tău nu este aprobat. Te rugăm să aștepți aprobarea administratorului.' });
     }
 
     // Salvează rețeta în baza de date
@@ -484,6 +719,15 @@ app.get('/api/prescriptions', async (req, res) => {
 
     if (!userId) {
       return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    // Verifică dacă utilizatorul este aprobat
+    const user = await getAsync('SELECT status FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+    if (user.status !== 'approved') {
+      return res.status(403).json({ error: 'Contul tău nu este aprobat. Te rugăm să aștepți aprobarea administratorului.' });
     }
 
     const prescriptions = await allAsync(

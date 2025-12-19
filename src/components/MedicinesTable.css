@@ -5943,3 +5943,49 @@ body.medai-dark-mode .chat-send-button:disabled {
   border-color: #b91c1c;
   transform: scale(1.05);
 }
+
+/* Admin Panel Styles */
+.admin-panel-content {
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+body.med-ai-dark .status-pending {
+  background: #3d2e00;
+  color: #ffc107;
+}
+
+body.med-ai-dark .status-approved {
+  background: #1e4620;
+  color: #4caf50;
+}
+
+body.med-ai-dark .status-rejected {
+  background: #4a1e1e;
+  color: #f44336;
+}
