@@ -145,6 +145,41 @@ const ensureTable = async () => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`
   );
+
+  // Tabelă pentru medicamente adăugate de utilizatori
+  await runAsync(
+    `CREATE TABLE IF NOT EXISTS user_medicines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      denumire TEXT NOT NULL,
+      forma_farmaceutica TEXT,
+      concentratie TEXT,
+      substanta_activa TEXT,
+      cod_atc TEXT,
+      mod_prescriere TEXT,
+      note TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`
+  );
+
+  // Migrare: adăugare coloane pentru user_medicines (dacă nu există deja)
+  try {
+    await runAsync(`ALTER TABLE user_medicines ADD COLUMN substanta_activa TEXT`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  try {
+    await runAsync(`ALTER TABLE user_medicines ADD COLUMN cod_atc TEXT`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
+  try {
+    await runAsync(`ALTER TABLE user_medicines ADD COLUMN mod_prescriere TEXT`);
+  } catch (e) {
+    // Coloana există deja, ignoră eroarea
+  }
 };
 
 const normalizeField = (row, key) => (row[key] ?? '').toString().trim();
@@ -339,9 +374,16 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'Parola trebuie să aibă cel puțin 6 caractere' });
     }
 
-    // Verifică dacă email-ul există deja
-    const existingUser = await getAsync('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
+    // Verifică dacă email-ul există deja (inclusiv conturi șterse)
+    const existingUser = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUser) {
+      if (existingUser.deleted_at) {
+        console.log('⚠️ [SIGNUP] Email cu cont șters:', email);
+        return res.status(409).json({ 
+          error: 'Există un cont șters pe acest email. Poți alege restaurare sau cont nou.',
+          code: 'ACCOUNT_DELETED'
+        });
+      }
       console.log('❌ [SIGNUP] Email deja folosit:', email);
       return res.status(400).json({ error: 'Acest email este deja folosit. Te rugăm să folosești alt email.' });
     }
@@ -395,6 +437,72 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+// Endpoint pentru recuperare cont șters (restaurare sau cont nou)
+app.post('/api/auth/recover', async (req, res) => {
+  try {
+    const { nume, email, parola, mode } = req.body;
+
+    if (!email || !parola || !mode) {
+      return res.status(400).json({ error: 'Email, parola și modul sunt obligatorii' });
+    }
+
+    if (mode !== 'restore' && mode !== 'new') {
+      return res.status(400).json({ error: 'Mod de recuperare invalid' });
+    }
+
+    if (mode === 'new' && !nume) {
+      return res.status(400).json({ error: 'Numele este obligatoriu pentru cont nou' });
+    }
+
+    const deletedUser = await getAsync(
+      'SELECT * FROM users WHERE email = ? AND deleted_at IS NOT NULL',
+      [email]
+    );
+
+    if (!deletedUser) {
+      return res.status(404).json({ error: 'Nu există cont șters pentru acest email' });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(parola, saltRounds);
+
+    if (mode === 'restore') {
+      await runAsync(
+        'UPDATE users SET deleted_at = NULL, parola = ? WHERE id = ?',
+        [hashedPassword, deletedUser.id]
+      );
+    } else {
+      const isAdmin = email.toLowerCase() === 'caruntu.emanuel@gmail.com';
+      const status = isAdmin ? 'approved' : 'pending';
+      const adminFlag = isAdmin ? 1 : 0;
+      const dataAprobare = isAdmin ? new Date().toISOString() : null;
+
+      await runAsync(
+        `UPDATE users 
+         SET nume = ?, parola = ?, status = ?, is_admin = ?, data_aprobare = ?, deleted_at = NULL, data_creare = CURRENT_TIMESTAMP 
+         WHERE id = ?`,
+        [nume, hashedPassword, status, adminFlag, dataAprobare, deletedUser.id]
+      );
+      // Curăță rețetele doar pentru cont nou
+      await runAsync('DELETE FROM retete WHERE user_id = ?', [deletedUser.id]);
+    }
+
+    const updatedUser = await getAsync(
+      'SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?',
+      [deletedUser.id]
+    );
+
+    res.json({
+      success: true,
+      message: mode === 'restore' ? 'Cont restaurat cu succes' : 'Cont recreat cu succes',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('❌ [RECOVER] Eroare la recuperare cont:', error);
+    res.status(500).json({ error: 'Eroare la recuperarea contului' });
+  }
+});
+
 // Endpoint pentru autentificare (login)
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -407,13 +515,21 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email și parola sunt obligatorii' });
     }
 
-    // Caută utilizatorul în baza de date
+    // Caută utilizatorul în baza de date (inclusiv conturi șterse)
     console.log('🔍 [LOGIN] Căutare utilizator în baza de date...');
-    const user = await getAsync('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
+    const user = await getAsync('SELECT * FROM users WHERE email = ?', [email]);
     
     if (!user) {
       console.log('❌ [LOGIN] Utilizator negăsit pentru email:', email);
       return res.status(401).json({ error: 'Email sau parolă incorectă' });
+    }
+
+    if (user.deleted_at) {
+      console.log('⚠️ [LOGIN] Cont șters pentru email:', email);
+      return res.status(403).json({ 
+        error: 'Contul asociat acestui email a fost șters. Poți merge la Înregistrare pentru restaurare sau cont nou.',
+        code: 'ACCOUNT_DELETED'
+      });
     }
 
     // Verifică parola (suportă atât parole hash-uite cât și parole în clar pentru compatibilitate)
@@ -472,6 +588,33 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Endpoint pentru ștergerea contului propriu (soft delete)
+app.delete('/api/auth/delete', async (req, res) => {
+  try {
+    const userId = req.query.userId || req.body.userId;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+
+    const user = await getAsync('SELECT id, deleted_at FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilizator negăsit' });
+    }
+
+    if (user.deleted_at) {
+      return res.status(400).json({ error: 'Contul este deja șters' });
+    }
+
+    await runAsync('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [userId]);
+
+    res.json({ success: true, message: 'Cont șters cu succes' });
+  } catch (error) {
+    console.error('❌ [DELETE SELF] Eroare la ștergerea contului:', error);
+    res.status(500).json({ error: 'Eroare la ștergerea contului' });
+  }
+});
+
 // Endpoint pentru verificare utilizator curent
 app.get('/api/auth/me', async (req, res) => {
   try {
@@ -517,6 +660,102 @@ app.get('/api/auth/status', async (req, res) => {
   } catch (error) {
     console.error('❌ [STATUS] Eroare la verificare status:', error);
     res.status(500).json({ error: 'Eroare la verificare status' });
+  }
+});
+
+// Medicamente adăugate de utilizatori (doar pentru utilizatorul curent)
+app.get('/api/user-medicines', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) {
+      return res.status(400).json({ error: 'ID utilizator lipsă' });
+    }
+    const items = await allAsync(
+      'SELECT id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note, created_at, updated_at FROM user_medicines WHERE user_id = ? ORDER BY created_at DESC',
+      [userId]
+    );
+    res.json({ medicines: items });
+  } catch (error) {
+    console.error('❌ [USER MEDS] Eroare la listare:', error);
+    res.status(500).json({ error: 'Eroare la listarea medicamentelor' });
+  }
+});
+
+app.post('/api/user-medicines', async (req, res) => {
+  try {
+    const { userId, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note } = req.body;
+    if (!userId || !denumire) {
+      return res.status(400).json({ error: 'ID utilizator și denumirea sunt obligatorii' });
+    }
+    const result = await runAsync(
+      'INSERT INTO user_medicines (user_id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, denumire, forma_farmaceutica || null, concentratie || null, substanta_activa || null, cod_atc || null, mod_prescriere || null, note || null]
+    );
+    const created = await getAsync(
+      'SELECT id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note, created_at, updated_at FROM user_medicines WHERE id = ? AND user_id = ?',
+      [result.lastID, userId]
+    );
+    res.status(201).json({ success: true, medicine: created });
+  } catch (error) {
+    console.error('❌ [USER MEDS] Eroare la creare:', error);
+    res.status(500).json({ error: 'Eroare la crearea medicamentului' });
+  }
+});
+
+app.put('/api/user-medicines/:id', async (req, res) => {
+  try {
+    const userId = req.body.userId || req.query.userId;
+    const id = req.params.id;
+    const { denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note } = req.body;
+    if (!userId || !id) {
+      return res.status(400).json({ error: 'ID utilizator sau medicament lipsă' });
+    }
+    const existing = await getAsync(
+      'SELECT id FROM user_medicines WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Medicament negăsit' });
+    }
+    if (!denumire) {
+      return res.status(400).json({ error: 'Denumirea este obligatorie' });
+    }
+    await runAsync(
+      `UPDATE user_medicines
+       SET denumire = ?, forma_farmaceutica = ?, concentratie = ?, substanta_activa = ?, cod_atc = ?, mod_prescriere = ?, note = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND user_id = ?`,
+      [denumire, forma_farmaceutica || null, concentratie || null, substanta_activa || null, cod_atc || null, mod_prescriere || null, note || null, id, userId]
+    );
+    const updated = await getAsync(
+      'SELECT id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note, created_at, updated_at FROM user_medicines WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+    res.json({ success: true, medicine: updated });
+  } catch (error) {
+    console.error('❌ [USER MEDS] Eroare la actualizare:', error);
+    res.status(500).json({ error: 'Eroare la actualizarea medicamentului' });
+  }
+});
+
+app.delete('/api/user-medicines/:id', async (req, res) => {
+  try {
+    const userId = req.query.userId || req.body.userId;
+    const id = req.params.id;
+    if (!userId || !id) {
+      return res.status(400).json({ error: 'ID utilizator sau medicament lipsă' });
+    }
+    const existing = await getAsync(
+      'SELECT id FROM user_medicines WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Medicament negăsit' });
+    }
+    await runAsync('DELETE FROM user_medicines WHERE id = ? AND user_id = ?', [id, userId]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ [USER MEDS] Eroare la ștergere:', error);
+    res.status(500).json({ error: 'Eroare la ștergerea medicamentului' });
   }
 });
 

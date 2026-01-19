@@ -88,6 +88,16 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [medicinePlans, setMedicinePlans] = useState({})
   const [showAddMedicineModal, setShowAddMedicineModal] = useState(false)
   const [newMedicineName, setNewMedicineName] = useState('')
+  const [newMedicineForm, setNewMedicineForm] = useState('')
+  const [newMedicineConcentration, setNewMedicineConcentration] = useState('')
+  const [newMedicineNote, setNewMedicineNote] = useState('')
+  const [newMedicineSubstance, setNewMedicineSubstance] = useState('')
+  const [newMedicineAtc, setNewMedicineAtc] = useState('')
+  const [newMedicinePrescription, setNewMedicinePrescription] = useState('')
+  const [showAdvancedMedicineFields, setShowAdvancedMedicineFields] = useState(false)
+  const [editingUserMedicine, setEditingUserMedicine] = useState(null)
+  const [officialMedicines, setOfficialMedicines] = useState([])
+  const [userMedicines, setUserMedicines] = useState([])
   const [showNewPatientModal, setShowNewPatientModal] = useState(false)
   const [isNightMode, setIsNightMode] = useState(false)
   const [isRecordingMic, setIsRecordingMic] = useState(false)
@@ -110,6 +120,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('')
   const [loginError, setLoginError] = useState('')
   const [signUpError, setSignUpError] = useState('')
+  const [showRecoverModal, setShowRecoverModal] = useState(false)
+  const [recoverError, setRecoverError] = useState('')
+  const [recoverLoading, setRecoverLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignUpPassword, setShowSignUpPassword] = useState(false)
@@ -118,6 +131,9 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [showHistoryPage, setShowHistoryPage] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
+  const [showAccountStatusModal, setShowAccountStatusModal] = useState(false)
+  const [accountStatusTitle, setAccountStatusTitle] = useState('')
+  const [accountStatusMessage, setAccountStatusMessage] = useState('')
   const [prescriptionHistory, setPrescriptionHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [expandedCardId, setExpandedCardId] = useState(null)
@@ -127,6 +143,98 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   // Filtre pentru istoric
   const [historyDateFilter, setHistoryDateFilter] = useState('toate') // 'toate', 'azi', 'saptamana', 'luna', 'anul', 'specifica'
   const [historySpecificDate, setHistorySpecificDate] = useState('')
+
+  const handleRecoverAccount = async (mode) => {
+    setRecoverError('')
+    if (!signUpEmail || !signUpPassword) {
+      setRecoverError('Email și parola sunt obligatorii')
+      return
+    }
+    if (mode === 'new' && !signUpName) {
+      setRecoverError('Numele este obligatoriu pentru cont nou')
+      return
+    }
+
+    try {
+      setRecoverLoading(true)
+      const response = await fetch(`${API_BASE_URL}/api/auth/recover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nume: signUpName,
+          email: signUpEmail,
+          parola: signUpPassword,
+          mode
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Eroare la recuperarea contului')
+      }
+
+      if (data.user) {
+        localStorage.setItem('currentUser', JSON.stringify(data.user))
+        setCurrentUser(data.user)
+        loadUserData(data.user.id)
+      }
+
+      setShowRecoverModal(false)
+      setShowSignUpModal(false)
+      setSignUpName('')
+      setSignUpEmail('')
+      setSignUpPassword('')
+      setSignUpConfirmPassword('')
+    } catch (error) {
+      console.error('❌ [FRONTEND] Eroare la recuperare cont:', error)
+      setRecoverError(error.message || 'Eroare la recuperarea contului')
+    } finally {
+      setRecoverLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.id) {
+      return
+    }
+    if (!window.confirm('Ești sigur că vrei să îți ștergi contul?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/delete?userId=${currentUser.id}`, {
+        method: 'DELETE'
+      })
+      const contentType = response.headers.get('content-type')
+      let data
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        const text = await response.text()
+        throw new Error(`Răspuns invalid de la server: ${text.slice(0, 120)}`)
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Eroare la ștergerea contului')
+      }
+
+      // Curăță datele locale și deloghează utilizatorul
+      setPatientNotes('')
+      setPatientName('')
+      setDoctorNotes('')
+      setSelectedProducts([])
+      setMedicinePlans({})
+      localStorage.removeItem('currentUser')
+      setCurrentUser(null)
+      setShowStatsModal(false)
+    } catch (error) {
+      console.error('❌ [FRONTEND] Eroare la ștergerea contului:', error)
+      alert(error.message || 'Eroare la ștergerea contului')
+    }
+  }
   const [historyNameFilter, setHistoryNameFilter] = useState('')
 
   // #region agent log
@@ -291,17 +399,23 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   // Funcție helper pentru a afișa mesaje despre statusul contului
   const showAccountStatusMessage = useCallback(() => {
     if (!currentUser) {
-      alert('Te rugăm să te autentifici pentru a folosi această funcție.')
+      setAccountStatusTitle('Autentificare necesară')
+      setAccountStatusMessage('Te rugăm să te autentifici pentru a folosi această funcție.')
+      setShowAccountStatusModal(true)
       return false
     }
     
     if (currentUser.status === 'pending') {
-      alert('⏳ Contul tău este în așteptare aprobare\n\nÎți mulțumim pentru interesul arătat! Contul tău a fost creat cu succes și este în curs de verificare de către echipa noastră.\n\nVei primi acces la toate funcțiile aplicației imediat ce contul tău va fi aprobat. Te rugăm să ai puțină răbdare.\n\nDacă ai întrebări, poți verifica statusul contului în setări (⚙️).')
+      setAccountStatusTitle('Cont în așteptare')
+      setAccountStatusMessage('Îți mulțumim pentru interesul arătat! Contul tău a fost creat cu succes și este în curs de verificare de către echipa noastră.\n\nVei primi acces la toate funcțiile aplicației imediat ce contul tău va fi aprobat. Te rugăm să ai puțină răbdare.\n\nDacă ai întrebări, poți verifica statusul contului în setări (⚙️).')
+      setShowAccountStatusModal(true)
       return false
     }
     
     if (currentUser.status === 'rejected') {
-      alert('❌ Contul tău nu a fost aprobat\n\nNe pare rău, dar contul tău nu a putut fi aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări (⚙️).')
+      setAccountStatusTitle('Cont respins')
+      setAccountStatusMessage('Ne pare rău, dar contul tău nu a putut fi aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări (⚙️).')
+      setShowAccountStatusModal(true)
       return false
     }
     
@@ -528,6 +642,44 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     }
   }
 
+  const mapUserMedicineToUi = (row) => {
+    if (!row) return {}
+    const toSafeValue = (value) => {
+      if (value === null || value === undefined) {
+        return 'N/A'
+      }
+      const text = String(value).trim()
+      return text.length > 0 ? text : 'N/A'
+    }
+    return {
+      'Denumire medicament': toSafeValue(row.denumire),
+      'Substanta activa': toSafeValue(row.substanta_activa),
+      'Lista de compensare': 'N/A',
+      'Cod medicament': `USER-${row.id}`,
+      'Formă farmaceutica': toSafeValue(row.forma_farmaceutica),
+      'Cod ATC': toSafeValue(row.cod_atc),
+      'Mod de prescriere': toSafeValue(row.mod_prescriere),
+      'Concentratie': toSafeValue(row.concentratie),
+      'Forma de ambalare': 'N/A',
+      'Nume detinator APP': 'N/A',
+      'Tara detinator APP': 'N/A',
+      'Cantitate pe forma ambalare': 'N/A',
+      'Preț maximal al medicamentului raportat la forma de ambalare': 'N/A',
+      'Pret maximal al medicamentului raportat la UT': 'N/A',
+      'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 100% din prețul de referinta': 'N/A',
+      'Contributie maxima a asiguratului raportat la UT, pentru asiguratii care beneficiaza de compensare 90% - sublista A, 50% - sublista B, 20% - sublista D din prețul de referinta': 'N/A',
+      'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv': 'N/A',
+      'CategorieVarsta': 'Toate',
+      'Coduri_Boli': '',
+      userMedicineId: row.id
+    }
+  }
+
+  const getUserMedicineId = (medicine) => {
+    const id = medicine?.userMedicineId
+    return typeof id === 'number' ? id : null
+  }
+
   // Funcție pentru încărcarea medicamentelor din backend (SQLite)
   const fetchMedicines = async () => {
     try {
@@ -552,7 +704,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
         console.log('📊 Exemplu medicament (din SQL):', medicinesData[0])
       }
 
-      setMedicines(medicinesData)
+      setOfficialMedicines(medicinesData)
       setError(null)
       setLoading(false)
     } catch (err) {
@@ -561,6 +713,34 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       setLoading(false)
     }
   }
+
+  const fetchUserMedicines = useCallback(async () => {
+    if (!currentUser?.id) {
+      setUserMedicines([])
+      return
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user-medicines?userId=${currentUser.id}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      const items = Array.isArray(data.medicines) ? data.medicines : []
+      setUserMedicines(items)
+    } catch (error) {
+      console.error('❌ Eroare la încărcarea medicamentelor utilizatorului:', error)
+      setUserMedicines([])
+    }
+  }, [currentUser?.id])
+
+  useEffect(() => {
+    fetchUserMedicines()
+  }, [fetchUserMedicines])
+
+  useEffect(() => {
+    const mappedUserMedicines = userMedicines.map(mapUserMedicineToUi)
+    setMedicines([...mappedUserMedicines, ...officialMedicines])
+  }, [officialMedicines, userMedicines])
 
   // Funcție pentru a încărca toate filtrele din JSON
   const loadAllFiltersFromJSON = async () => {
@@ -1246,12 +1426,12 @@ Programează o consultație dacă simptomele persistă`
               <tbody>
                 ${selectedProducts.map((product, index) => {
                   const plan = medicinePlans[product['Cod medicament']] || {}
-                  const planText = plan.duration ? `${plan.duration} ${plan.unit || 'zile'}, ${plan.frequency || '1x/zi'}` : 'N/A'
+                  const planText = plan.duration ? `${plan.duration} ${plan.unit || 'zile'}, ${plan.frequency || '1x/zi'}` : ''
                   return `
                     <tr>
                       <td>${index + 1}</td>
-                      <td>${product['Denumire medicament'] || 'N/A'}</td>
-                      <td>${product['Cod medicament'] || 'N/A'}</td>
+                      <td>${product['Denumire medicament'] || ''}</td>
+                      <td>${product['Cod medicament'] || ''}</td>
                       <td>${planText}</td>
                     </tr>
                   `
@@ -1592,34 +1772,160 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea medicamentelor personalizate
   const openAddMedicineModal = useCallback(() => {
+    if (!currentUser?.id) {
+      setShowLoginModal(true)
+      return
+    }
+    if (!showAccountStatusMessage()) {
+      return
+    }
     setShowAddMedicineModal(true)
     setNewMedicineName('')
-  }, [])
+    setNewMedicineForm('')
+    setNewMedicineConcentration('')
+    setNewMedicineNote('')
+    setNewMedicineSubstance('')
+    setNewMedicineAtc('')
+    setNewMedicinePrescription('')
+    setShowAdvancedMedicineFields(false)
+    setEditingUserMedicine(null)
+  }, [currentUser?.id, showAccountStatusMessage])
 
   const closeAddMedicineModal = useCallback(() => {
     setShowAddMedicineModal(false)
     setNewMedicineName('')
+    setNewMedicineForm('')
+    setNewMedicineConcentration('')
+    setNewMedicineNote('')
+    setNewMedicineSubstance('')
+    setNewMedicineAtc('')
+    setNewMedicinePrescription('')
+    setShowAdvancedMedicineFields(false)
+    setEditingUserMedicine(null)
   }, [])
 
-  const addCustomMedicine = useCallback(() => {
+  const addCustomMedicine = useCallback(async () => {
+    if (!currentUser?.id) {
+      setShowLoginModal(true)
+      return
+    }
     if (!newMedicineName.trim()) {
       alert('Te rog introdu numele medicamentului!')
       return
     }
 
-    const customMedicine = {
-      'Denumire medicament': newMedicineName.trim().toUpperCase(),
-      'Cod medicament': 'N/A',
-      'Substanta activa': 'Personalizat',
-      'Lista de compensare': 'Personalizat',
-      'CategorieVarsta': 'Toate',
-      'Coduri_Boli': '',
-      'isCustom': true // Flag pentru a identifica medicamentele personalizate
-    }
+    try {
+      const payload = {
+        userId: currentUser.id,
+        denumire: newMedicineName.trim().toUpperCase(),
+        forma_farmaceutica: newMedicineForm.trim() || null,
+        concentratie: newMedicineConcentration.trim() || null,
+        substanta_activa: newMedicineSubstance.trim() || null,
+        cod_atc: newMedicineAtc.trim() || null,
+        mod_prescriere: newMedicinePrescription.trim() || null,
+        note: newMedicineNote.trim() || null
+      }
 
-    setSelectedProducts(prev => [...prev, customMedicine])
-    closeAddMedicineModal()
-  }, [newMedicineName, closeAddMedicineModal])
+      const url = editingUserMedicine
+        ? `${API_BASE_URL}/api/user-medicines/${editingUserMedicine.id}`
+        : `${API_BASE_URL}/api/user-medicines`
+      const method = editingUserMedicine ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Eroare la salvarea medicamentului')
+      }
+
+      if (data.medicine) {
+        setUserMedicines(prev => {
+          if (editingUserMedicine) {
+            return prev.map(item => item.id === data.medicine.id ? data.medicine : item)
+          }
+          return [data.medicine, ...prev]
+        })
+        const updatedUi = mapUserMedicineToUi(data.medicine)
+        setSelectedProducts(prev => prev.map(item => {
+          if (item['Cod medicament'] === updatedUi['Cod medicament']) {
+            return updatedUi
+          }
+          return item
+        }))
+      }
+
+      closeAddMedicineModal()
+    } catch (error) {
+      console.error('❌ Eroare la salvarea medicamentului personalizat:', error)
+      alert(error.message || 'Eroare la salvarea medicamentului')
+    }
+  }, [
+    API_BASE_URL,
+    currentUser?.id,
+    editingUserMedicine,
+    mapUserMedicineToUi,
+    newMedicineSubstance,
+    newMedicineAtc,
+    newMedicinePrescription,
+    newMedicineName,
+    newMedicineForm,
+    newMedicineConcentration,
+    newMedicineNote,
+    closeAddMedicineModal
+  ])
+
+  const handleEditUserMedicine = useCallback((userMedicineId) => {
+    if (!userMedicineId) {
+      return
+    }
+    const target = userMedicines.find(item => item.id === userMedicineId)
+    if (!target) {
+      return
+    }
+    setEditingUserMedicine(target)
+    setNewMedicineName(target.denumire || '')
+    setNewMedicineForm(target.forma_farmaceutica || '')
+    setNewMedicineConcentration(target.concentratie || '')
+    setNewMedicineNote(target.note || '')
+    setNewMedicineSubstance(target.substanta_activa || '')
+    setNewMedicineAtc(target.cod_atc || '')
+    setNewMedicinePrescription(target.mod_prescriere || '')
+    setShowAdvancedMedicineFields(!!(target.substanta_activa || target.cod_atc || target.mod_prescriere))
+    setShowAddMedicineModal(true)
+  }, [userMedicines])
+
+  const handleDeleteUserMedicine = useCallback(async (userMedicineId) => {
+    if (!userMedicineId) {
+      return
+    }
+    if (!currentUser?.id) {
+      return
+    }
+    if (!window.confirm('Ești sigur că vrei să ștergi acest medicament personalizat?')) {
+      return
+    }
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/user-medicines/${userMedicineId}?userId=${currentUser.id}`,
+        { method: 'DELETE' }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Eroare la ștergerea medicamentului')
+      }
+      setUserMedicines(prev => prev.filter(item => item.id !== userMedicineId))
+      setSelectedProducts(prev => prev.filter(item => item['Cod medicament'] !== `USER-${userMedicineId}`))
+    } catch (error) {
+      console.error('❌ Eroare la ștergerea medicamentului personalizat:', error)
+      alert(error.message || 'Eroare la ștergerea medicamentului')
+    }
+  }, [API_BASE_URL, currentUser?.id])
 
   // Funcție pentru generarea PDF-ului unei rețete din istoric
   const downloadPrescriptionPDF = useCallback(async (prescription) => {
@@ -1859,8 +2165,8 @@ Programează o consultație dacă simptomele persistă`
                     planDescription = parts.join(', ')
                   }
                   
-                  const denumire = product['Denumire medicament'] || product.denumire_medicament || 'N/A'
-                  const cod = product['Cod medicament'] || product.cod_medicament || 'N/A'
+                  const denumire = product['Denumire medicament'] || product.denumire_medicament || ''
+                  const cod = product['Cod medicament'] || product.cod_medicament || ''
                   
                   return `
                     <tr>
@@ -2558,7 +2864,7 @@ Programează o consultație dacă simptomele persistă`
                           <ul className="history-card-list">
                             {prescription.medicamente.slice(0, historyViewMode === 'large' ? prescription.medicamente.length : (historyViewMode === 'list' ? 5 : 3)).map((med, idx) => (
                               <li key={idx} className="history-card-list-item">
-                                {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
+                                {med['Denumire medicament'] || med.denumire_medicament || ''}
                               </li>
                             ))}
                             {historyViewMode !== 'large' && prescription.medicamente.length > (historyViewMode === 'list' ? 5 : 3) && (
@@ -2656,9 +2962,9 @@ Programează o consultație dacă simptomele persistă`
                       <div className="history-card-modal-section">
                         <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
                         <ul className="history-card-list">
-                          {prescription.medicamente.map((med, idx) => (
+                            {prescription.medicamente.map((med, idx) => (
                             <li key={idx} className="history-card-list-item">
-                              {med['Denumire medicament'] || med.denumire_medicament || 'N/A'}
+                                {med['Denumire medicament'] || med.denumire_medicament || ''}
                             </li>
                           ))}
                         </ul>
@@ -3273,10 +3579,12 @@ etc.`
               <tbody>
                 {currentMedicines.map((medicine, index) => {
                   const isSelected = selectedProducts.some(selected => selected['Cod medicament'] === medicine['Cod medicament'])
+                  const userMedicineId = getUserMedicineId(medicine)
+                  const isUserMedicine = userMedicineId !== null
                   return (
                     <tr 
                       key={index} 
-                      className={`medicine-row ${isSelected ? 'selected' : ''}`}
+                      className={`medicine-row ${isSelected ? 'selected' : ''} ${isUserMedicine ? 'custom-medicine-row' : ''}`}
                       onClick={() => handleProductSelect(medicine)}
                     >
                       <td className="row-number">
@@ -3301,7 +3609,43 @@ etc.`
                               ))}
                             </div>
                           ) : isNameColumn ? (
-                            <span className="medicine-name">{medicine[header]}</span>
+                            <div className="medicine-name-container">
+                              <span className="medicine-name">
+                                {medicine[header]}
+                                {isUserMedicine && medicine['Concentratie'] && medicine['Concentratie'] !== 'N/A'
+                                  ? ` ${medicine['Concentratie']}`
+                                  : ''}
+                              </span>
+                              {isUserMedicine && (
+                                <>
+                                  <span className="custom-medicine-badge">Personal</span>
+                                  <div className="custom-medicine-actions">
+                                    <button
+                                      type="button"
+                                      className="custom-medicine-action-button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleEditUserMedicine(userMedicineId)
+                                      }}
+                                    >
+                                      Editează
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="custom-medicine-action-button delete"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteUserMedicine(userMedicineId)
+                                      }}
+                                    >
+                                      Șterge
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ) : header === 'Cod medicament' && isUserMedicine ? (
+                            'N/A'
                           ) : (
                             medicine[header]
                           )}
@@ -3764,7 +4108,7 @@ etc.`
             <div className="add-medicine-modal-overlay" onClick={closeAddMedicineModal}>
           <div className="add-medicine-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="add-medicine-modal-header">
-              <h3>➕ Adaugă medicament personalizat</h3>
+              <h3>{editingUserMedicine ? '✏️ Editează medicament personalizat' : '➕ Adaugă medicament personalizat'}</h3>
               <button className="add-medicine-modal-close" onClick={closeAddMedicineModal}>✕</button>
             </div>
             
@@ -3776,7 +4120,7 @@ etc.`
                   type="text"
                   placeholder="Introdu numele medicamentului..."
                   value={newMedicineName}
-                  onChange={(e) => setNewMedicineName(e.target.value)}
+                  onChange={(e) => setNewMedicineName(e.target.value.toUpperCase())}
                   className="add-medicine-input"
                   autoFocus
                   onKeyPress={(e) => {
@@ -3785,6 +4129,71 @@ etc.`
                     }
                   }}
                 />
+                <label htmlFor="medicineConcentration">Concentrație:</label>
+                <input
+                  id="medicineConcentration"
+                  type="text"
+                  placeholder="Ex: 500 mg"
+                  value={newMedicineConcentration}
+                  onChange={(e) => setNewMedicineConcentration(e.target.value)}
+                  className="add-medicine-input"
+                />
+                <label htmlFor="medicineNote">Notițe (opțional):</label>
+                <textarea
+                  id="medicineNote"
+                  placeholder="Observații personale..."
+                  value={newMedicineNote}
+                  onChange={(e) => setNewMedicineNote(e.target.value)}
+                  className="add-medicine-textarea"
+                  rows={3}
+                />
+                <button
+                  type="button"
+                  className="add-medicine-advanced-toggle"
+                  onClick={() => setShowAdvancedMedicineFields(prev => !prev)}
+                >
+                  {showAdvancedMedicineFields ? 'Ascunde detalii avansate' : 'Detalii avansate'}
+                </button>
+                {showAdvancedMedicineFields && (
+                  <div className="add-medicine-advanced">
+                    <label htmlFor="medicineForm">Formă farmaceutică:</label>
+                    <input
+                      id="medicineForm"
+                      type="text"
+                      placeholder="Ex: comprimate, sirop..."
+                      value={newMedicineForm}
+                      onChange={(e) => setNewMedicineForm(e.target.value)}
+                      className="add-medicine-input"
+                    />
+                    <label htmlFor="medicineSubstance">Substanță activă:</label>
+                    <input
+                      id="medicineSubstance"
+                      type="text"
+                      placeholder="Ex: paracetamol"
+                      value={newMedicineSubstance}
+                      onChange={(e) => setNewMedicineSubstance(e.target.value)}
+                      className="add-medicine-input"
+                    />
+                    <label htmlFor="medicineAtc">Cod ATC:</label>
+                    <input
+                      id="medicineAtc"
+                      type="text"
+                      placeholder="Ex: N02BE01"
+                      value={newMedicineAtc}
+                      onChange={(e) => setNewMedicineAtc(e.target.value)}
+                      className="add-medicine-input"
+                    />
+                    <label htmlFor="medicinePrescription">Mod de prescriere:</label>
+                    <input
+                      id="medicinePrescription"
+                      type="text"
+                      placeholder="Ex: rețetă simplă"
+                      value={newMedicinePrescription}
+                      onChange={(e) => setNewMedicinePrescription(e.target.value)}
+                      className="add-medicine-input"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3793,7 +4202,7 @@ etc.`
                 Anulează
               </button>
               <button className="add-medicine-save-button" onClick={addCustomMedicine}>
-                Salvează
+                {editingUserMedicine ? 'Actualizează' : 'Salvează'}
               </button>
             </div>
           </div>
@@ -3945,6 +4354,23 @@ etc.`
                     >
                       📋 Vizualizare istoric
                     </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        marginTop: '10px'
+                      }}
+                    >
+                      🗑️ Șterge contul meu
+                    </button>
                   </div>
                 )}
               </div>
@@ -3957,6 +4383,40 @@ etc.`
                 style={{ width: '100%' }}
               >
                 Închide
+              </button>
+            </div>
+          </div>
+        </div>
+          )}
+
+          {/* Modal pentru status cont */}
+          {showAccountStatusModal && (
+            <div className="new-patient-modal-overlay" onClick={() => setShowAccountStatusModal(false)}>
+          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="new-patient-modal-header">
+              <div className="new-patient-modal-icon">ℹ️</div>
+              <h3>{accountStatusTitle}</h3>
+              <button 
+                className="new-patient-modal-close"
+                onClick={() => setShowAccountStatusModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="new-patient-modal-body">
+              <div style={{ padding: '20px', whiteSpace: 'pre-line' }}>
+                {accountStatusMessage}
+              </div>
+            </div>
+
+            <div className="new-patient-modal-footer">
+              <button 
+                className="new-patient-confirm-button"
+                onClick={() => setShowAccountStatusModal(false)}
+                style={{ width: '100%' }}
+              >
+                OK
               </button>
             </div>
           </div>
@@ -4111,7 +4571,11 @@ etc.`
                       console.log('✅ [FRONTEND] Login reușit!')
                     } else {
                       console.log('❌ [FRONTEND] Eroare la login:', data.error)
-                      setLoginError(data.error || 'Eroare la autentificare')
+                      if (data.code === 'ACCOUNT_DELETED') {
+                        setLoginError(data.error)
+                      } else {
+                        setLoginError(data.error || 'Eroare la autentificare')
+                      }
                     }
                   } catch (error) {
                     console.error('❌ [FRONTEND] Eroare la login:', error)
@@ -4476,7 +4940,13 @@ etc.`
                       }
                     } else {
                       console.log('❌ [FRONTEND] Eroare la signup:', data.error)
-                      setSignUpError(data.error || 'Eroare la crearea contului')
+                      if (data.code === 'ACCOUNT_DELETED') {
+                        setSignUpError('')
+                        setRecoverError('')
+                        setShowRecoverModal(true)
+                      } else {
+                        setSignUpError(data.error || 'Eroare la crearea contului')
+                      }
                     }
                   } catch (error) {
                     console.error('❌ [FRONTEND] Eroare la signup:', error)
@@ -4516,6 +4986,87 @@ etc.`
                   </div>
                 </div>
               </div>
+          )}
+
+          {/* Modal pentru recuperare cont șters */}
+          {showRecoverModal && (
+            <div
+              className="new-patient-modal-overlay"
+              onClick={() => {
+                setShowRecoverModal(false)
+                setRecoverError('')
+              }}
+            >
+              <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="new-patient-modal-header">
+                  <div className="new-patient-modal-icon">🧭</div>
+                  <h3>Cont șters detectat</h3>
+                  <button 
+                    className="new-patient-modal-close"
+                    onClick={() => {
+                      setShowRecoverModal(false)
+                      setRecoverError('')
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="new-patient-modal-body">
+                  <div style={{ padding: '20px' }}>
+                    <p style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
+                      Email-ul <strong>{signUpEmail}</strong> are un cont șters.
+                    </p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                      Poți restaura contul vechi sau poți crea un cont nou de la zero pe același email.
+                    </p>
+                  </div>
+                </div>
+
+                {recoverError && (
+                  <div style={{
+                    padding: '12px',
+                    margin: '0 20px 15px 20px',
+                    background: '#fee2e2',
+                    border: '1px solid #fca5a5',
+                    borderRadius: '8px',
+                    color: '#dc2626',
+                    fontSize: '14px'
+                  }}>
+                    {recoverError}
+                  </div>
+                )}
+
+                <div className="new-patient-modal-footer">
+                  <button
+                    className="new-patient-confirm-button"
+                    onClick={() => handleRecoverAccount('restore')}
+                    disabled={recoverLoading}
+                    style={{ width: '100%', marginBottom: '10px' }}
+                  >
+                    {recoverLoading ? 'Se procesează...' : 'Restaurează contul'}
+                  </button>
+                  <button
+                    className="new-patient-cancel-button"
+                    onClick={() => handleRecoverAccount('new')}
+                    disabled={recoverLoading}
+                    style={{ width: '100%', marginBottom: '10px' }}
+                  >
+                    Cont nou (de la zero)
+                  </button>
+                  <button
+                    className="new-patient-cancel-button"
+                    onClick={() => {
+                      setShowRecoverModal(false)
+                      setRecoverError('')
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    Anulează
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Admin Panel */}
