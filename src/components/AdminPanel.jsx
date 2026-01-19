@@ -3,13 +3,13 @@ import './MedicinesTable.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
-const AdminPanel = ({ currentUser, onClose }) => {
+const AdminPanel = ({ currentUser, onClose, isFullPage = false, onLogout }) => {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('toate') // 'toate', 'pending', 'approved', 'rejected', 'istoric'
   const [actionLoading, setActionLoading] = useState(null)
-  const [deletedCount, setDeletedCount] = useState(0)
+  const [deletedRequests, setDeletedRequests] = useState([])
   const [selectedUser, setSelectedUser] = useState(null) // Utilizatorul selectat pentru vizualizare rețete
   const [userPrescriptions, setUserPrescriptions] = useState([])
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false)
@@ -18,11 +18,8 @@ const AdminPanel = ({ currentUser, onClose }) => {
     try {
       setLoading(true)
       setError('')
-      const status = activeTab === 'toate' ? '' : activeTab === 'istoric' ? '' : activeTab
-      const showDeleted = activeTab === 'istoric' ? 'true' : 'false'
-      const url = `${API_BASE_URL}/api/admin/requests?userId=${currentUser.id}${status ? `&status=${status}` : ''}&showDeleted=${showDeleted}`
-      
-      console.log('📋 [FRONTEND] Fetching requests:', { activeTab, showDeleted, url })
+      const url = `${API_BASE_URL}/api/admin/requests?userId=${currentUser.id}&showDeleted=false`
+      console.log('📋 [FRONTEND] Fetching requests:', { activeTab, url })
       
       const response = await fetch(url)
       const data = await response.json()
@@ -50,27 +47,27 @@ const AdminPanel = ({ currentUser, onClose }) => {
     }
   }
 
+  const fetchDeletedRequests = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/requests?userId=${currentUser.id}&showDeleted=true`)
+      const data = await response.json()
+      if (response.ok) {
+        setDeletedRequests(data.requests || [])
+      }
+    } catch (err) {
+      console.error('Eroare la încărcarea conturilor șterse:', err)
+    }
+  }
+
   useEffect(() => {
     if (currentUser?.id) {
       fetchRequests()
     }
-  }, [activeTab, currentUser])
+  }, [currentUser])
 
-  // Încarcă numărul de conturi șterse
   useEffect(() => {
-    const fetchDeletedCount = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/requests?userId=${currentUser.id}&showDeleted=true`)
-        const data = await response.json()
-        if (response.ok) {
-          setDeletedCount(data.requests?.length || 0)
-        }
-      } catch (err) {
-        console.error('Eroare la încărcarea numărului de conturi șterse:', err)
-      }
-    }
     if (currentUser?.id) {
-      fetchDeletedCount()
+      fetchDeletedRequests()
     }
   }, [currentUser])
 
@@ -202,6 +199,7 @@ const AdminPanel = ({ currentUser, onClose }) => {
       
       // Reîncarcă lista
       await fetchRequests()
+      await fetchDeletedRequests()
       alert('Cont șters cu succes! Poți vedea conturile șterse în tab-ul "Istoric".')
     } catch (err) {
       console.error('Eroare la ștergere cont:', err)
@@ -230,6 +228,7 @@ const AdminPanel = ({ currentUser, onClose }) => {
       
       // Reîncarcă lista
       await fetchRequests()
+      await fetchDeletedRequests()
       alert('Cont restaurat cu succes!')
     } catch (err) {
       console.error('Eroare la restaurare cont:', err)
@@ -338,259 +337,169 @@ const AdminPanel = ({ currentUser, onClose }) => {
     { id: 'pending', label: 'În așteptare', count: requests.filter(r => r.status === 'pending').length },
     { id: 'approved', label: 'Aprobate', count: requests.filter(r => r.status === 'approved').length },
     { id: 'rejected', label: 'Respinse', count: requests.filter(r => r.status === 'rejected').length },
-    { id: 'istoric', label: 'Istoric (Șterse)', count: deletedCount, isHistory: true }
+    { id: 'istoric', label: 'Șterse', count: deletedRequests.length, isHistory: true }
   ]
 
   const filteredRequests = activeTab === 'toate' 
     ? requests 
     : activeTab === 'istoric'
-    ? requests // Pentru istoric, toate request-urile sunt deja filtrate de backend
+    ? deletedRequests
     : requests.filter(r => r.status === activeTab)
+
+  const content = (
+    <div className={`admin-panel ${isFullPage ? 'admin-panel-full' : ''}`}>
+      <div className="admin-panel-header">
+        <div>
+          <h2 className="admin-title">Administrare conturi</h2>
+          <p className="admin-subtitle">Monitorizare și aprobări utilizatori</p>
+        </div>
+        <div className="admin-header-actions">
+          {isFullPage ? (
+            <button className="admin-logout-button" onClick={onLogout}>Deconectare</button>
+          ) : (
+            <button className="admin-close-button" onClick={onClose}>✕</button>
+          )}
+        </div>
+      </div>
+
+      <div className="admin-stats-grid">
+        <div className="admin-stat-card">
+          <div className="admin-stat-label">Total conturi</div>
+          <div className="admin-stat-value">{requests.length + deletedRequests.length}</div>
+        </div>
+        <div className="admin-stat-card pending">
+          <div className="admin-stat-label">În așteptare</div>
+          <div className="admin-stat-value">{requests.filter(r => r.status === 'pending').length}</div>
+        </div>
+        <div className="admin-stat-card approved">
+          <div className="admin-stat-label">Aprobate</div>
+          <div className="admin-stat-value">{requests.filter(r => r.status === 'approved').length}</div>
+        </div>
+        <div className="admin-stat-card rejected">
+          <div className="admin-stat-label">Respinse</div>
+          <div className="admin-stat-value">{requests.filter(r => r.status === 'rejected').length}</div>
+        </div>
+        <div className="admin-stat-card deleted">
+          <div className="admin-stat-label">Șterse</div>
+          <div className="admin-stat-value">{deletedRequests.length}</div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="admin-error">{error}</div>
+      )}
+
+      <div className="admin-tabs">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
+          >
+            {tab.label} <span className="admin-tab-count">{tab.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="admin-loading">Se încarcă...</div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="admin-empty">
+          {activeTab === 'istoric' 
+            ? 'Nu există conturi șterse.' 
+            : `Nu există cereri${activeTab !== 'toate' ? ` cu status "${activeTab}"` : ''}.`}
+        </div>
+      ) : (
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Nume</th>
+                <th>Email</th>
+                <th>Data înregistrării</th>
+                <th>Status</th>
+                {activeTab === 'istoric' && <th>Data ștergerii</th>}
+                <th>Acțiuni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRequests.map(request => (
+                <tr key={request.id} className={activeTab === 'istoric' ? 'muted' : ''}>
+                  <td>{request.nume}</td>
+                  <td>{request.email}</td>
+                  <td>{formatDate(request.data_creare)}</td>
+                  <td>{getStatusBadge(request.status)}</td>
+                  {activeTab === 'istoric' && (
+                    <td>{formatDate(request.deleted_at)}</td>
+                  )}
+                  <td>
+                    <div className="admin-actions">
+                      {activeTab === 'istoric' && request.deleted_at && (
+                        <button
+                          onClick={() => handleRestoreUser(request.id)}
+                          disabled={actionLoading === request.id}
+                          className="admin-action-button info"
+                        >
+                          {actionLoading === request.id ? '⏳' : 'Restaurează'}
+                        </button>
+                      )}
+                      {request.status !== 'approved' && activeTab !== 'istoric' && (
+                        <button
+                          onClick={() => handleChangeStatus(request.id, 'approved')}
+                          disabled={actionLoading === request.id}
+                          className="admin-action-button success"
+                        >
+                          {actionLoading === request.id ? '⏳' : 'Aprobă'}
+                        </button>
+                      )}
+                      {request.status !== 'rejected' && activeTab !== 'istoric' && (
+                        <button
+                          onClick={() => handleChangeStatus(request.id, 'rejected')}
+                          disabled={actionLoading === request.id}
+                          className="admin-action-button danger"
+                        >
+                          {actionLoading === request.id ? '⏳' : 'Respinge'}
+                        </button>
+                      )}
+                      {request.status !== 'pending' && activeTab !== 'istoric' && (
+                        <button
+                          onClick={() => handleChangeStatus(request.id, 'pending')}
+                          disabled={actionLoading === request.id}
+                          className="admin-action-button warning"
+                        >
+                          {actionLoading === request.id ? '⏳' : 'În așteptare'}
+                        </button>
+                      )}
+                      {activeTab !== 'istoric' && (
+                        <button
+                          onClick={() => handleDeleteUser(request.id)}
+                          disabled={actionLoading === request.id}
+                          className="admin-action-button danger-outline"
+                        >
+                          {actionLoading === request.id ? '⏳' : 'Șterge'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+
+  if (isFullPage) {
+    return <div className="admin-dashboard">{content}</div>
+  }
 
   return (
     <div className="new-patient-modal-overlay" onClick={onClose}>
       <div className="new-patient-modal-content admin-panel-content" onClick={(e) => e.stopPropagation()}>
-        <div className="new-patient-modal-header">
-          <h2>🔐 Panou Management - Cereri Conturi</h2>
-          <button 
-            className="close-button"
-            onClick={onClose}
-            style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {error && (
-          <div style={{ 
-            padding: '12px', 
-            margin: '10px 0', 
-            background: '#fee', 
-            color: '#c33', 
-            borderRadius: '4px' 
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '10px', 
-          marginBottom: '20px',
-          borderBottom: '2px solid #e0e0e0'
-        }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                background: activeTab === tab.id ? '#3a6ad6' : 'transparent',
-                color: activeTab === tab.id ? 'white' : '#666',
-                cursor: 'pointer',
-                borderBottom: activeTab === tab.id ? '3px solid #3a6ad6' : '3px solid transparent',
-                fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                transition: 'all 0.2s'
-              }}
-            >
-              {tab.label} ({tab.count})
-            </button>
-          ))}
-        </div>
-
-        {/* Lista cereri */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div>⏳ Se încarcă...</div>
-          </div>
-        ) : filteredRequests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            {activeTab === 'istoric' 
-              ? 'Nu există conturi șterse în istoric' 
-              : `Nu există cereri ${activeTab !== 'toate' ? `cu status "${activeTab}"` : ''}`}
-          </div>
-        ) : (
-          <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Nume</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Email</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Data înregistrării</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
-                  {activeTab === 'istoric' && <th style={{ padding: '12px', textAlign: 'left' }}>Data ștergerii</th>}
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Acțiuni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.map(request => {
-                  const currentRole = request.is_admin === 1 ? 'admin' : 'user'
-                  return (
-                  <tr key={request.id} style={{ borderBottom: '1px solid #eee', opacity: activeTab === 'istoric' ? 0.7 : 1 }}>
-                    <td style={{ padding: '12px' }}>{request.nume}</td>
-                    <td style={{ padding: '12px' }}>{request.email}</td>
-                    <td style={{ padding: '12px' }}>{formatDate(request.data_creare)}</td>
-                    <td style={{ padding: '12px' }}>
-                      {getStatusBadge(request.status)}
-                    </td>
-                    {activeTab === 'istoric' && (
-                      <td style={{ padding: '12px', color: '#dc3545' }}>
-                        {formatDate(request.deleted_at)}
-                      </td>
-                    )}
-                    <td style={{ padding: '12px' }}>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        {/* Pentru conturile șterse, afișează buton de restaurare */}
-                        {activeTab === 'istoric' && request.deleted_at && (
-                          <button
-                            onClick={() => handleRestoreUser(request.id)}
-                            disabled={actionLoading === request.id}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#17a2b8',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                              opacity: actionLoading === request.id ? 0.6 : 1,
-                              fontSize: '12px'
-                            }}
-                            title="Restaurează cont"
-                          >
-                            {actionLoading === request.id ? '⏳' : '♻️'} Restaurează
-                          </button>
-                        )}
-                        {/* Buton pentru aprobare - doar pentru conturile active */}
-                        {request.status !== 'approved' && activeTab !== 'istoric' && (
-                          <button
-                            onClick={() => handleChangeStatus(request.id, 'approved')}
-                            disabled={actionLoading === request.id}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#4caf50',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                              opacity: actionLoading === request.id ? 0.6 : 1,
-                              fontSize: '12px'
-                            }}
-                            title="Aprobă cont"
-                          >
-                            {actionLoading === request.id ? '⏳' : '✅'} Aprobă
-                          </button>
-                        )}
-                        {/* Buton pentru respingere - doar pentru conturile active */}
-                        {request.status !== 'rejected' && activeTab !== 'istoric' && (
-                          <button
-                            onClick={() => handleChangeStatus(request.id, 'rejected')}
-                            disabled={actionLoading === request.id}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#f44336',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                              opacity: actionLoading === request.id ? 0.6 : 1,
-                              fontSize: '12px'
-                            }}
-                            title="Respinge cont"
-                          >
-                            {actionLoading === request.id ? '⏳' : '❌'} Respinge
-                          </button>
-                        )}
-                        {/* Buton pentru pending - doar pentru conturile active */}
-                        {request.status !== 'pending' && activeTab !== 'istoric' && (
-                          <button
-                            onClick={() => handleChangeStatus(request.id, 'pending')}
-                            disabled={actionLoading === request.id}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#ff9800',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                              opacity: actionLoading === request.id ? 0.6 : 1,
-                              fontSize: '12px'
-                            }}
-                            title="Pune în așteptare"
-                          >
-                            {actionLoading === request.id ? '⏳' : '⏳'} În așteptare
-                          </button>
-                        )}
-                        {/* Buton pentru vizualizare rețete - disponibil pentru toate conturile (active și șterse) */}
-                        <button
-                          onClick={() => {
-                            console.log('🔵 [FRONTEND] Click pe buton Rețete:', { 
-                              requestId: request.id, 
-                              requestIdType: typeof request.id,
-                              requestNume: request.nume,
-                              requestEmail: request.email,
-                              fullRequest: request
-                            })
-                            if (!request.id) {
-                              alert('Eroare: ID utilizator lipsă. Te rugăm să reîmprospătezi pagina.')
-                              return
-                            }
-                            handleViewPrescriptions(request.id, request.nume, request.email)
-                          }}
-                          disabled={actionLoading === request.id || !request.id}
-                          style={{
-                            padding: '6px 12px',
-                            background: '#2196F3',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: (actionLoading === request.id || !request.id) ? 'wait' : 'pointer',
-                            opacity: (actionLoading === request.id || !request.id) ? 0.6 : 1,
-                            fontSize: '12px'
-                          }}
-                          title={!request.id ? "ID utilizator lipsă" : "Vezi rețete"}
-                        >
-                          📋 Rețete
-                        </button>
-                        {/* Buton pentru ștergere - doar pentru conturile active */}
-                        {activeTab !== 'istoric' && (
-                          <button
-                            onClick={() => handleDeleteUser(request.id)}
-                            disabled={actionLoading === request.id}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: actionLoading === request.id ? 'wait' : 'pointer',
-                              opacity: actionLoading === request.id ? 0.6 : 1,
-                              fontSize: '12px'
-                            }}
-                            title="Șterge cont"
-                          >
-                            {actionLoading === request.id ? '⏳' : '🗑️'} Șterge
-                          </button>
-                        )}
-                      </div>
-                      {request.status === 'approved' && request.data_aprobare && (
-                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                          Aprobat: {formatDate(request.data_aprobare)}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {content}
       </div>
-
-      {/* Modal pentru vizualizare rețete */}
-      {selectedUser && (
+      {!isFullPage && selectedUser && (
         <div 
           className="new-patient-modal-overlay" 
           onClick={() => setSelectedUser(null)}

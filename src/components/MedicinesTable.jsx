@@ -422,6 +422,20 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     return true
   }, [currentUser])
 
+  const handleLogout = useCallback(() => {
+    // Șterge datele din state când se deconectează
+    setPatientNotes('')
+    setPatientName('')
+    setDoctorNotes('')
+    setSelectedProducts([])
+    setMedicinePlans({})
+    setUserMedicines([])
+    localStorage.removeItem('currentUser')
+    setCurrentUser(null)
+    setShowAdminPanel(false)
+    setShowHistoryPage(false)
+  }, [])
+
   // Când se schimbă utilizatorul, încarcă datele noului utilizator
   useEffect(() => {
     if (currentUser?.id) {
@@ -2509,6 +2523,18 @@ Programează o consultație dacă simptomele persistă`
     return (
       <div className="medicines-container">
         <div className="error">Eroare: {error}</div>
+      </div>
+    )
+  }
+
+  if (isUserAdmin()) {
+    return (
+      <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
+        <AdminPanel
+          currentUser={currentUser}
+          isFullPage
+          onLogout={handleLogout}
+        />
       </div>
     )
   }
