@@ -1707,6 +1707,17 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea produselor selectate
   const handleProductSelect = useCallback((medicine) => {
+    // Verifică autentificarea înainte de a permite adăugarea medicamentelor
+    if (!currentUser) {
+      setShowLoginModal(true)
+      return
+    }
+    
+    // Verifică statusul contului
+    if (!showAccountStatusMessage()) {
+      return
+    }
+    
     setSelectedProducts(prev => {
       const isSelected = prev.some(selected => selected['Cod medicament'] === medicine['Cod medicament'])
       if (isSelected) {
@@ -1715,7 +1726,7 @@ Programează o consultație dacă simptomele persistă`
         return [...prev, medicine]
       }
     })
-  }, [])
+  }, [currentUser, showAccountStatusMessage])
 
   const clearSelectedProducts = useCallback(() => {
     setSelectedProducts([])
@@ -1780,9 +1791,20 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea planurilor de medicamente
   const openPlanModal = useCallback((medicine) => {
+    // Verifică autentificarea înainte de a permite adăugarea planurilor
+    if (!currentUser) {
+      setShowLoginModal(true)
+      return
+    }
+    
+    // Verifică statusul contului
+    if (!showAccountStatusMessage()) {
+      return
+    }
+    
     setSelectedMedicineForPlan(medicine)
     setShowPlanModal(true)
-  }, [])
+  }, [currentUser, showAccountStatusMessage])
 
   const closePlanModal = useCallback(() => {
     setShowPlanModal(false)
@@ -1790,12 +1812,23 @@ Programează o consultație dacă simptomele persistă`
   }, [])
 
   const saveMedicinePlan = useCallback((medicineCode, plan) => {
+    // Verifică autentificarea înainte de a salva planul
+    if (!currentUser) {
+      setShowLoginModal(true)
+      return
+    }
+    
+    // Verifică statusul contului
+    if (!showAccountStatusMessage()) {
+      return
+    }
+    
     setMedicinePlans(prev => ({
       ...prev,
       [medicineCode]: plan
     }))
     closePlanModal()
-  }, [closePlanModal])
+  }, [currentUser, showAccountStatusMessage, closePlanModal])
 
   const removeMedicinePlan = useCallback((medicineCode) => {
     setMedicinePlans(prev => {
@@ -1895,7 +1928,7 @@ Programează o consultație dacă simptomele persistă`
         }))
       }
 
-      closeAddMedicineModal()
+    closeAddMedicineModal()
     } catch (error) {
       console.error('❌ Eroare la salvarea medicamentului personalizat:', error)
       alert(error.message || 'Eroare la salvarea medicamentului')
@@ -2577,7 +2610,20 @@ Programează o consultație dacă simptomele persistă`
               <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
             </svg>
           </button>
-          <button className="sidebar-nav-item" onClick={() => setShowPatientNotes(true)} title="Notițe">
+          <button 
+            className="sidebar-nav-item" 
+            onClick={() => {
+              if (!currentUser) {
+                setShowLoginModal(true)
+                return
+              }
+              if (!showAccountStatusMessage()) {
+                return
+              }
+              setShowPatientNotes(true)
+            }} 
+            title="Notițe"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
@@ -3110,7 +3156,7 @@ Programează o consultație dacă simptomele persistă`
                       <div className="history-card-modal-section">
                         <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
                         <ul className="history-card-list">
-                            {prescription.medicamente.map((med, idx) => (
+                          {prescription.medicamente.map((med, idx) => (
                             <li key={idx} className="history-card-list-item">
                                 {med['Denumire medicament'] || med.denumire_medicament || ''}
                             </li>
@@ -3466,14 +3512,32 @@ etc.`
             <div className="top-navigation-right">
               <button 
                 className="top-navigation-action-btn"
-                onClick={() => setShowPatientNotes(true)}
+                onClick={() => {
+                  if (!currentUser) {
+                    setShowLoginModal(true)
+                    return
+                  }
+                  if (!showAccountStatusMessage()) {
+                    return
+                  }
+                  setShowPatientNotes(true)
+                }}
                 title="Indicații Pacient"
               >
                 Indicații Pacient
               </button>
               <button 
                 className="top-navigation-action-btn"
-                onClick={() => setShowDoctorNotes(true)}
+                onClick={() => {
+                  if (!currentUser) {
+                    setShowLoginModal(true)
+                    return
+                  }
+                  if (!showAccountStatusMessage()) {
+                    return
+                  }
+                  setShowDoctorNotes(true)
+                }}
                 title="Indicații Medic"
               >
                 Indicații Medic
@@ -3494,38 +3558,38 @@ etc.`
                         <circle cx="11" cy="11" r="8"/>
                         <path d="m21 21-4.35-4.35"/>
                       </svg>
-                      <input
-                        type="text"
+        <input
+          type="text"
                         placeholder="Caută după nume, cod sau substanță..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
                         className="medicine-table-search-input"
-                      />
+        />
                     </div>
-                    
+        
                     <div className="medicine-table-actions">
                       {currentUser && currentUser.status === 'approved' && (
                         <>
-                          <button 
+        <button 
                             className="medicine-table-action-btn medicine-table-add-medicine-btn"
                             onClick={openAddMedicineModal}
                             title="Adaugă medicament personalizat"
-                          >
+        >
                             Adaugă medicament
-                          </button>
+        </button>
                           <div className="medicine-table-actions-separator"></div>
                         </>
                       )}
-                      <button 
+        <button 
                         className="medicine-table-action-btn active"
-                        onClick={handleContextMenuClick}
+          onClick={handleContextMenuClick}
                         title="Filtre"
-                      >
+        >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
                         </svg>
-                      </button>
-                      <button 
+        </button>
+          <button 
                         className="medicine-table-action-btn"
                         onClick={() => setShowColumnModal(true)}
                         title="Coloane"
@@ -3536,9 +3600,9 @@ etc.`
                           <rect x="14" y="14" width="7" height="7"/>
                           <rect x="3" y="14" width="7" height="7"/>
                         </svg>
-                      </button>
-                    </div>
-                  </div>
+          </button>
+          </div>
+          </div>
 
                   {/* Filtre orizontale */}
                   {defaultAgeCategories.length > 0 && (
@@ -3550,11 +3614,11 @@ etc.`
                         FILTRE:
                       </div>
 
-                      {/* Categorii de vârstă */}
+              {/* Categorii de vârstă */}
                       <div className="medicine-table-filter-group">
                         {defaultAgeCategories.map(category => (
-                          <button
-                            key={category.id}
+                    <button
+                      key={category.id}
                             className={`medicine-table-filter-pill ${localAgeCategory === category.id ? 'active' : ''}`}
                             onClick={() => {
                               const newCategory = localAgeCategory === category.id ? 'toate' : category.id
@@ -3563,41 +3627,41 @@ etc.`
                             }}
                           >
                             {category.isSpecial ? category.percentage : category.label}
-                          </button>
-                        ))}
-                      </div>
+                    </button>
+                  ))}
+              </div>
 
                       <div className="medicine-table-filter-separator"></div>
-
-                      {/* Categorii de compensare */}
+              
+              {/* Categorii de compensare */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div className="medicine-table-filters-label">
                           COMPENSARE:
                         </div>
                         <div className="medicine-table-filter-group">
-                          {compensationCategories.map(category => (
-                          <button
-                            key={category.id}
+                  {compensationCategories.map(category => (
+                    <button
+                      key={category.id}
                             className={`medicine-table-filter-pill compensation ${selectedCompensationCategory === category.id ? 'active' : ''}`}
-                            onClick={() => setSelectedCompensationCategory(category.id)}
-                          >
+                      onClick={() => setSelectedCompensationCategory(category.id)}
+                    >
                             {category.isSpecial ? category.percentage : (
                               <>
                                 {category.percentage}
-                                {category.pieValue && (
-                                  <div className="pie-chart-container">
-                                    {generatePieChart(category.pieValue)}
-                                  </div>
+                      {category.pieValue && (
+                        <div className="pie-chart-container">
+                          {generatePieChart(category.pieValue)}
+                        </div>
                                 )}
                               </>
-                            )}
-                          </button>
-                        ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
+                    </button>
+                  ))}
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
 
                 {/* Table Content */}
                 <div className={`medicine-table-content items-${itemsPerPage}`}>
@@ -3730,61 +3794,61 @@ etc.`
                 })}
               </tbody>
             </table>
-                </div>
+          </div>
 
                 {/* Table Footer */}
                 <div className="medicine-table-footer">
                   <span className="medicine-table-footer-info">
                     Se afișează {startIndex + 1}-{Math.min(startIndex + (itemsPerPage === 'All' ? sortedMedicines.length : itemsPerPage), sortedMedicines.length)} din {sortedMedicines.length} rezultate
                   </span>
-                  
-                  {itemsPerPage !== 'All' && (
+
+          {itemsPerPage !== 'All' && (
                     <div className="medicine-table-footer-pagination">
-                      <button 
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
                         className="medicine-table-pagination-btn"
-                      >
+              >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="15 18 9 12 15 6"/>
                         </svg>
-                      </button>
+              </button>
                       <div className="medicine-table-pagination-info">
-                        {isEditingPage ? (
-                          <input
-                            type="text"
+              {isEditingPage ? (
+                <input
+                  type="text"
                             className="medicine-table-pagination-input"
-                            value={pageInputValue}
-                            onChange={handlePageInputChange}
-                            onKeyPress={handlePageInputKeyPress}
-                            onBlur={handlePageInputBlur}
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          <span 
+                  value={pageInputValue}
+                  onChange={handlePageInputChange}
+                  onKeyPress={handlePageInputKeyPress}
+                  onBlur={handlePageInputBlur}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span 
                             className="medicine-table-pagination-text"
-                            onClick={handlePageClick}
-                            style={{ cursor: 'pointer' }}
-                          >
+                  onClick={handlePageClick}
+                  style={{ cursor: 'pointer' }}
+                >
                             Pagina {currentPage} / {totalPages}
-                          </span>
-                        )}
+                </span>
+              )}
                       </div>
-                      <button 
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
                         className="medicine-table-pagination-btn"
-                      >
+              >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="9 18 15 12 9 6"/>
                         </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              </button>
             </div>
+          )}
+            </div>
+              </div>
+        </div>
 
         {/* Coloana dreaptă - REȚETĂ ACTIVĂ */}
         <div className="selected-products-column">
@@ -3801,9 +3865,9 @@ etc.`
                 </svg>
                 <h3>LISTA MEDICAMENTE ({selectedProducts.length})</h3>
               </div>
-              <button 
+                <button 
                 className="prescription-panel-print-btn"
-                onClick={clearSelectedProducts}
+                    onClick={clearSelectedProducts}
                 title="Șterge toate medicamentele"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3812,9 +3876,9 @@ etc.`
                   <line x1="10" y1="11" x2="10" y2="17"/>
                   <line x1="14" y1="11" x2="14" y2="17"/>
                 </svg>
-              </button>
+                  </button>
             </div>
-
+            
             {/* Content Scrollable */}
             <div className="prescription-panel-content">
               {selectedProducts.length === 0 ? (
@@ -3847,7 +3911,7 @@ etc.`
                               <line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                           </button>
-                        </div>
+                      </div>
                         {product['Cod medicament'] && (
                           <div className="prescription-medicine-code">
                             <span className="prescription-medicine-code-label">Cod:</span>
@@ -3877,7 +3941,7 @@ etc.`
                                 </span>
                               )
                             })()}
-                          </div>
+                      </div>
                         )}
                         <div className="prescription-medicine-plan">
                           <button 
@@ -3920,12 +3984,12 @@ etc.`
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
 
                 </>
               )}
             </div>
-
+            
             {/* Footer */}
             <div className="prescription-panel-footer">
               <button 
@@ -3939,7 +4003,7 @@ etc.`
           </div>
           </div>
 
-      {/* Previzualizare rețetă - overlay în aplicație */}
+          {/* Previzualizare rețetă - overlay în aplicație */}
           {isCheckoutOpen && (
             <div className="checkout-overlay" onClick={handleCheckoutBack}>
           <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
@@ -4689,7 +4753,7 @@ etc.`
                       if (data.code === 'ACCOUNT_DELETED') {
                         setLoginError(data.error)
                       } else {
-                        setLoginError(data.error || 'Eroare la autentificare')
+                      setLoginError(data.error || 'Eroare la autentificare')
                       }
                     }
                   } catch (error) {
@@ -5060,7 +5124,7 @@ etc.`
                         setRecoverError('')
                         setShowRecoverModal(true)
                       } else {
-                        setSignUpError(data.error || 'Eroare la crearea contului')
+                      setSignUpError(data.error || 'Eroare la crearea contului')
                       }
                     }
                   } catch (error) {
@@ -5179,9 +5243,9 @@ etc.`
                   >
                     Anulează
                   </button>
+                  </div>
                 </div>
               </div>
-            </div>
           )}
 
           {/* Admin Panel */}
