@@ -74,6 +74,24 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [skipFadeAnimation, setSkipFadeAnimation] = useState(false)
   const [diseases, setDiseases] = useState({})
   const [selectedCompensationCategory, setSelectedCompensationCategory] = useState('toate')
+  const [localAgeCategory, setLocalAgeCategory] = useState(ageCategory || 'toate')
+  
+  // Sincronizează localAgeCategory când se schimbă prop-ul ageCategory
+  useEffect(() => {
+    if (ageCategory !== undefined) {
+      setLocalAgeCategory(ageCategory)
+    }
+  }, [ageCategory])
+  
+  // Definirea categoriilor de vârstă dacă nu sunt transmise ca prop
+  const defaultAgeCategories = ageCategories && ageCategories.length > 0 ? ageCategories : [
+    { id: 'toate', label: 'Toate' },
+    { id: 'copii', label: 'Copii' },
+    { id: 'adolescenti', label: 'Adolescenți' },
+    { id: 'tineri', label: 'Tineri' },
+    { id: 'adulti', label: 'Adulți' },
+    { id: 'batrani', label: 'Bătrâni' }
+  ]
   const [showPatientNotes, setShowPatientNotes] = useState(false)
   const [patientNotes, setPatientNotes] = useState('')
   const [patientName, setPatientName] = useState('')
@@ -110,6 +128,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [pageInputValue, setPageInputValue] = useState('')
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [showStatsModal, setShowStatsModal] = useState(false)
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showSignUpModal, setShowSignUpModal] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
@@ -1080,9 +1099,10 @@ Programează o consultație dacă simptomele persistă`
     let filtered = medicines
 
     // Aplică filtrarea pe bază de categorie de vârstă folosind coloana CategorieVarsta
-    if (ageCategory && ageCategory !== 'toate') {
+    const activeAgeCategory = localAgeCategory || ageCategory
+    if (activeAgeCategory && activeAgeCategory !== 'toate') {
       filtered = filtered.filter(medicine => {
-        const categorieVarsta = medicine['CategorieVarsta'] || ''
+        const categorieVarsta = (medicine['CategorieVarsta'] || '').toString().trim()
         
         // Mapare între ID-ul categoriei și valoarea din CSV
         const categoryMap = {
@@ -1093,12 +1113,13 @@ Programează o consultație dacă simptomele persistă`
           'batrani': 'Bătrâni'
         }
         
-        const categoryValue = categoryMap[ageCategory]
+        const categoryValue = categoryMap[activeAgeCategory]
         if (!categoryValue) return false
         
         // Verifică dacă categoria selectată apare în CategorieVarsta
         // (poate fi "Copii", "Adolescenți+Tineri", "Adulți+Bătrâni", etc.)
-        return categorieVarsta.includes(categoryValue)
+        // Folosim toLowerCase pentru a face comparația case-insensitive
+        return categorieVarsta.toLowerCase().includes(categoryValue.toLowerCase())
       })
     }
 
@@ -1183,7 +1204,7 @@ Programează o consultație dacă simptomele persistă`
     })
 
     return filtered
-  }, [medicines, searchTerm, filters, ageCategory, ageCategoryData, selectedCompensationCategory])
+  }, [medicines, searchTerm, filters, localAgeCategory, ageCategory, ageCategoryData, selectedCompensationCategory])
 
   // Datele nu mai sunt sortate - se folosesc direct datele filtrate
   const sortedMedicines = filteredMedicines
@@ -2544,6 +2565,107 @@ Programează o consultație dacă simptomele persistă`
   // #endregion
   return (
     <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
+      {/* Sidebar stânga - Navigare */}
+      <aside className="left-sidebar">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">🏥</div>
+        </div>
+
+        <nav className="sidebar-nav">
+          <button className="sidebar-nav-item active" title="Medicamente">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+            </svg>
+          </button>
+          <button className="sidebar-nav-item" onClick={() => setShowPatientNotes(true)} title="Notițe">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button 
+            className="sidebar-theme-toggle"
+            onClick={() => setIsNightMode(prev => !prev)}
+            title={isNightMode ? 'Comută la modul zi' : 'Comută la modul noapte'}
+          >
+            {isNightMode ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
+          <div className="sidebar-avatar-wrapper">
+            <button 
+              className="sidebar-avatar"
+              onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+              title="Cont"
+              aria-label="Cont"
+            >
+              {currentUser ? (
+                <div className="sidebar-avatar-initials">
+                  {(currentUser.nume || currentUser.name) ? (currentUser.nume || currentUser.name).charAt(0).toUpperCase() : 'U'}
+                </div>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              )}
+            </button>
+            
+            {showAvatarMenu && (
+              <>
+                <div 
+                  className="sidebar-avatar-menu-overlay"
+                  onClick={() => setShowAvatarMenu(false)}
+                />
+                <div className="sidebar-avatar-menu">
+                  <button
+                    className="sidebar-avatar-menu-item"
+                    onClick={() => {
+                      setShowStatsModal(true)
+                      setShowAvatarMenu(false)
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m8.48 0l-4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m8.48 0l-4.24-4.24"/>
+                    </svg>
+                    Setări
+                  </button>
+                  {currentUser && (
+                    <button
+                      className="sidebar-avatar-menu-item sidebar-avatar-menu-item--danger"
+                      onClick={() => {
+                        handleLogout()
+                        setShowAvatarMenu(false)
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                      </svg>
+                      Deconectare
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Content principal */}
+      <div className="main-content-wrapper">
       {/* Pagina de istoric rețete */}
       {showHistoryPage && (
         <div className={`history-page-container ${expandedCardId ? 'blurred' : ''}`}>
@@ -3019,43 +3141,7 @@ Programează o consultație dacă simptomele persistă`
                 🔐 Management
               </button>
             )}
-            {currentUser ? (
-              <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            padding: '8px 16px',
-            background: 'rgba(26, 60, 124, 0.1)',
-            borderRadius: '6px',
-            border: '1px solid rgba(26, 60, 124, 0.3)'
-          }}>
-            <span style={{ fontSize: '12px', color: '#1a3c7c', fontWeight: '500' }}>
-              👤 {currentUser.nume}
-            </span>
-            <button 
-              className="auth-button"
-              onClick={() => {
-                // Șterge datele din state când se deconectează
-                setPatientNotes('')
-                setPatientName('')
-                setDoctorNotes('')
-                setSelectedProducts([])
-                setMedicinePlans({})
-                localStorage.removeItem('currentUser')
-                setCurrentUser(null)
-              }}
-              style={{
-                padding: '4px 12px',
-                fontSize: '11px',
-                background: '#dc2626',
-                color: 'white',
-                border: '1px solid #dc2626'
-              }}
-            >
-              Deconectare
-            </button>
-              </div>
-            ) : (
+            {!currentUser && (
               <>
             <button 
               className="auth-button login-button"
@@ -3081,111 +3167,6 @@ Programează o consultație dacă simptomele persistă`
         )}
           </div>
 
-          {/* Buton Pacient Nou - în colțul din dreapta sus */}
-          <div className="new-patient-button-container">
-        <button
-          type="button"
-          className={`theme-toggle-button ${isNightMode ? 'theme-toggle-button--night' : ''}`}
-          onClick={() => setIsNightMode(prev => !prev)}
-          aria-label={isNightMode ? 'Comută la modul zi' : 'Comută la modul noapte'}
-          aria-pressed={isNightMode}
-        >
-          <span className={`theme-icon ${isNightMode ? 'theme-icon--moon' : 'theme-icon--sun'}`}></span>
-        </button>
-        <button 
-          className="stats-button"
-          onClick={() => setShowStatsModal(true)}
-          title="Stări aplicație"
-          aria-label="Stări aplicație"
-        >
-          ⚙️
-        </button>
-        {currentUser && (
-          <button 
-            className="new-patient-button"
-            onClick={openNewPatientModal}
-          >
-            🆕 Pacient nou
-          </button>
-        )}
-          </div>
-
-          {/* Butoane Indicații - vizibile pentru toți utilizatorii autentificați */}
-          {currentUser && (
-            <div className="notes-buttons-container">
-          <button 
-            className="patient-notes-button"
-            onClick={() => {
-              if (!showAccountStatusMessage()) {
-                return
-              }
-              setShowPatientNotes(!showPatientNotes)
-            }}
-          >
-            📝 Indicații Pacient
-          </button>
-          <button 
-            className="doctor-notes-button"
-            onClick={async () => {
-              // Verifică statusul contului
-              if (!showAccountStatusMessage()) {
-                return
-              }
-              // Deschide modalul direct
-              setShowDoctorNotes(!showDoctorNotes)
-              
-              // Verifică dacă există nume pacient
-              if (!patientName || patientName.trim() === '') {
-                console.log('⚠️ Nu există nume pacient - nu se generează sfaturi AI')
-                setAiAdvice([{ 
-                  icon: '⚠️', 
-                  text: 'Te rugăm să introduci numele pacientului înainte de a genera sfaturi AI.' 
-                }])
-                setIsLoadingAI(false)
-                return
-              }
-              
-              // Verifică dacă există indicații pacient și generează sfaturi AI
-              if (patientNotes && patientNotes.trim() !== '') {
-                console.log('🔍 Verifică indicațiile pacientului:', patientNotes)
-                setIsLoadingAI(true)
-                setAiAdvice([]) // Șterge sfaturile vechi
-                
-                try {
-                  console.log('🤖 Încep generarea sfaturilor AI...')
-                  const newAdvice = await generateAIAdvice(patientNotes)
-                  console.log('✅ Sfaturi AI generate:', newAdvice)
-                  
-                  if (newAdvice && newAdvice.length > 0) {
-                    setAiAdvice(newAdvice)
-                    console.log(`✅ ${newAdvice.length} sfaturi AI afișate`)
-                  } else {
-                    console.warn('⚠️ Nu s-au generat sfaturi AI (array gol)')
-                    setAiAdvice([{ 
-                      icon: '⚠️', 
-                      text: 'Nu s-au putut genera sfaturi AI. Verifică configurația API sau încearcă din nou.' 
-                    }])
-                  }
-                } catch (error) {
-                  console.error('❌ Eroare la generarea sfaturilor AI:', error)
-                  setAiAdvice([{ 
-                    icon: '❌', 
-                    text: `Eroare la generarea sfaturilor AI: ${error.message || 'Eroare necunoscută'}` 
-                  }])
-                } finally {
-                  setIsLoadingAI(false)
-                }
-              } else {
-                console.log('⚠️ Nu există indicații pacient - afișez mesaj informativ')
-                setAiAdvice([])
-                setIsLoadingAI(false)
-              }
-            }}
-          >
-            👨‍⚕️ Indicații Medic
-          </button>
-            </div>
-          )}
 
 
           {/* Zona de notițe pentru pacient */}
@@ -3465,127 +3446,161 @@ etc.`
           </div>
           )}
 
-          <div className="search-container">
-        <input
-          type="text"
-          placeholder="Caută..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
-        
-        <button 
-          className="column-toggle-button"
-          onClick={() => setShowColumnModal(true)}
-        >
-          ⚙️
-        </button>
-        <button 
-          className="substance-filter-toggle-button"
-          onClick={handleContextMenuClick}
-        >
-          🔬
-        </button>
-        {activeFilterColumns.length > 0 && (
-          <button 
-            className="clear-all-filters-button"
-            onClick={clearAllFilters}
-          >
-            🗑️ Șterge filtrele
-          </button>
-        )}
-        <div className="items-per-page">
-          <label htmlFor="itemsPerPage">Elemente pe pagină:</label>
-          <select
-            id="itemsPerPage"
-            value={itemsPerPage}
-            onChange={(e) => handleItemsPerPageChange(e.target.value === 'All' ? 'All' : parseInt(e.target.value))}
-            className="items-per-page-select"
-          >
-            <option value={5}>5</option>
-            <option value={6}>6</option>
-            <option value={7}>7</option>
-            <option value={8}>8</option>
-            <option value={9}>9</option>
-            <option value={10}>10</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-            <option value="All">Toate</option>
-          </select>
-          </div>
-          </div>
-
-          {/* Layout cu trei coloane */}
-          <div className="main-content-layout">
-        {/* Coloana stângă - Filtre */}
-        <div className="filters-column">
-          {/* Categorii de vârstă și compensare */}
-          {ageCategories.length > 0 && (
-            <div className="categories-section">
-              {/* Categorii de vârstă */}
-              <div className="age-categories-column">
-                <h4 className="filter-section-title">📋 Categorii de vârstă</h4>
-                <div className="categories-grid">
-                  {ageCategories.map(category => (
-                    <button
-                      key={category.id}
-                      className={`category-btn age-category-btn ${ageCategory === category.id ? 'active' : ''}`}
-                      onClick={() => onCategoryChange(category.id)}
-                    >
-                      {category.isSpecial ? (
-                        <div className="category-info">
-                          <span className="category-label" style={{fontSize: '1rem', fontWeight: '700'}}>{category.percentage}</span>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="category-icon">{category.icon}</span>
-                          <div className="category-info">
-                            <span className="category-label">{category.label}</span>
-                            <span className="category-description">{category.description}</span>
-                          </div>
-                        </>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Categorii de compensare */}
-              <div className="compensation-categories-column">
-                <h4 className="filter-section-title">💰 Categorii de compensare</h4>
-                <div className="categories-grid">
-                  {compensationCategories.map(category => (
-                    <button
-                      key={category.id}
-                      className={`category-btn compensation-category-btn ${selectedCompensationCategory === category.id ? 'active' : ''}`}
-                      onClick={() => setSelectedCompensationCategory(category.id)}
-                    >
-                      <div className="category-info">
-                        {category.isSpecial ? (
-                          <span className="category-label" style={{fontSize: '1rem', fontWeight: '700'}}>{category.percentage}</span>
-                        ) : (
-                          <>
-                            <span className="category-label">{category.percentage}</span>
-                            <span className="category-description">{category.description}</span>
-                          </>
-                        )}
-                      </div>
-                      {category.pieValue && (
-                        <div className="pie-chart-container">
-                          {generatePieChart(category.pieValue)}
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+          {/* Top Navigation */}
+          <div className="top-navigation">
+            <div className="top-navigation-left">
+              <h1 className="top-navigation-title">MedAI</h1>
+              <div className="top-navigation-meta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>{new Date().toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span className="top-navigation-separator">|</span>
+                <span>{currentUser ? `Dr. ${currentUser.nume || currentUser.name || 'Utilizator'}` : 'Utilizator'}</span>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Coloana dreaptă - Tabelul de medicamente */}
-        <div className="table-column">
-          <div className={`table-container items-${itemsPerPage}`}>
+            <div className="top-navigation-right">
+              <button 
+                className="top-navigation-action-btn"
+                onClick={() => setShowPatientNotes(true)}
+                title="Indicații Pacient"
+              >
+                Indicații Pacient
+              </button>
+              <button 
+                className="top-navigation-action-btn"
+                onClick={() => setShowDoctorNotes(true)}
+                title="Indicații Medic"
+              >
+                Indicații Medic
+              </button>
+            </div>
+          </div>
+
+          {/* Layout cu două coloane - Table și Cart */}
+          <div className="main-content-layout">
+            {/* Coloana stângă - Tabelul de medicamente */}
+            <div className="table-column">
+              <div className="medicine-table-card">
+                {/* Header Table cu Search și Filtre */}
+                <div className="medicine-table-header">
+                  <div className="medicine-table-search-section">
+                    <div className="medicine-table-search-wrapper">
+                      <svg className="medicine-table-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Caută după nume, cod sau substanță..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="medicine-table-search-input"
+                      />
+                    </div>
+                    
+                    <div className="medicine-table-actions">
+                      {currentUser && currentUser.status === 'approved' && (
+                        <>
+                          <button 
+                            className="medicine-table-action-btn medicine-table-add-medicine-btn"
+                            onClick={openAddMedicineModal}
+                            title="Adaugă medicament personalizat"
+                          >
+                            Adaugă medicament
+                          </button>
+                          <div className="medicine-table-actions-separator"></div>
+                        </>
+                      )}
+                      <button 
+                        className="medicine-table-action-btn active"
+                        onClick={handleContextMenuClick}
+                        title="Filtre"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                        </svg>
+                      </button>
+                      <button 
+                        className="medicine-table-action-btn"
+                        onClick={() => setShowColumnModal(true)}
+                        title="Coloane"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="7" height="7"/>
+                          <rect x="14" y="3" width="7" height="7"/>
+                          <rect x="14" y="14" width="7" height="7"/>
+                          <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filtre orizontale */}
+                  {defaultAgeCategories.length > 0 && (
+                    <div className="medicine-table-filters">
+                      <div className="medicine-table-filters-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                        </svg>
+                        FILTRE:
+                      </div>
+
+                      {/* Categorii de vârstă */}
+                      <div className="medicine-table-filter-group">
+                        {defaultAgeCategories.map(category => (
+                          <button
+                            key={category.id}
+                            className={`medicine-table-filter-pill ${localAgeCategory === category.id ? 'active' : ''}`}
+                            onClick={() => {
+                              const newCategory = localAgeCategory === category.id ? 'toate' : category.id
+                              setLocalAgeCategory(newCategory)
+                              onCategoryChange(newCategory)
+                            }}
+                          >
+                            {category.isSpecial ? category.percentage : category.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="medicine-table-filter-separator"></div>
+
+                      {/* Categorii de compensare */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div className="medicine-table-filters-label">
+                          COMPENSARE:
+                        </div>
+                        <div className="medicine-table-filter-group">
+                          {compensationCategories.map(category => (
+                          <button
+                            key={category.id}
+                            className={`medicine-table-filter-pill compensation ${selectedCompensationCategory === category.id ? 'active' : ''}`}
+                            onClick={() => setSelectedCompensationCategory(category.id)}
+                          >
+                            {category.isSpecial ? category.percentage : (
+                              <>
+                                {category.percentage}
+                                {category.pieValue && (
+                                  <div className="pie-chart-container">
+                                    {generatePieChart(category.pieValue)}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </button>
+                        ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Table Content */}
+                <div className={`medicine-table-content items-${itemsPerPage}`}>
             <table className="medicines-table">
               <thead>
                 <tr>
@@ -3621,10 +3636,15 @@ etc.`
                       </td>
                     {headers.map((header, headerIndex) => {
                       const isNameColumn = header === 'Denumire medicament'
+                      const isCompensationColumn = header === 'Lista de compensare'
+                      const isCodeColumn = header === 'Cod medicament'
+                      const isSubstanceColumn = header === 'Substanta activa'
+                      
                       return (
                         <td 
                           key={headerIndex}
                           className={isNameColumn ? 'medicine-name-cell' : undefined}
+                          style={isCodeColumn ? { textAlign: 'right' } : isCompensationColumn ? { textAlign: 'center' } : {}}
                         >
                           {header === 'Coduri_Boli' ? (
                             <div className="diseases-cell">
@@ -3636,42 +3656,69 @@ etc.`
                             </div>
                           ) : isNameColumn ? (
                             <div className="medicine-name-container">
-                              <span className="medicine-name">
-                                {medicine[header]}
-                                {isUserMedicine && medicine['Concentratie'] && medicine['Concentratie'] !== 'N/A'
-                                  ? ` ${medicine['Concentratie']}`
-                                  : ''}
-                              </span>
+                              <div className="medicine-name-wrapper">
+                                <span className="medicine-name">
+                                  {medicine[header]}
+                                  {isUserMedicine && medicine['Concentratie'] && medicine['Concentratie'] !== 'N/A'
+                                    ? ` ${medicine['Concentratie']}`
+                                    : ''}
+                                </span>
+                              </div>
+                              {isCodeColumn && medicine['Cod medicament'] && (
+                                <span className="medicine-code-mono">{medicine['Cod medicament']}</span>
+                              )}
                               {isUserMedicine && (
-                                <>
-                                  <span className="custom-medicine-badge">Personal</span>
-                                  <div className="custom-medicine-actions">
-                                    <button
-                                      type="button"
-                                      className="custom-medicine-action-button"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleEditUserMedicine(userMedicineId)
-                                      }}
-                                    >
-                                      Editează
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="custom-medicine-action-button delete"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteUserMedicine(userMedicineId)
-                                      }}
-                                    >
-                                      Șterge
-                                    </button>
-                                  </div>
-                                </>
+                                <div className="custom-medicine-actions">
+                                  <button
+                                    type="button"
+                                    className="custom-medicine-action-button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleEditUserMedicine(userMedicineId)
+                                    }}
+                                  >
+                                    Editează
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="custom-medicine-action-button delete"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeleteUserMedicine(userMedicineId)
+                                    }}
+                                  >
+                                    Șterge
+                                  </button>
+                                </div>
                               )}
                             </div>
-                          ) : header === 'Cod medicament' && isUserMedicine ? (
+                          ) : isCompensationColumn ? (
+                            medicine[header] && medicine[header] !== 'N/A' ? (
+                              (() => {
+                                const lista = medicine[header].toUpperCase()
+                                let badgeClass = 'badge-blue'
+                                if (lista === 'A') {
+                                  badgeClass = 'badge-blue'
+                                } else if (lista === 'B') {
+                                  badgeClass = 'badge-amber'
+                                } else if (lista === 'C1' || lista === 'C2' || lista === 'C3') {
+                                  badgeClass = 'badge-emerald'
+                                } else if (lista === 'C') {
+                                  badgeClass = 'badge-amber'
+                                } else if (lista === 'D') {
+                                  badgeClass = 'badge-red'
+                                }
+                                return (
+                                  <span className={`medicine-compensation-badge ${badgeClass}`}>
+                                    Lista {medicine[header]}
+                                  </span>
+                                )
+                              })()
+                            ) : null
+                          ) : isCodeColumn && isUserMedicine ? (
                             'N/A'
+                          ) : isSubstanceColumn ? (
+                            <span className="medicine-substance-text">{medicine[header]}</span>
                           ) : (
                             medicine[header]
                           )}
@@ -3683,114 +3730,168 @@ etc.`
                 })}
               </tbody>
             </table>
-          </div>
-
-          {itemsPerPage !== 'All' && (
-            <div className="pagination">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="pagination-button"
-              >
-                Anterior
-              </button>
-              
-              {isEditingPage ? (
-                <input
-                  type="text"
-                  className="pagination-info-input"
-                  value={pageInputValue}
-                  onChange={handlePageInputChange}
-                  onKeyPress={handlePageInputKeyPress}
-                  onBlur={handlePageInputBlur}
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <span 
-                  className="pagination-info"
-                  onClick={handlePageClick}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {currentPage}/{totalPages}
-                </span>
-              )}
-              
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="pagination-button"
-              >
-                Următor
-              </button>
-            </div>
-          )}
-
-          {itemsPerPage === 'All' && (
-            <div className="pagination">
-              <span className="pagination-info">
-                Afișate toate {sortedMedicines.length} elemente
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Coloana dreaptă - Produse selectate */}
-        <div className="selected-products-column">
-          <div className="selected-products-section">
-            <div className="selected-products-header">
-              <h4 className="filter-section-title">Lista Medicamente</h4>
-              <div className="selected-products-header-buttons">
-                <button 
-                  className="add-medicine-button"
-                  onClick={openAddMedicineModal}
-                >
-                  ➕
-                </button>
-                {selectedProducts.length > 0 && (
-                  <button 
-                    className="clear-selected-products-button"
-                    onClick={clearSelectedProducts}
-                  >
-                    🗑️
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            <div className="selected-products-list">
-              {selectedProducts.length === 0 ? (
-                <div className="no-selected-products">
-                  <p>Nu ai selectat încă niciun produs.</p>
-                  <p>Click pe un medicament din tabel pentru a-l adăuga aici.</p>
                 </div>
-              ) : (
-                selectedProducts.map((product, index) => (
-                  <div key={product['Cod medicament']} className="selected-product-item">
-                    <div className="selected-product-info">
-                      <div className="selected-product-name">
-                        {product['Denumire medicament']}
-                      </div>
-                      <div className="selected-product-details">
-                        <span className="selected-product-code">
-                          Cod: {product['Cod medicament']}
-                        </span>
-                        {product['Lista de compensare'] && (
-                          <span className="selected-product-compensation">
-                            Compensare: {getCompensationPercentage(product['Lista de compensare'])}
+
+                {/* Table Footer */}
+                <div className="medicine-table-footer">
+                  <span className="medicine-table-footer-info">
+                    Se afișează {startIndex + 1}-{Math.min(startIndex + (itemsPerPage === 'All' ? sortedMedicines.length : itemsPerPage), sortedMedicines.length)} din {sortedMedicines.length} rezultate
+                  </span>
+                  
+                  {itemsPerPage !== 'All' && (
+                    <div className="medicine-table-footer-pagination">
+                      <button 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="medicine-table-pagination-btn"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                      </button>
+                      <div className="medicine-table-pagination-info">
+                        {isEditingPage ? (
+                          <input
+                            type="text"
+                            className="medicine-table-pagination-input"
+                            value={pageInputValue}
+                            onChange={handlePageInputChange}
+                            onKeyPress={handlePageInputKeyPress}
+                            onBlur={handlePageInputBlur}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span 
+                            className="medicine-table-pagination-text"
+                            onClick={handlePageClick}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            Pagina {currentPage} / {totalPages}
                           </span>
                         )}
                       </div>
-                      <div className="selected-product-plan-section">
-                        <div className="plan-display-container">
+                      <button 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="medicine-table-pagination-btn"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+        {/* Coloana dreaptă - REȚETĂ ACTIVĂ */}
+        <div className="selected-products-column">
+          <div className="prescription-panel">
+            {/* Header */}
+            <div className="prescription-panel-header">
+              <div className="prescription-panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <h3>LISTA MEDICAMENTE ({selectedProducts.length})</h3>
+              </div>
+              <button 
+                className="prescription-panel-print-btn"
+                onClick={clearSelectedProducts}
+                title="Șterge toate medicamentele"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Content Scrollable */}
+            <div className="prescription-panel-content">
+              {selectedProducts.length === 0 ? (
+                <div className="prescription-empty-state">
+                  <div className="empty-cart-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+                    </svg>
+                  </div>
+                  <h4 className="empty-cart-title">Rețeta este goală</h4>
+                  <p className="empty-cart-description">
+                    Selectează medicamente din tabel pentru a le adăuga în rețetă
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Selected Medicines List */}
+                  <div className="prescription-medicines-list">
+                    {selectedProducts.map((product, index) => (
+                      <div key={product['Cod medicament']} className="prescription-medicine-item">
+                        <div className="prescription-medicine-header">
+                          <span className="prescription-medicine-name">{product['Denumire medicament']}</span>
                           <button 
-                            className="plan-medicine-button"
+                            className="prescription-medicine-remove"
+                            onClick={() => removeSelectedProduct(product['Cod medicament'])}
+                            title="Șterge medicament"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18"/>
+                              <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
+                        {product['Cod medicament'] && (
+                          <div className="prescription-medicine-code">
+                            <span className="prescription-medicine-code-label">Cod:</span>
+                            <span className="prescription-medicine-code-value">{product['Cod medicament']}</span>
+                          </div>
+                        )}
+                        {product['Lista de compensare'] && product['Lista de compensare'] !== 'N/A' && (
+                          <div className="prescription-medicine-compensation">
+                            {(() => {
+                              const lista = product['Lista de compensare'].toUpperCase()
+                              let badgeClass = 'badge-blue'
+                              if (lista === 'A') {
+                                badgeClass = 'badge-blue'
+                              } else if (lista === 'B') {
+                                badgeClass = 'badge-amber'
+                              } else if (lista === 'C1' || lista === 'C2' || lista === 'C3') {
+                                badgeClass = 'badge-emerald'
+                              } else if (lista === 'C') {
+                                badgeClass = 'badge-amber'
+                              } else if (lista === 'D') {
+                                badgeClass = 'badge-red'
+                              }
+                              const percentage = getCompensationPercentage(product['Lista de compensare'])
+                              return (
+                                <span className={`medicine-compensation-badge ${badgeClass}`}>
+                                  Compensare: {percentage}
+                                </span>
+                              )
+                            })()}
+                          </div>
+                        )}
+                        <div className="prescription-medicine-plan">
+                          <button 
+                            className="prescription-medicine-plan-btn"
                             onClick={() => openPlanModal(product)}
                           >
-                            📋 Plan
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10"/>
+                              <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            Plan
                           </button>
                           {medicinePlans[product['Cod medicament']] && (
-                            <div className="saved-plan-display">
+                            <div className="prescription-medicine-plan-display">
                               {(() => {
                                 const plan = medicinePlans[product['Cod medicament']]
                                 const parts = []
@@ -3801,10 +3902,8 @@ etc.`
                                 
                                 if (plan.frequency) {
                                   if (plan.isCustomFrequency) {
-                                    // Dacă e personalizare, afișează direct valoarea cu "ori pe zi"
                                     parts.push(`${plan.frequency} ori pe zi`)
                                   } else {
-                                    // Dacă e selecție predefinită, folosește maparea
                                     parts.push(getFrequencyText(plan.frequency))
                                   }
                                 }
@@ -3820,37 +3919,27 @@ etc.`
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="selected-product-actions">
-                      <button 
-                        className="remove-selected-product-button"
-                        onClick={() => removeSelectedProduct(product['Cod medicament'])}
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))
+
+                </>
               )}
             </div>
-            
-            <div className="selected-products-summary">
-              <p className="selected-products-summary-text">
-                Total produse selectate: <strong>{selectedProducts.length}</strong>
-              </p>
+
+            {/* Footer */}
+            <div className="prescription-panel-footer">
               <button 
-                className="download-selected-products-button download-selected-products-button--compact"
+                className="prescription-finalize-btn"
                 onClick={handleFinalize}
-                title="Descarcă lista de medicamente selectate"
               >
-                Finalizare
+                FINALIZARE REȚETĂ
               </button>
             </div>
           </div>
           </div>
           </div>
 
-          {/* Previzualizare rețetă - overlay în aplicație */}
+      {/* Previzualizare rețetă - overlay în aplicație */}
           {isCheckoutOpen && (
             <div className="checkout-overlay" onClick={handleCheckoutBack}>
           <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
@@ -5104,6 +5193,7 @@ etc.`
           )}
         </>
       )}
+      </div>
       {/* #region agent log */}
       {(() => { fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:4514',message:'MedicinesTable return completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{}); return null; })()}
       {/* #endregion */}
