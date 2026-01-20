@@ -13,7 +13,7 @@ const sqlite = sqlite3.verbose();
 
 const DB_DIR = path.join(__dirname, 'data');
 const DB_PATH = path.join(DB_DIR, 'medicamente.db');
-const CSV_PATH = path.join(process.cwd(), 'counter-app', 'public', 'medicamente_cnas.csv');
+const CSV_PATH = path.join(process.cwd(), 'public', 'medicamente_cu_boli_COMPLET.csv');
 const PORT = process.env.PORT || 3001;
 
 if (!fs.existsSync(DB_DIR)) {
@@ -220,6 +220,8 @@ const mapRow = (row) => {
       row,
       'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv'
     ),
+    categorie_varsta: normalizeField(row, 'CategorieVarsta'),
+    coduri_boli: normalizeField(row, 'Coduri_Boli'),
   };
 };
 
@@ -247,8 +249,10 @@ const seedFromCsv = async () =>
       pret_max_ut,
       contributie_max_100,
       contributie_max_90_50_20,
-      contributie_max_pensionari_90
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      contributie_max_pensionari_90,
+      categorie_varsta,
+      coduri_boli
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     let processed = 0;
     const stmt = db.prepare(insertSql);
@@ -277,6 +281,8 @@ const seedFromCsv = async () =>
             mapped.contributie_max_100,
             mapped.contributie_max_90_50_20,
             mapped.contributie_max_pensionari_90,
+            mapped.categorie_varsta,
+            mapped.coduri_boli,
           ],
           (err) => {
             if (err) {

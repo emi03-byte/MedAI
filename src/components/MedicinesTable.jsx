@@ -672,6 +672,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
         row.contributie_max_90_50_20 || '',
       'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv':
         row.contributie_max_pensionari_90 || '',
+      'CategorieVarsta': row.categorie_varsta || '',
+      'Coduri_Boli': row.coduri_boli || '',
     }
   }
 
@@ -1219,6 +1221,16 @@ Programează o consultație dacă simptomele persistă`
   useEffect(() => {
     setCurrentPage(1)
   }, [itemsPerPage])
+
+  // Reset la pagina 1 când se schimbă categoria de vârstă
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [localAgeCategory, ageCategory])
+
+  // Reset la pagina 1 când se schimbă categoria de compensare
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCompensationCategory])
 
   // Reset la pagina 1 când începi să scrii în bara de căutare
   useEffect(() => {
@@ -2583,52 +2595,61 @@ Programează o consultație dacă simptomele persistă`
       {/* Sidebar stânga - Navigare */}
       <aside className="left-sidebar">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">🏥</div>
+          <div className="sidebar-logo-icon">&#x1F3E5;</div>
         </div>
 
         <nav className="sidebar-nav">
           <button className="sidebar-nav-item active" title="Medicamente">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+              <path d="M12 8v13"></path>
+              <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
+              <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
             </svg>
           </button>
-          <button 
-            className="sidebar-nav-item" 
-            onClick={() => {
-              if (!showAccountStatusMessage()) {
-                return
-              }
-              setShowPatientNotes(true)
-            }} 
-            title="Notițe"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
-          </button>
+          {currentUser && (
+            <button 
+              className="sidebar-nav-item" 
+              onClick={() => {
+                if (!showAccountStatusMessage()) {
+                  return
+                }
+                setShowPatientNotes(true)
+              }} 
+              title="Notițe"
+            >
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-footer">
           {/* Buton Chat - în sidebar pentru ambele moduri */}
-          <button 
-            className="chat-button chat-button-sidebar"
-            onClick={() => {
-              // Deschide chat-ul - trigger event pentru ChatBot
-              window.dispatchEvent(new CustomEvent('openChatBot'))
-            }}
-            title="Asistent AI Medical"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              <line x1="9" y1="10" x2="15" y2="10"></line>
-              <line x1="9" y1="14" x2="13" y2="14"></line>
-            </svg>
-          </button>
-          <button 
+          {currentUser && (
+            <div
+              className="chat-button chat-button-sidebar"
+              onClick={() => {
+                // Deschide chat-ul - trigger event pentru ChatBot
+                window.dispatchEvent(new CustomEvent('openChatBot'))
+              }}
+              title="Asistent AI Medical"
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <line x1="9" y1="10" x2="15" y2="10"></line>
+                <line x1="9" y1="14" x2="13" y2="14"></line>
+              </svg>
+            </div>
+          )}
+          <div 
             className="sidebar-theme-toggle"
             onClick={() => setIsNightMode(prev => !prev)}
             title={isNightMode ? 'Comută la modul zi' : 'Comută la modul noapte'}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}
           >
             {isNightMode ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2640,7 +2661,7 @@ Programează o consultație dacă simptomele persistă`
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
               </svg>
             )}
-          </button>
+          </div>
           <div className="sidebar-avatar-wrapper">
             <button 
               className="sidebar-avatar"
@@ -3479,30 +3500,34 @@ etc.`
             </div>
 
             <div className="top-navigation-right">
-              <button 
-                className="top-navigation-action-btn"
-                onClick={() => {
-                  if (!showAccountStatusMessage()) {
-                    return
-                  }
-                  setShowPatientNotes(true)
-                }}
-                title="Indicații Pacient"
-              >
-                Indicații Pacient
-              </button>
-              <button 
-                className="top-navigation-action-btn"
-                onClick={() => {
-                  if (!showAccountStatusMessage()) {
-                    return
-                  }
-                  setShowDoctorNotes(true)
-                }}
-                title="Indicații Medic"
-              >
-                Indicații Medic
-              </button>
+              {currentUser && (
+                <>
+                  <button 
+                    className="top-navigation-action-btn"
+                    onClick={() => {
+                      if (!showAccountStatusMessage()) {
+                        return
+                      }
+                      setShowPatientNotes(true)
+                    }}
+                    title="Indicații Pacient"
+                  >
+                    Indicații Pacient
+                  </button>
+                  <button 
+                    className="top-navigation-action-btn"
+                    onClick={() => {
+                      if (!showAccountStatusMessage()) {
+                        return
+                      }
+                      setShowDoctorNotes(true)
+                    }}
+                    title="Indicații Medic"
+                  >
+                    Indicații Medic
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -3562,6 +3587,27 @@ etc.`
                           <rect x="3" y="14" width="7" height="7"/>
                         </svg>
           </button>
+          {/* Buton ștergere filtre - apare doar când sunt filtre active */}
+          {(() => {
+            const hasActiveFilters = Object.keys(filters).some(column => 
+              filters[column] && Object.values(filters[column]).some(value => value === true)
+            )
+            return hasActiveFilters && (
+              <>
+                <div className="medicine-table-actions-separator"></div>
+                <button 
+                  className="medicine-table-action-btn medicine-table-clear-filters-btn"
+                  onClick={() => {
+                    clearAllFilters()
+                    setSearchTerms({})
+                  }}
+                  title="Șterge toate filtrele"
+                >
+                  Șterge filtre
+                </button>
+              </>
+            )
+          })()}
           </div>
           </div>
 
@@ -4451,6 +4497,40 @@ etc.`
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
                   Gestionează informațiile contului tău, vezi statusul aprobării și accesează istoricul rețetelor tale.
                 </p>
+                {!currentUser && (
+                  <div style={{ marginTop: '20px' }}>
+                    <button
+                      onClick={() => {
+                        setShowStatsModal(false)
+                        setShowLoginModal(true)
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: '#2a2a2a',
+                        color: '#e5e5e5',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        marginTop: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#333333'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#2a2a2a'
+                      }}
+                    >
+                      🔐 Conectare
+                    </button>
+                  </div>
+                )}
                 {currentUser && (
                   <div style={{ marginTop: '20px' }}>
                     <button
@@ -4517,7 +4597,21 @@ etc.`
               <button 
                 className="new-patient-confirm-button"
                 onClick={() => setShowStatsModal(false)}
-                style={{ width: '100%' }}
+                style={{ 
+                  width: '100%',
+                  background: '#2a2a2a',
+                  color: '#e5e5e5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#333333'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#2a2a2a'
+                }}
               >
                 Închide
               </button>
@@ -4635,21 +4729,49 @@ etc.`
 
           {/* Modal pentru Login */}
           {showLoginModal && (
-            <div className="new-patient-modal-overlay" onClick={() => setShowLoginModal(false)}>
+            <div className="new-patient-modal-overlay" onClick={() => {
+              setShowLoginModal(false)
+              setLoginEmail('')
+              setLoginPassword('')
+              setLoginError('')
+              setShowLoginPassword(false)
+            }}>
           <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
               <div className="new-patient-modal-icon">🔐</div>
               <h3>Autentificare</h3>
               <button 
                 className="new-patient-modal-close"
-                onClick={() => setShowLoginModal(false)}
+                onClick={() => {
+                  setShowLoginModal(false)
+                  setLoginEmail('')
+                  setLoginPassword('')
+                  setLoginError('')
+                  setShowLoginPassword(false)
+                }}
               >
                 ✕
               </button>
             </div>
-            
-            <div className="new-patient-modal-body">
-              <div style={{ padding: '20px' }}>
+
+            <div className="new-patient-modal-body" style={{ paddingTop: loginError ? '0' : undefined }}>
+              {loginError && (
+                <div style={{
+                  padding: '0 16px 8px 16px',
+                  margin: '0',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: '0',
+                  color: '#dc2626',
+                  fontSize: '14px',
+                  textAlign: 'center',
+                  lineHeight: '1.4',
+                  width: '100%'
+                }}>
+                  {loginError}
+                </div>
+              )}
+              <div style={{ padding: loginError ? '0 20px 10px 20px' : '10px 20px' }}>
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ 
                     display: 'block', 
@@ -4727,20 +4849,6 @@ etc.`
                 </div>
               </div>
             </div>
-
-            {loginError && (
-              <div style={{
-                padding: '12px',
-                margin: '0 20px 15px 20px',
-                background: '#fee2e2',
-                border: '1px solid #fca5a5',
-                borderRadius: '8px',
-                color: '#dc2626',
-                fontSize: '14px'
-              }}>
-                {loginError}
-              </div>
-            )}
             <div className="new-patient-modal-footer">
               <button 
                 className="new-patient-confirm-button"
@@ -4792,7 +4900,7 @@ etc.`
                     setLoginError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
                   }
                 }}
-                style={{ width: '100%', marginBottom: '15px' }}
+                style={{ width: '100%', marginBottom: '10px', padding: '0.625rem 1.25rem', fontSize: '0.8125rem', fontWeight: '500' }}
               >
                 Autentificare
               </button>
@@ -4807,6 +4915,10 @@ etc.`
                 <button
                   onClick={() => {
                     setShowLoginModal(false)
+                    setLoginEmail('')
+                    setLoginPassword('')
+                    setLoginError('')
+                    setShowLoginPassword(false)
                     setShowSignUpModal(true)
                   }}
                   style={{
@@ -4910,21 +5022,57 @@ etc.`
 
           {/* Modal pentru Sign Up */}
           {showSignUpModal && (
-            <div className="new-patient-modal-overlay" onClick={() => setShowSignUpModal(false)}>
+            <div className="new-patient-modal-overlay" onClick={() => {
+              setShowSignUpModal(false)
+              setSignUpName('')
+              setSignUpEmail('')
+              setSignUpPassword('')
+              setSignUpConfirmPassword('')
+              setSignUpError('')
+              setShowSignUpPassword(false)
+              setShowSignUpConfirmPassword(false)
+            }}>
               <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="new-patient-modal-header">
                   <div className="new-patient-modal-icon">📝</div>
                   <h3>Înregistrare</h3>
                   <button 
                     className="new-patient-modal-close"
-                    onClick={() => setShowSignUpModal(false)}
+                    onClick={() => {
+                      setShowSignUpModal(false)
+                      setSignUpName('')
+                      setSignUpEmail('')
+                      setSignUpPassword('')
+                      setSignUpConfirmPassword('')
+                      setSignUpError('')
+                      setShowSignUpPassword(false)
+                      setShowSignUpConfirmPassword(false)
+                    }}
                   >
                     ✕
                   </button>
                 </div>
-                
-                <div className="new-patient-modal-body">
-                  <div style={{ padding: '20px' }}>
+            
+            <div className="new-patient-modal-body" style={{ paddingTop: signUpError ? '0' : undefined }}>
+              {signUpError && (
+                <div style={{
+                  padding: '0 16px 8px 16px',
+                  margin: '0',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: '0',
+                  color: '#dc2626',
+                  fontSize: '14px',
+                  textAlign: 'center',
+                  lineHeight: '1.4',
+                  width: '100%',
+                  marginTop: '0',
+                  marginBottom: '0'
+                }}>
+                  {signUpError}
+                </div>
+              )}
+                  <div style={{ padding: signUpError ? '0 20px 10px 20px' : '10px 20px', marginTop: signUpError ? '0' : undefined }}>
                     <div style={{ marginBottom: '20px' }}>
                   <label style={{ 
                     display: 'block', 
@@ -5077,20 +5225,6 @@ etc.`
                 </div>
               </div>
             </div>
-
-            {signUpError && (
-              <div style={{
-                padding: '12px',
-                margin: '0 20px 15px 20px',
-                background: '#fee2e2',
-                border: '1px solid #fca5a5',
-                borderRadius: '8px',
-                color: '#dc2626',
-                fontSize: '14px'
-              }}>
-                {signUpError}
-              </div>
-            )}
             <div className="new-patient-modal-footer">
               <button 
                 className="new-patient-confirm-button"
@@ -5168,7 +5302,7 @@ etc.`
                     setSignUpError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
                   }
                 }}
-                style={{ width: '100%', marginBottom: '15px' }}
+                style={{ width: '100%', marginBottom: '10px', padding: '0.625rem 1.25rem', fontSize: '0.8125rem', fontWeight: '500' }}
               >
                 Înregistrează-te
               </button>
@@ -5183,6 +5317,13 @@ etc.`
                 <button
                   onClick={() => {
                     setShowSignUpModal(false)
+                    setSignUpName('')
+                    setSignUpEmail('')
+                    setSignUpPassword('')
+                    setSignUpConfirmPassword('')
+                    setSignUpError('')
+                    setShowSignUpPassword(false)
+                    setShowSignUpConfirmPassword(false)
                     setShowLoginModal(true)
                   }}
                   style={{

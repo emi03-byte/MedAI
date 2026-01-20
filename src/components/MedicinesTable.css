@@ -9,6 +9,19 @@ body.med-ai-dark {
   color: #e2e8f0;
 }
 
+/* Elimină conturul albastru pentru toate butoanele */
+button:focus,
+button:active,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .medicines-container {
   --background-card: #ffffff;
   --background-light: #f5f5f5;
@@ -246,18 +259,19 @@ body.med-ai-dark {
 .sidebar-logo-icon {
   width: 40px;
   height: 40px;
-  background: var(--primary-color);
+  background: transparent;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+  filter: grayscale(0%) brightness(1);
+  transition: filter 0.2s ease;
 }
 
 .medicines-container.dark-mode .sidebar-logo-icon {
-  background: #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: transparent;
+  filter: grayscale(0%) brightness(1.1);
 }
 
 .sidebar-nav {
@@ -284,6 +298,12 @@ body.med-ai-dark {
   cursor: pointer;
 }
 
+.sidebar-nav-item.active svg,
+.sidebar-nav-item svg {
+  width: 56px !important;
+  height: 56px !important;
+}
+
 .sidebar-nav-item:hover {
   color: #525252;
   background: #f5f5f5;
@@ -300,12 +320,16 @@ body.med-ai-dark {
 
 .sidebar-nav-item.active {
   color: var(--primary-color);
-  background: rgba(2, 132, 199, 0.1);
+  background: #2a2a2a;
+  border: none;
+  box-shadow: none;
 }
 
 .medicines-container.dark-mode .sidebar-nav-item.active {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-color);
+  background: #1a1a1a;
+  border: none;
+  box-shadow: none;
 }
 
 .sidebar-nav-item.active::before {
@@ -315,13 +339,13 @@ body.med-ai-dark {
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
-  height: 32px;
+  height: 40px;
   background: var(--primary-color);
   border-radius: 0 2px 2px 0;
 }
 
 .medicines-container.dark-mode .sidebar-nav-item.active::before {
-  background: #3b82f6;
+  background: var(--primary-color);
 }
 
 .sidebar-footer {
@@ -336,76 +360,70 @@ body.med-ai-dark {
 .sidebar-theme-toggle {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #334155;
-  background: white;
-  border: 1.5px solid #cbd5e1;
+  background: transparent;
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  position: relative;
+  padding: 0;
+  margin: 0;
 }
 
-.sidebar-theme-toggle::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(2, 132, 199, 0.02));
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
+/* Light mode - iconița de lună */
 .sidebar-theme-toggle:hover {
-  color: var(--primary-color);
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+  color: #000000;
+}
+
+.sidebar-theme-toggle:hover svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   transform: translateY(-1px);
 }
 
-.sidebar-theme-toggle:hover::before {
-  opacity: 1;
-}
-
-.sidebar-theme-toggle:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.15);
+.sidebar-theme-toggle:hover svg path {
+  fill: #000000;
+  stroke: #000000;
 }
 
 .sidebar-theme-toggle svg {
-  position: relative;
-  z-index: 1;
   width: 20px;
   height: 20px;
   flex-shrink: 0;
   color: inherit;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
+  transition: all 0.2s ease;
 }
 
+.sidebar-theme-toggle svg path {
+  fill: none;
+  stroke: currentColor;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode - iconița de soare */
 .medicines-container.dark-mode .sidebar-theme-toggle {
   color: #e5e5e5;
-  background: #252525;
-  border-color: #333333;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.medicines-container.dark-mode .sidebar-theme-toggle::before {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08));
 }
 
 .medicines-container.dark-mode .sidebar-theme-toggle:hover {
-  color: #3b82f6;
-  background: #333333;
-  border-color: #3b82f6;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  color: #f59e0b;
 }
 
-.medicines-container.dark-mode .sidebar-theme-toggle svg {
-  filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.25));
+.medicines-container.dark-mode .sidebar-theme-toggle:hover svg {
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5));
+  transform: translateY(-1px);
+}
+
+.medicines-container.dark-mode .sidebar-theme-toggle:hover svg path {
+  fill: #f59e0b;
+  stroke: #f59e0b;
+}
+
+.medicines-container.dark-mode .sidebar-theme-toggle svg path {
+  fill: none;
+  stroke: currentColor;
+  transition: all 0.2s ease;
 }
 
 .sidebar-avatar {
@@ -974,6 +992,41 @@ code, .mono, .font-mono {
 
 .auth-modal-content {
   max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.auth-modal-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.auth-modal-content .new-patient-modal-header {
+  flex-shrink: 0;
+  padding: 0.75rem 1.5rem;
+}
+
+.auth-modal-content .new-patient-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.auth-modal-content .new-patient-modal-body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.auth-modal-content .new-patient-modal-footer {
+  flex-shrink: 0;
 }
 
 .medicines-container.dark-mode .new-patient-modal-header {
@@ -1046,13 +1099,13 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button {
-  background: var(--primary-color);
-  color: white;
+  background: #1a1a1a;
+  color: #e5e5e5;
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button:hover {
-  background: var(--primary-hover);
-  color: white;
+  background: #2a2a2a;
+  color: #e5e5e5;
 }
 
 /* Dark mode pentru modalul de selecție a coloanelor */
@@ -1740,6 +1793,29 @@ code, .mono, .font-mono {
   color: #3b82f6;
 }
 
+.medicine-table-clear-filters-btn {
+  color: var(--text-primary);
+  background: transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.medicine-table-clear-filters-btn:hover {
+  color: rgba(239, 68, 68, 0.7);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.medicines-container.dark-mode .medicine-table-clear-filters-btn {
+  color: #d1d5db;
+  background: #0f0f0f;
+}
+
+.medicines-container.dark-mode .medicine-table-clear-filters-btn:hover {
+  color: rgba(239, 68, 68, 0.7);
+  background: #0f0f0f;
+}
+
 .medicine-table-add-medicine-btn {
   background: #f5f5f5 !important;
   color: #666666 !important;
@@ -1953,14 +2029,28 @@ code, .mono, .font-mono {
   width: 2rem;
   height: 2rem;
   border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: white;
+  border: 0.5px solid var(--border-color);
+  background: #d1d5db;
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.medicine-table-pagination-btn:focus {
+  outline: none;
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.medicine-table-pagination-btn:active {
+  outline: none;
+  border-color: var(--border-color);
+  box-shadow: none;
 }
 
 .medicine-table-pagination-btn svg {
@@ -1971,8 +2061,9 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .medicine-table-pagination-btn {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1a1a1a;
+  border-color: #333333;
+  border-width: 0.5px;
   color: #94a3b8;
 }
 
@@ -1981,22 +2072,64 @@ code, .mono, .font-mono {
 }
 
 .medicine-table-pagination-btn:hover:not(:disabled) {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  background: rgba(2, 132, 199, 0.05);
+  border-color: var(--border-color);
+  border-width: 0.5px;
+  color: var(--text-primary);
+  background: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.medicine-table-pagination-btn:hover:not(:disabled) svg {
+  color: #000000;
+}
+
+.medicine-table-pagination-btn:active:not(:disabled) {
+  outline: none;
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.medicine-table-pagination-btn:active:not(:disabled) svg {
+  color: #000000;
 }
 
 .medicines-container.dark-mode .medicine-table-pagination-btn:hover:not(:disabled) {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+  border-color: #404040;
+  border-width: 0.5px;
+  color: #ffffff;
+  background: #2a2a2a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.medicines-container.dark-mode .medicine-table-pagination-btn:hover:not(:disabled) svg {
+  color: #ffffff;
+}
+
+.medicines-container.dark-mode .medicine-table-pagination-btn:active:not(:disabled) {
+  outline: none;
+  border-color: #333333;
+  box-shadow: none;
+}
+
+.medicines-container.dark-mode .medicine-table-pagination-btn:active:not(:disabled) svg {
+  color: #ffffff;
+}
+
+.medicines-container.dark-mode .medicine-table-pagination-btn:focus {
+  outline: none;
+  border-color: #333333;
+  box-shadow: none;
 }
 
 .medicine-table-pagination-btn:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
   background: var(--background-light);
   border-color: var(--border-color);
+  border-width: 0.5px;
+  pointer-events: none;
 }
 
 .medicine-table-pagination-info {
@@ -2017,7 +2150,7 @@ code, .mono, .font-mono {
   color: var(--text-primary);
   padding: 0.25rem 0.5rem;
   background: white;
-  border: 1px solid var(--border-color);
+  border: 0.5px solid var(--border-color);
   border-radius: 6px;
   outline: none;
   text-align: center;
@@ -2096,33 +2229,63 @@ code, .mono, .font-mono {
 
 .prescription-panel-print-btn {
   padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: white;
+  border-radius: 0;
+  border: none !important;
+  background: transparent !important;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.prescription-panel-print-btn:focus {
+  border: none !important;
+  background: transparent !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.prescription-panel-print-btn:active {
+  border: none !important;
+  background: transparent !important;
+  outline: none;
+  box-shadow: none !important;
 }
 
 .medicines-container.dark-mode .prescription-panel-print-btn {
-  background: #252525;
-  border-color: #333333;
+  background: transparent !important;
+  border: none !important;
   color: #a3a3a3;
 }
 
+.medicines-container.dark-mode .prescription-panel-print-btn:focus {
+  border: none !important;
+  background: transparent !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.medicines-container.dark-mode .prescription-panel-print-btn:active {
+  border: none !important;
+  background: transparent !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
 .prescription-panel-print-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  background: rgba(2, 132, 199, 0.05);
+  border: none !important;
+  color: rgba(239, 68, 68, 0.7);
+  background: transparent !important;
 }
 
 .medicines-container.dark-mode .prescription-panel-print-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+  border: none !important;
+  color: rgba(239, 68, 68, 0.7);
+  background: transparent !important;
 }
 
 /* Prescription Info Box */
@@ -3068,61 +3231,62 @@ code, .mono, .font-mono {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border: 1px solid;
+  border: none;
+  background: transparent;
 }
 
 .medicine-compensation-badge.badge-emerald {
-  background: rgba(16, 185, 129, 0.1);
+  background: transparent;
   color: #10b981;
-  border-color: rgba(16, 185, 129, 0.2);
+  border: none;
 }
 
 .medicines-container.dark-mode .medicine-compensation-badge.badge-emerald {
-  background: rgba(16, 185, 129, 0.2);
+  background: transparent;
   color: #34d399;
-  border-color: rgba(16, 185, 129, 0.4);
+  border: none;
 }
 
 .medicine-compensation-badge.badge-blue {
-  background: rgba(59, 130, 246, 0.1);
+  background: transparent;
   color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.2);
+  border: none;
 }
 
 .medicines-container.dark-mode .medicine-compensation-badge.badge-blue {
-  background: rgba(59, 130, 246, 0.2);
+  background: transparent;
   color: #60a5fa;
-  border-color: rgba(59, 130, 246, 0.4);
+  border: none;
 }
 
 .medicine-compensation-badge.badge-amber {
-  background: rgba(245, 158, 11, 0.1);
+  background: transparent;
   color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.2);
+  border: none;
 }
 
 .medicines-container.dark-mode .medicine-compensation-badge.badge-amber {
-  background: rgba(245, 158, 11, 0.2);
+  background: transparent;
   color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.4);
+  border: none;
 }
 
 .medicine-compensation-badge.badge-red {
-  background: rgba(239, 68, 68, 0.1);
+  background: transparent;
   color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.2);
+  border: none;
 }
 
 .medicines-container.dark-mode .medicine-compensation-badge.badge-red {
-  background: rgba(239, 68, 68, 0.2);
+  background: transparent;
   color: #f87171;
-  border-color: rgba(239, 68, 68, 0.4);
+  border: none;
 }
 
 /* Medicine Substance Text */
@@ -6624,12 +6788,30 @@ body.med-ai-dark .patient-notes-done-button:hover {
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
 .new-patient-confirm-button:hover {
   background: var(--primary-hover);
   color: white !important;
+}
+
+/* Butoane mai mici și elegante pentru modalul de autentificare */
+.auth-modal-content .new-patient-confirm-button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-height: auto;
+  height: auto;
+}
+
+.auth-modal-content .new-patient-cancel-button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-height: auto;
+  height: auto;
 }
 
 /* ChatBot Styles - Butonul original este ascuns, folosim doar cel din sidebar */
@@ -6660,68 +6842,82 @@ body.med-ai-dark .patient-notes-done-button:hover {
   stroke: white;
 }
 
+/* Override pentru chat-button-sidebar - să nu moștenească stilurile de la chat-button */
+.chat-button-sidebar svg {
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+  fill: none;
+}
+
+.chat-button-sidebar:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: none;
+}
+
 /* Chat Button în Sidebar - pentru ambele moduri */
 .chat-button-sidebar {
   position: static !important;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: white;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin: 0 auto;
   margin-bottom: 1rem;
-  color: #334155;
+  color: #0f172a;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .chat-button-sidebar:hover {
-  color: var(--primary-color);
-  background: white;
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
-  transform: translateY(-1px);
+  color: #000000;
 }
 
 .chat-button-sidebar svg {
   width: 20px;
   height: 20px;
-  color: inherit;
-  stroke: currentColor;
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+  fill: none;
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
 }
 
 .chat-button-sidebar:hover svg {
-  color: inherit;
-  stroke: currentColor;
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transform: translateY(-1px);
 }
 
 /* Dark Mode pentru Chat Button în Sidebar */
 .medicines-container.dark-mode .chat-button-sidebar {
-  background: #252525;
-  border-color: #333333;
   color: #e5e5e5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .medicines-container.dark-mode .chat-button-sidebar:hover {
-  background: #333333;
-  border-color: #3b82f6;
-  color: #3b82f6;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  color: #ffffff;
 }
 
 .medicines-container.dark-mode .chat-button-sidebar svg {
-  color: #e5e5e5;
-  stroke: currentColor;
+  color: #e5e5e5 !important;
+  stroke: #e5e5e5 !important;
+  fill: none;
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
 }
 
 .medicines-container.dark-mode .chat-button-sidebar:hover svg {
-  color: #3b82f6;
-  stroke: currentColor;
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: none;
+  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.3));
+  transform: translateY(-1px);
 }
 
 .chat-modal-overlay {
