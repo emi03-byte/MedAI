@@ -386,6 +386,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
               // Utilizatorul nu mai există, șterge din localStorage
               localStorage.removeItem('currentUser')
               setCurrentUser(null)
+              // Încarcă datele pentru utilizator neautentificat
+              loadUserData(null)
             }
           })
           .catch(() => {
@@ -396,7 +398,13 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       } catch (error) {
         console.error('Eroare la parsarea utilizatorului:', error)
         localStorage.removeItem('currentUser')
+        setCurrentUser(null)
+        // Încarcă datele pentru utilizator neautentificat
+        loadUserData(null)
       }
+    } else {
+      // Nu există utilizator autentificat, încarcă datele pentru utilizator neautentificat
+      loadUserData(null)
     }
   }, [loadUserData])
 
@@ -910,12 +918,11 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
   // Salvează planurile de medicamente în localStorage când se schimbă
   useEffect(() => {
-    if (currentUser?.id) {
-      if (Object.keys(medicinePlans).length > 0) {
-        setStorageItem('medicinePlans', JSON.stringify(medicinePlans), currentUser.id)
-      } else {
-        removeStorageItem('medicinePlans', currentUser.id)
-      }
+    const userId = currentUser?.id || null
+    if (Object.keys(medicinePlans).length > 0) {
+      setStorageItem('medicinePlans', JSON.stringify(medicinePlans), userId)
+    } else {
+      removeStorageItem('medicinePlans', userId)
     }
   }, [medicinePlans, currentUser])
 
@@ -1724,11 +1731,6 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea produselor selectate
   const handleProductSelect = useCallback((medicine) => {
-    // Verifică autentificarea înainte de a permite adăugarea medicamentelor
-    if (!showAccountStatusMessage()) {
-      return
-    }
-    
     setSelectedProducts(prev => {
       const isSelected = prev.some(selected => selected['Cod medicament'] === medicine['Cod medicament'])
       if (isSelected) {
@@ -1737,7 +1739,7 @@ Programează o consultație dacă simptomele persistă`
         return [...prev, medicine]
       }
     })
-  }, [currentUser, showAccountStatusMessage])
+  }, [])
 
   const clearSelectedProducts = useCallback(() => {
     setSelectedProducts([])
@@ -1745,11 +1747,8 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcție pentru deschiderea modalului de confirmare
   const openNewPatientModal = useCallback(() => {
-    if (!showAccountStatusMessage()) {
-      return
-    }
     setShowNewPatientModal(true)
-  }, [showAccountStatusMessage])
+  }, [])
 
 
   const removeSelectedProduct = useCallback((medicineCode) => {
@@ -1802,14 +1801,9 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea planurilor de medicamente
   const openPlanModal = useCallback((medicine) => {
-    // Verifică autentificarea înainte de a permite adăugarea planurilor
-    if (!showAccountStatusMessage()) {
-      return
-    }
-    
     setSelectedMedicineForPlan(medicine)
     setShowPlanModal(true)
-  }, [currentUser, showAccountStatusMessage])
+  }, [])
 
   const closePlanModal = useCallback(() => {
     setShowPlanModal(false)
@@ -1817,17 +1811,12 @@ Programează o consultație dacă simptomele persistă`
   }, [])
 
   const saveMedicinePlan = useCallback((medicineCode, plan) => {
-    // Verifică autentificarea înainte de a salva planul
-    if (!showAccountStatusMessage()) {
-      return
-    }
-    
     setMedicinePlans(prev => ({
       ...prev,
       [medicineCode]: plan
     }))
     closePlanModal()
-  }, [currentUser, showAccountStatusMessage, closePlanModal])
+  }, [closePlanModal])
 
   const removeMedicinePlan = useCallback((medicineCode) => {
     setMedicinePlans(prev => {
@@ -2309,16 +2298,11 @@ Programează o consultație dacă simptomele persistă`
       return
     }
     
-    // Verifică statusul contului
-    if (!showAccountStatusMessage()) {
-      return
-    }
-    
     // Deschide pagina de checkout în aplicație (fără pop-up)
     // Salvarea rețetei se va face când utilizatorul dă click pe "Finalizează rețeta" în checkout
     console.log('🧾 Deschid pagina de checkout (setIsCheckoutOpen(true))')
     setIsCheckoutOpen(true)
-  }, [currentUser, showAccountStatusMessage])
+  }, [])
 
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
@@ -2600,12 +2584,7 @@ Programează o consultație dacă simptomele persistă`
 
         <nav className="sidebar-nav">
           <button className="sidebar-nav-item active" title="Medicamente">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="8" width="18" height="4" rx="1"></rect>
-              <path d="M12 8v13"></path>
-              <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
-              <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
-            </svg>
+            <span style={{ fontSize: '50px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊞</span>
           </button>
           {currentUser && (
             <button 
@@ -3979,9 +3958,19 @@ etc.`
                                   }
                                 }
                                 
+                                // Afișează orele - fie din times array, fie din customTime
                                 if (plan.times && plan.times.length > 0) {
-                                  const timesText = plan.times.map(time => getTimeText(time)).join(' | ')
+                                  const timesText = plan.times.map(time => {
+                                    // Verifică dacă este o oră personalizată (format HH:MM) sau o opțiune predefinită
+                                    if (time.match(/^\d{1,2}:\d{2}$/)) {
+                                      return time // O oră personalizată în format HH:MM
+                                    }
+                                    return getTimeText(time) // O opțiune predefinită
+                                  }).join(' | ')
                                   parts.push(timesText)
+                                } else if (plan.customTime) {
+                                  // Dacă nu există times dar există customTime, afișează-l
+                                  parts.push(plan.customTime)
                                 }
                                 
                                 return parts.join(' | ')
@@ -4050,9 +4039,19 @@ etc.`
                           }
                         }
 
+                        // Afișează orele - fie din times array, fie din customTime
                         if (plan.times && plan.times.length > 0) {
-                          const timesText = plan.times.map(time => getTimeText(time)).join(' | ')
+                          const timesText = plan.times.map(time => {
+                            // Verifică dacă este o oră personalizată (format HH:MM) sau o opțiune predefinită
+                            if (time.match(/^\d{1,2}:\d{2}$/)) {
+                              return time // O oră personalizată în format HH:MM
+                            }
+                            return getTimeText(time) // O opțiune predefinită
+                          }).join(' | ')
                           parts.push(timesText)
+                        } else if (plan.customTime) {
+                          // Dacă nu există times dar există customTime, afișează-l
+                          parts.push(plan.customTime)
                         }
                       }
 
@@ -4504,14 +4503,11 @@ etc.`
                         setShowStatsModal(false)
                         setShowLoginModal(true)
                       }}
+                      className="settings-modal-button"
                       style={{
                         width: '100%',
-                        padding: '12px',
-                        background: '#2a2a2a',
-                        color: '#e5e5e5',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '14px',
+                        padding: '0.625rem 1.25rem',
+                        fontSize: '0.875rem',
                         fontWeight: '500',
                         cursor: 'pointer',
                         marginTop: '10px',
@@ -4519,12 +4515,6 @@ etc.`
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#333333'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#2a2a2a'
                       }}
                     >
                       🔐 Conectare
@@ -4595,22 +4585,17 @@ etc.`
 
             <div className="new-patient-modal-footer">
               <button 
-                className="new-patient-confirm-button"
+                className="settings-modal-button"
                 onClick={() => setShowStatsModal(false)}
                 style={{ 
                   width: '100%',
-                  background: '#2a2a2a',
-                  color: '#e5e5e5',
+                  padding: '0.625rem 1.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#333333'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#2a2a2a'
                 }}
               >
                 Închide
@@ -5462,7 +5447,23 @@ const PlanModal = ({ medicine, onClose, onSave, existingPlan }) => {
       setSelectedTimes(existingPlan.times || [])
       setCustomDuration(existingPlan.customDuration || '')
       setCustomFrequency(existingPlan.customFrequency || '')
-      setCustomTime(existingPlan.customTime || '')
+      
+      // Identifică orele personalizate din times array și le setează în customTime pentru afișare
+      if (existingPlan.times && existingPlan.times.length > 0) {
+        const timeOptionsValues = ['dimineata', 'amiaza', 'seara', 'noaptea', 'la4ore', 'la6ore', 'la8ore', 'la12ore']
+        const customTimes = existingPlan.times.filter(time => {
+          const isPredefined = timeOptionsValues.includes(time)
+          const isCustomFormat = time.match(/^\d{1,2}:\d{2}(,\s*\d{1,2}:\d{2})*$/)
+          return !isPredefined && (isCustomFormat || time.trim() !== '')
+        })
+        if (customTimes.length > 0) {
+          setCustomTime(customTimes.join(', '))
+        } else {
+          setCustomTime(existingPlan.customTime || '')
+        }
+      } else {
+        setCustomTime(existingPlan.customTime || '')
+      }
     }
   }, [existingPlan])
 
@@ -5738,12 +5739,27 @@ const PlanModal = ({ medicine, onClose, onSave, existingPlan }) => {
                   </button>
                 </div>
               )}
-              {customTime && (
-                <div className="custom-display">
-                  <span className="custom-label">Personalizat:</span>
-                  <span className="custom-value">{customTime}</span>
-                </div>
-              )}
+              {(() => {
+                // Identifică orele personalizate (cele care nu sunt în timeOptions)
+                const customTimes = selectedTimes.filter(time => {
+                  const isPredefined = timeOptions.some(option => option.value === time)
+                  // Verifică dacă este un format de oră personalizată (HH:MM sau HH:MM, HH:MM)
+                  const isCustomFormat = time.match(/^\d{1,2}:\d{2}(,\s*\d{1,2}:\d{2})*$/)
+                  return !isPredefined && (isCustomFormat || time.trim() !== '')
+                })
+                
+                // Dacă există customTime sau ore personalizate în selectedTimes, afișează-le
+                if (customTime || customTimes.length > 0) {
+                  const displayValue = customTime || customTimes.join(', ')
+                  return (
+                    <div className="custom-display">
+                      <span className="custom-label">Personalizat:</span>
+                      <span className="custom-value">{displayValue}</span>
+                    </div>
+                  )
+                }
+                return null
+              })()}
             </div>
           </div>
         </div>

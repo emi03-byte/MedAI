@@ -298,10 +298,31 @@ button:focus-visible {
   cursor: pointer;
 }
 
-.sidebar-nav-item.active svg,
+.sidebar-nav-item.active {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-nav-item.active span {
+  font-size: 50px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-nav-item.active svg {
+  width: 32px !important;
+  height: 32px !important;
+}
+
 .sidebar-nav-item svg {
-  width: 56px !important;
-  height: 56px !important;
+  width: 24px !important;
+  height: 24px !important;
 }
 
 .sidebar-nav-item:hover {
@@ -320,7 +341,7 @@ button:focus-visible {
 
 .sidebar-nav-item.active {
   color: var(--primary-color);
-  background: #2a2a2a;
+  background: white;
   border: none;
   box-shadow: none;
 }
@@ -536,7 +557,7 @@ button:focus-visible {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border: none;
-  background: transparent;
+  background: #e5e5e5;
   color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
@@ -551,11 +572,12 @@ button:focus-visible {
 }
 
 .medicines-container.dark-mode .sidebar-avatar-menu-item {
+  background: #2a2a2a;
   color: #a3a3a3;
 }
 
 .medicines-container.dark-mode .sidebar-avatar-menu-item:hover {
-  background: #252525;
+  background: #333333;
   color: #3b82f6;
 }
 
@@ -1099,13 +1121,27 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button {
-  background: #1a1a1a;
-  color: #e5e5e5;
+  background: #3b82f6;
+  color: white;
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button:hover {
+  background: #2563eb;
+  color: white !important;
+}
+
+/* Excepție pentru butoanele din modalul de autentificare - folosesc tema gri închis */
+.medicines-container.dark-mode .auth-modal-content .new-patient-confirm-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .auth-modal-content .new-patient-confirm-button:hover {
   background: #2a2a2a;
-  color: #e5e5e5;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary) !important;
 }
 
 /* Dark mode pentru modalul de selecție a coloanelor */
@@ -1367,69 +1403,7 @@ code, .mono, .font-mono {
 }
 
 /* Dark mode pentru modalul de plan de tratament */
-.medicines-container.dark-mode .plan-modal-content {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-}
-
-.medicines-container.dark-mode .plan-modal-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-}
-
-.medicines-container.dark-mode .plan-modal-header h3 {
-  color: var(--text-primary);
-}
-
-.medicines-container.dark-mode .plan-modal-close {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-}
-
-.medicines-container.dark-mode .plan-modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
-}
-
-.medicines-container.dark-mode .plan-modal-body {
-  background: transparent;
-}
-
-.medicines-container.dark-mode .medicine-info {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.25);
-}
-
-.medicines-container.dark-mode .medicine-info h4 {
-  color: var(--text-primary);
-}
-
-.medicines-container.dark-mode .medicine-info p {
-  color: var(--text-secondary);
-}
-
-.medicines-container.dark-mode .plan-section h5 {
-  color: var(--text-primary);
-}
-
-.medicines-container.dark-mode .plan-option-button {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.2);
-  color: var(--text-primary);
-}
-
-.medicines-container.dark-mode .plan-option-button:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(125, 211, 252, 0.4);
-}
-
-.medicines-container.dark-mode .plan-option-button.selected {
-  background: rgba(125, 211, 252, 0.2);
-  border-color: rgba(125, 211, 252, 0.5);
-  color: #7dd3fc;
-}
+/* Dark mode styles for plan modal are now defined inline with the main styles above */
 
 .medicines-container.dark-mode .plan-custom-button {
   background: rgba(251, 146, 60, 0.2);
@@ -1548,17 +1522,7 @@ code, .mono, .font-mono {
   color: var(--text-primary);
 }
 
-.medicines-container.dark-mode .plan-save-button {
-  background: #22d3ee;
-  border-color: #22d3ee;
-  color: #05202c;
-}
-
-.medicines-container.dark-mode .plan-cancel-button {
-  background: rgba(148, 163, 184, 0.15);
-  border-color: rgba(148, 163, 184, 0.4);
-  color: var(--text-primary);
-}
+/* Dark mode styles for plan buttons are now defined inline with the main styles above */
 
 .search-container {
   display: flex;
@@ -1676,11 +1640,12 @@ code, .mono, .font-mono {
   transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .medicine-table-search-wrapper:focus-within .medicine-table-search-icon {
   color: var(--primary-color);
+  transform: translateY(-50%) scale(1.1);
 }
 
 .medicine-table-search-input {
@@ -1701,14 +1666,17 @@ code, .mono, .font-mono {
 }
 
 .medicine-table-search-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
   background: white;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  box-shadow: none;
+  outline: none;
 }
 
 .medicines-container.dark-mode .medicine-table-search-input:focus {
   background: #0a0a0a;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: #333333;
+  box-shadow: none;
+  outline: none;
 }
 
 .medicine-table-search-input::placeholder {
@@ -2392,13 +2360,25 @@ code, .mono, .font-mono {
 }
 
 .prescription-medicine-item:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.1);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .medicines-container.dark-mode .prescription-medicine-item:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  border-color: #333333;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.prescription-medicine-item:focus {
+  outline: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.medicines-container.dark-mode .prescription-medicine-item:focus {
+  outline: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .prescription-medicine-header {
@@ -2421,10 +2401,10 @@ code, .mono, .font-mono {
   padding: 0.25rem;
   border-radius: 4px;
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2433,7 +2413,21 @@ code, .mono, .font-mono {
 
 .prescription-medicine-remove:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: transparent !important;
+}
+
+.prescription-medicine-remove:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+}
+
+.prescription-medicine-remove:active {
+  background: transparent !important;
+}
+
+.prescription-medicine-remove:focus {
+  background: transparent !important;
+  outline: none;
 }
 
 .prescription-medicine-code {
@@ -2489,15 +2483,35 @@ code, .mono, .font-mono {
 }
 
 .prescription-medicine-plan-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  background: rgba(2, 132, 199, 0.05);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  background: var(--background-light);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .medicines-container.dark-mode .prescription-medicine-plan-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+  border-color: #333333;
+  color: var(--text-primary);
+  background: #252525;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.prescription-medicine-plan-btn:focus {
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.medicines-container.dark-mode .prescription-medicine-plan-btn:focus {
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.prescription-medicine-plan-btn:active {
+  outline: none;
+  box-shadow: none;
+  transform: translateY(0);
 }
 
 .prescription-medicine-plan-display {
@@ -2645,11 +2659,13 @@ code, .mono, .font-mono {
 }
 
 .prescription-finalize-btn:hover {
+  color: white !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);
 }
 
 .prescription-finalize-btn:active {
+  color: white !important;
   transform: translateY(0);
 }
 
@@ -2659,6 +2675,7 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .prescription-finalize-btn:hover {
+  color: white !important;
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 
@@ -3993,6 +4010,7 @@ code, .mono, .font-mono {
 
 .clear-filters-inline-btn:hover {
   background: var(--primary-hover);
+  color: white !important;
 }
 
 /* Meniu de filtre centrat și interactiv - Design consistent cu imaginea */
@@ -4793,9 +4811,10 @@ code, .mono, .font-mono {
 }
 
 .plan-modal-content {
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-width: 800px;
   width: 90%;
   max-height: 90vh;
@@ -4804,28 +4823,43 @@ code, .mono, .font-mono {
   flex-direction: column;
 }
 
+.medicines-container.dark-mode .plan-modal-content {
+  background: #1a1a1a;
+  border-color: #333333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
 .plan-modal-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 1.5rem;
+  background: var(--background-card);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.medicines-container.dark-mode .plan-modal-header {
+  background: #1a1a1a;
+  border-bottom-color: #333333;
 }
 
 .plan-modal-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medicines-container.dark-mode .plan-modal-header h3 {
+  color: var(--text-primary);
 }
 
 .plan-modal-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -4834,28 +4868,89 @@ code, .mono, .font-mono {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: 500;
 }
 
+.medicines-container.dark-mode .plan-modal-close {
+  border-color: #333333;
+  color: #a3a3a3;
+}
+
 .plan-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background: var(--background-light);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .plan-modal-close:hover {
+  background: #252525;
+  color: var(--text-primary);
+  border-color: #404040;
+}
+
+.plan-modal-close:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .plan-modal-body {
   padding: 1.5rem;
   flex: 1;
   overflow-y: auto;
+  background: var(--background-card);
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #d4d4d4 transparent; /* Firefox: thumb color, track color */
+  -ms-overflow-style: -ms-autohiding-scrollbar; /* IE and Edge */
+}
+
+.plan-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.plan-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.plan-modal-body::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 3px;
+}
+
+.plan-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+.medicines-container.dark-mode .plan-modal-body {
+  background: #1a1a1a;
+  scrollbar-color: #404040 transparent; /* Firefox dark mode */
+}
+
+.medicines-container.dark-mode .plan-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.medicines-container.dark-mode .plan-modal-body::-webkit-scrollbar-thumb {
+  background: #404040 !important;
+  border-radius: 3px;
+}
+
+.medicines-container.dark-mode .plan-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #525252 !important;
 }
 
 .medicine-info {
   text-align: center;
   margin-bottom: 2rem;
   padding: 1rem;
-  background: rgba(26, 60, 124, 0.05);
+  background: var(--background-light);
   border-radius: 8px;
   border: 1px solid var(--border-color);
+}
+
+.medicines-container.dark-mode .medicine-info {
+  background: #252525;
+  border-color: #333333;
 }
 
 .medicine-info h4 {
@@ -4893,182 +4988,365 @@ code, .mono, .font-mono {
 
 .plan-option-button {
   padding: 0.75rem 1rem;
-  background: #f5f5f5;
-  border: 2px solid #e0e0e0;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: #333;
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
   font-weight: 500;
   text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medicines-container.dark-mode .plan-option-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
 }
 
 .plan-option-button:hover {
-  background: #e8e8e8;
-  border-color: #1a3c7c;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
+}
+
+.medicines-container.dark-mode .plan-option-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .plan-option-button.selected {
-  background: #1a3c7c;
-  border-color: #1a3c7c;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: white;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(26, 60, 124, 0.3);
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+
+.medicines-container.dark-mode .plan-option-button.selected {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.plan-option-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .plan-custom-button {
-  background: #FF9800;
-  color: white;
-  border: 2px solid #FF9800;
-  padding: 8px 12px;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.875rem;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
+}
+
+.medicines-container.dark-mode .plan-custom-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
 }
 
 .plan-custom-button:hover {
-  background: #F57C00;
-  border-color: #F57C00;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
+}
+
+.medicines-container.dark-mode .plan-custom-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.plan-custom-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .custom-input-section {
   margin-top: 10px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+  padding: 0.75rem;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.medicines-container.dark-mode .custom-input-section {
+  background: #252525;
+  border-color: #333333;
 }
 
 .custom-input {
   flex: 1;
   min-width: 150px;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: var(--background-card);
+  color: var(--text-primary);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.medicines-container.dark-mode .custom-input {
+  background: #1a1a1a;
+  border-color: #333333;
+  color: var(--text-primary);
 }
 
 .custom-input:focus {
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+.medicines-container.dark-mode .custom-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .custom-save-button {
-  background: #4CAF50;
+  background: var(--primary-color);
   color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  border: 1px solid var(--primary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.medicines-container.dark-mode .custom-save-button {
+  background: #3b82f6;
+  border-color: #3b82f6;
 }
 
 .custom-save-button:hover {
-  background: #45a049;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.medicines-container.dark-mode .custom-save-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.custom-save-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .custom-cancel-button {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.875rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.medicines-container.dark-mode .custom-cancel-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
 }
 
 .custom-cancel-button:hover {
-  background: #da190b;
+  background: var(--background-light);
+  border-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .custom-cancel-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+}
+
+.custom-cancel-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .custom-display {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.medicines-container.dark-mode .custom-display {
+  background: #252525;
+  border-color: #333333;
 }
 
 .custom-label {
-  color: #6c757d;
+  color: var(--text-secondary);
   font-weight: 500;
-  font-size: 11px;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .custom-value {
-  color: #495057;
+  color: var(--text-primary);
   font-weight: 600;
   flex: 1;
 }
 
 
 .plan-modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  background: var(--background-card);
+}
+
+.medicines-container.dark-mode .plan-modal-footer {
+  background: #1a1a1a;
+  border-top-color: #333333;
 }
 
 .plan-cancel-button {
-  padding: 0.75rem 1.5rem;
-  background: #f5f5f5;
-  color: #333;
-  border: 2px solid #e0e0e0;
+  padding: 0.625rem 1.25rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medicines-container.dark-mode .plan-cancel-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
 }
 
 .plan-cancel-button:hover {
-  background: #e8e8e8;
-  border-color: #ccc;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.medicines-container.dark-mode .plan-cancel-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.plan-cancel-button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Butoane pentru modalul de setări */
+.settings-modal-button {
+  padding: 0.625rem 1.25rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medicines-container.dark-mode .settings-modal-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
+}
+
+.settings-modal-button:hover {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .settings-modal-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.settings-modal-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .plan-save-button {
-  padding: 0.75rem 1.5rem;
-  background: #22c55e;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-color);
   color: white;
-  border: 2px solid #22c55e;
+  border: 1px solid var(--primary-color);
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medicines-container.dark-mode .plan-save-button {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
 }
 
 .plan-save-button:hover {
-  background: #16a34a;
-  border-color: #16a34a;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: white !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+
+.medicines-container.dark-mode .plan-save-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.plan-save-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Stiluri pentru butonul Pacient Nou */
@@ -6800,15 +7078,31 @@ body.med-ai-dark .patient-notes-done-button:hover {
 /* Butoane mai mici și elegante pentru modalul de autentificare */
 .auth-modal-content .new-patient-confirm-button {
   padding: 0.625rem 1.25rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 500;
   min-height: auto;
   height: auto;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.auth-modal-content .new-patient-confirm-button:hover {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary) !important;
+}
+
+.auth-modal-content .new-patient-confirm-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .auth-modal-content .new-patient-cancel-button {
   padding: 0.625rem 1.25rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 500;
   min-height: auto;
   height: auto;
