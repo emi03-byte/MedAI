@@ -419,7 +419,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const showAccountStatusMessage = useCallback(() => {
     if (!currentUser) {
       setAccountStatusTitle('Autentificare necesară')
-      setAccountStatusMessage('Te rugăm să te autentifici pentru a folosi această funcție.')
+      setAccountStatusMessage('Pentru a folosi această funcție, trebuie să te autentifici sau să-ți creezi un cont.\n\nDupă autentificare vei putea accesa toate funcționalitățile aplicației.')
       setShowAccountStatusModal(true)
       return false
     }
@@ -1660,6 +1660,11 @@ Programează o consultație dacă simptomele persistă`
       ...prev,
       [filterKey]: clearedFilters
     }))
+    // Șterge și termenul de căutare pentru acest filtru
+    setSearchTerms(prev => ({
+      ...prev,
+      [filterKey]: ''
+    }))
   }, [filters])
 
   const clearAllFilters = useCallback(() => {
@@ -1708,12 +1713,6 @@ Programează o consultație dacă simptomele persistă`
   // Funcții pentru gestionarea produselor selectate
   const handleProductSelect = useCallback((medicine) => {
     // Verifică autentificarea înainte de a permite adăugarea medicamentelor
-    if (!currentUser) {
-      setShowLoginModal(true)
-      return
-    }
-    
-    // Verifică statusul contului
     if (!showAccountStatusMessage()) {
       return
     }
@@ -1792,12 +1791,6 @@ Programează o consultație dacă simptomele persistă`
   // Funcții pentru gestionarea planurilor de medicamente
   const openPlanModal = useCallback((medicine) => {
     // Verifică autentificarea înainte de a permite adăugarea planurilor
-    if (!currentUser) {
-      setShowLoginModal(true)
-      return
-    }
-    
-    // Verifică statusul contului
     if (!showAccountStatusMessage()) {
       return
     }
@@ -1813,12 +1806,6 @@ Programează o consultație dacă simptomele persistă`
 
   const saveMedicinePlan = useCallback((medicineCode, plan) => {
     // Verifică autentificarea înainte de a salva planul
-    if (!currentUser) {
-      setShowLoginModal(true)
-      return
-    }
-    
-    // Verifică statusul contului
     if (!showAccountStatusMessage()) {
       return
     }
@@ -1840,10 +1827,6 @@ Programează o consultație dacă simptomele persistă`
 
   // Funcții pentru gestionarea medicamentelor personalizate
   const openAddMedicineModal = useCallback(() => {
-    if (!currentUser?.id) {
-      setShowLoginModal(true)
-      return
-    }
     if (!showAccountStatusMessage()) {
       return
     }
@@ -1873,8 +1856,7 @@ Programează o consultație dacă simptomele persistă`
   }, [])
 
   const addCustomMedicine = useCallback(async () => {
-    if (!currentUser?.id) {
-      setShowLoginModal(true)
+    if (!showAccountStatusMessage()) {
       return
     }
     if (!newMedicineName.trim()) {
@@ -2613,10 +2595,6 @@ Programează o consultație dacă simptomele persistă`
           <button 
             className="sidebar-nav-item" 
             onClick={() => {
-              if (!currentUser) {
-                setShowLoginModal(true)
-                return
-              }
               if (!showAccountStatusMessage()) {
                 return
               }
@@ -2632,6 +2610,21 @@ Programează o consultație dacă simptomele persistă`
         </nav>
 
         <div className="sidebar-footer">
+          {/* Buton Chat - în sidebar pentru ambele moduri */}
+          <button 
+            className="chat-button chat-button-sidebar"
+            onClick={() => {
+              // Deschide chat-ul - trigger event pentru ChatBot
+              window.dispatchEvent(new CustomEvent('openChatBot'))
+            }}
+            title="Asistent AI Medical"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <line x1="9" y1="10" x2="15" y2="10"></line>
+              <line x1="9" y1="14" x2="13" y2="14"></line>
+            </svg>
+          </button>
           <button 
             className="sidebar-theme-toggle"
             onClick={() => setIsNightMode(prev => !prev)}
@@ -3187,30 +3180,6 @@ Programează o consultație dacă simptomele persistă`
                 🔐 Management
               </button>
             )}
-            {!currentUser && (
-              <>
-            <button 
-              className="auth-button login-button"
-              onClick={() => {
-                setShowLoginModal(true)
-                setShowSignUpModal(false)
-                setLoginError('')
-              }}
-            >
-              Autentificare
-            </button>
-            <button 
-              className="auth-button signup-button"
-              onClick={() => {
-                setShowSignUpModal(true)
-                setShowLoginModal(false)
-                setSignUpError('')
-              }}
-            >
-              Înregistrare
-            </button>
-          </>
-        )}
           </div>
 
 
@@ -3513,10 +3482,6 @@ etc.`
               <button 
                 className="top-navigation-action-btn"
                 onClick={() => {
-                  if (!currentUser) {
-                    setShowLoginModal(true)
-                    return
-                  }
                   if (!showAccountStatusMessage()) {
                     return
                   }
@@ -3529,10 +3494,6 @@ etc.`
               <button 
                 className="top-navigation-action-btn"
                 onClick={() => {
-                  if (!currentUser) {
-                    setShowLoginModal(true)
-                    return
-                  }
                   if (!showAccountStatusMessage()) {
                     return
                   }
@@ -4138,9 +4099,6 @@ etc.`
               <div className="filter-modal-header">
                 <h3>{filterKey}</h3>
                 <div className="filter-modal-header-buttons">
-                  <button className="clear-filters-btn" onClick={() => clearFilters(filterKey)}>
-                    Șterge filtrele
-                  </button>
                   <button className="close-filters-btn" onClick={() => {
                     setShowFilters(prev => ({ ...prev, [filterKey]: false }))
                     setSkipFadeAnimation(true) // Oprește animația pentru revenirea rapidă
@@ -4444,8 +4402,8 @@ etc.`
             <div className="new-patient-modal-overlay" onClick={() => setShowStatsModal(false)}>
           <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">📊</div>
-              <h3>Stări aplicație</h3>
+              <div className="new-patient-modal-icon">⚙️</div>
+              <h3>Setări</h3>
               <button 
                 className="new-patient-modal-close"
                 onClick={() => setShowStatsModal(false)}
@@ -4489,9 +4447,9 @@ etc.`
                   </div>
                 )}
                 
-                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>👥 Utilizatori</h4>
+                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>📋 Contul meu</h4>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                  Informații despre utilizatorii aplicației vor fi afișate aici.
+                  Gestionează informațiile contului tău, vezi statusul aprobării și accesează istoricul rețetelor tale.
                 </p>
                 {currentUser && (
                   <div style={{ marginTop: '20px' }}>
@@ -4573,7 +4531,9 @@ etc.`
             <div className="new-patient-modal-overlay" onClick={() => setShowAccountStatusModal(false)}>
           <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">ℹ️</div>
+              <div className="new-patient-modal-icon">
+                {!currentUser ? '🔐' : currentUser?.status === 'pending' ? '⏳' : currentUser?.status === 'rejected' ? '❌' : 'ℹ️'}
+              </div>
               <h3>{accountStatusTitle}</h3>
               <button 
                 className="new-patient-modal-close"
@@ -4584,19 +4544,90 @@ etc.`
             </div>
             
             <div className="new-patient-modal-body">
-              <div style={{ padding: '20px', whiteSpace: 'pre-line' }}>
-                {accountStatusMessage}
+              <div style={{ padding: '20px' }}>
+                {!currentUser ? (
+                  <>
+                    <p style={{ 
+                      color: 'var(--text-primary)', 
+                      fontSize: '16px',
+                      marginBottom: '20px',
+                      whiteSpace: 'pre-line',
+                      lineHeight: '1.6'
+                    }}>
+                      {accountStatusMessage}
+                    </p>
+                    <div style={{
+                      background: 'var(--background-light)',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      marginBottom: '20px'
+                    }}>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px', fontWeight: '500' }}>
+                        După autentificare vei putea:
+                      </p>
+                      <ul style={{ 
+                        color: 'var(--text-secondary)', 
+                        fontSize: '14px',
+                        textAlign: 'left',
+                        marginTop: '10px',
+                        paddingLeft: '20px',
+                        lineHeight: '1.8'
+                      }}>
+                        <li>Adăuga medicamente în rețetă</li>
+                        <li>Salva planuri de medicamente</li>
+                        <li>Gestiona pacienți și notițe</li>
+                        <li>Descărca rețete medicale</li>
+                        <li>Accesa istoricul rețetelor</li>
+                      </ul>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ 
+                    color: 'var(--text-primary)', 
+                    fontSize: '16px',
+                    whiteSpace: 'pre-line',
+                    lineHeight: '1.6'
+                  }}>
+                    {accountStatusMessage}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="new-patient-modal-footer">
-              <button 
-                className="new-patient-confirm-button"
-                onClick={() => setShowAccountStatusModal(false)}
-                style={{ width: '100%' }}
-              >
-                OK
-              </button>
+              {!currentUser ? (
+                <>
+                  <button 
+                    className="new-patient-confirm-button"
+                    onClick={() => {
+                      setShowAccountStatusModal(false)
+                      setShowLoginModal(true)
+                    }}
+                    style={{ width: '100%', marginBottom: '10px' }}
+                  >
+                    Autentificare
+                  </button>
+                  <button 
+                    className="new-patient-cancel-button"
+                    onClick={() => {
+                      setShowAccountStatusModal(false)
+                      setShowSignUpModal(true)
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    Creează cont nou
+                  </button>
+                </>
+              ) : (
+                <button 
+                  className="new-patient-confirm-button"
+                  onClick={() => setShowAccountStatusModal(false)}
+                  style={{ width: '100%' }}
+                >
+                  OK
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -4799,9 +4830,9 @@ etc.`
           {/* Modal pentru autentificare necesară */}
           {showLoginRequiredModal && (
             <div className="new-patient-modal-overlay" onClick={() => setShowLoginRequiredModal(false)}>
-          <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">🔒</div>
+              <div className="new-patient-modal-icon">🔐</div>
               <h3>Autentificare necesară</h3>
               <button 
                 className="new-patient-modal-close"
@@ -4812,11 +4843,13 @@ etc.`
             </div>
             
             <div className="new-patient-modal-body">
-              <div style={{ padding: '20px', textAlign: 'center' }}>
+              <div style={{ padding: '20px' }}>
                 <p style={{ 
                   color: 'var(--text-primary)', 
+                  fontSize: '16px',
                   marginBottom: '20px',
-                  fontSize: '16px'
+                  whiteSpace: 'pre-line',
+                  lineHeight: '1.6'
                 }}>
                   Pentru a finaliza și a descărca rețeta, trebuie să te autentifici sau să-ți creezi un cont.
                 </p>
@@ -4827,7 +4860,7 @@ etc.`
                   border: '1px solid var(--border-color)',
                   marginBottom: '20px'
                 }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px', fontWeight: '500' }}>
                     După autentificare vei putea:
                   </p>
                   <ul style={{ 
@@ -4835,12 +4868,15 @@ etc.`
                     fontSize: '14px',
                     textAlign: 'left',
                     marginTop: '10px',
-                    paddingLeft: '20px'
+                    paddingLeft: '20px',
+                    lineHeight: '1.8'
                   }}>
                     <li>Finaliza și descărca rețeta</li>
-                    <li>Adăuga indicații pentru pacienți</li>
-                    <li>Adăuga indicații pentru medici</li>
-                    <li>Crea pacienți noi</li>
+                    <li>Adăuga medicamente în rețetă</li>
+                    <li>Salva planuri de medicamente</li>
+                    <li>Gestiona pacienți și notițe</li>
+                    <li>Accesa istoricul rețetelor</li>
+                    <li>Adăuga indicații pentru pacienți și medici</li>
                   </ul>
                 </div>
               </div>

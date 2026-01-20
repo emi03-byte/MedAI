@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 
-const ChatBot = ({ medicinesData = [] }) => {
+const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Bună! Sunt asistentul tău medical. Descrie-mi simptomele sau starea pacientului și îți voi recomanda medicamentele potrivite din lista CNAS. Cu ce te pot ajuta?' }
+    { role: 'assistant', content: 'Bună! 👋 Descrie-mi simptomele sau starea pacientului și îți voi recomanda medicamentele potrivite din lista CNAS. Cu ce te pot ajuta?' }
   ])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -16,6 +16,17 @@ const ChatBot = ({ medicinesData = [] }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Ascultă pentru event-ul de deschidere chat din sidebar
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsOpen(true)
+    }
+    window.addEventListener('openChatBot', handleOpenChat)
+    return () => {
+      window.removeEventListener('openChatBot', handleOpenChat)
+    }
+  }, [])
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
@@ -134,10 +145,15 @@ IMPORTANT:
       {/* Buton Chat */}
       {!isOpen && (
         <button 
-          className="chat-button"
+          className={`chat-button ${renderButtonInSidebar ? 'chat-button-sidebar' : ''}`}
           onClick={() => setIsOpen(true)}
+          title="Asistent AI Medical"
         >
-          💬
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <line x1="9" y1="10" x2="15" y2="10"></line>
+            <line x1="9" y1="14" x2="13" y2="14"></line>
+          </svg>
         </button>
       )}
 
@@ -147,7 +163,7 @@ IMPORTANT:
           <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="chat-header">
-              <h3>🤖 Asistent AI</h3>
+              <h3>Asistent AI Medical</h3>
               <button 
                 className="chat-close-button"
                 onClick={() => setIsOpen(false)}
@@ -197,8 +213,12 @@ IMPORTANT:
                 className="chat-send-button"
                 onClick={sendMessage}
                 disabled={isLoading || !inputMessage.trim()}
+                title="Trimite mesaj"
               >
-                📤
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
               </button>
             </div>
           </div>

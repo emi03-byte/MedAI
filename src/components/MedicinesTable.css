@@ -833,14 +833,14 @@ code, .mono, .font-mono {
 
 /* Dark mode pentru meniul de filtre */
 .medicines-container.dark-mode .filter-menu-modal {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .medicines-container.dark-mode .filter-menu-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .filter-menu-header h3 {
@@ -848,18 +848,19 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .filter-menu-close {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .filter-menu-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .filter-menu-content {
-  background: transparent;
+  background: var(--background-card);
 }
 
 .medicines-container.dark-mode .filter-menu-description {
@@ -867,19 +868,19 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .filter-menu-item {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .medicines-container.dark-mode .filter-menu-item:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(125, 211, 252, 0.4);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .medicines-container.dark-mode .filter-menu-item-icon {
-  color: rgba(125, 211, 252, 0.8);
+  color: var(--text-secondary);
 }
 
 .medicines-container.dark-mode .filter-menu-item-title {
@@ -891,11 +892,11 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .filter-menu-item-arrow {
-  color: rgba(125, 211, 252, 0.6);
+  color: var(--text-secondary);
 }
 
 .medicines-container.dark-mode .filter-menu-item:hover .filter-menu-item-arrow {
-  color: rgba(125, 211, 252, 0.9);
+  color: var(--primary-color);
 }
 
 /* Dark mode pentru coloana de produse selectate */
@@ -941,9 +942,9 @@ code, .mono, .font-mono {
 
 /* Dark mode pentru modalul "Pacient nou" */
 .medicines-container.dark-mode .new-patient-modal-content {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .medicines-container.dark-mode .auth-button {
@@ -976,8 +977,8 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .new-patient-modal-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .new-patient-modal-header h3 {
@@ -985,22 +986,23 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .new-patient-modal-icon {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--primary-light);
 }
 
 .medicines-container.dark-mode .new-patient-modal-close {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .new-patient-modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .new-patient-modal-body {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 13, 27, 0.95) 100%);
+  background: var(--background-card);
 }
 
 .medicines-container.dark-mode .new-patient-modal-warning h4 {
@@ -1027,44 +1029,42 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .new-patient-modal-footer {
-  background: rgba(8, 13, 27, 0.95);
-  border-top-color: rgba(148, 163, 184, 0.25);
+  background: var(--background-card);
+  border-top-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .new-patient-cancel-button {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--background-light);
   color: var(--text-secondary);
-  border-color: rgba(148, 163, 184, 0.3);
+  border-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .new-patient-cancel-button:hover {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
   color: var(--text-primary);
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-color: rgba(125, 211, 252, 0.4);
-  color: #7dd3fc;
+  background: var(--primary-color);
+  color: white;
 }
 
 .medicines-container.dark-mode .new-patient-confirm-button:hover {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(59, 130, 246, 0.3));
-  border-color: rgba(125, 211, 252, 0.6);
-  color: #38bdf8;
+  background: var(--primary-hover);
+  color: white;
 }
 
 /* Dark mode pentru modalul de selecție a coloanelor */
 .medicines-container.dark-mode .modal-content {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .medicines-container.dark-mode .modal-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .modal-header h3 {
@@ -1072,32 +1072,33 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .modal-close {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .modal-body {
-  background: transparent;
+  background: var(--background-card);
 }
 
 .medicines-container.dark-mode .column-checkbox {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.2);
+  background: var(--background-light);
+  border-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .column-checkbox:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(125, 211, 252, 0.4);
+  background: var(--background-light);
+  border-color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .column-checkbox input[type="checkbox"] {
-  accent-color: rgba(125, 211, 252, 0.8);
+  accent-color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .column-checkbox span {
@@ -1105,32 +1106,30 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .modal-footer {
-  border-top-color: rgba(148, 163, 184, 0.25);
-  background: transparent;
+  border-top-color: var(--border-color);
+  background: var(--background-card);
 }
 
 .medicines-container.dark-mode .modal-button {
-  background: rgba(125, 211, 252, 0.12);
-  border-color: rgba(125, 211, 252, 0.4);
-  color: #7dd3fc;
+  background: var(--primary-color);
+  color: white;
 }
 
 .medicines-container.dark-mode .modal-button:hover {
-  background: rgba(125, 211, 252, 0.2);
-  border-color: rgba(125, 211, 252, 0.6);
-  color: #38bdf8;
+  background: var(--primary-hover);
+  color: white;
 }
 
 /* Dark mode pentru subpaginile de filtre */
 .medicines-container.dark-mode .filter-modal-section {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .medicines-container.dark-mode .filter-modal-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .filter-modal-header h3 {
@@ -1138,69 +1137,70 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .close-filters-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .medicines-container.dark-mode .close-filters-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .clear-filters-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.3);
+  background: var(--background-light);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .clear-filters-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .medicines-container.dark-mode .filter-modal-content {
-  background: transparent;
+  background: var(--background-card);
 }
 
 .medicines-container.dark-mode .filter-search-input {
-  background: rgba(15, 23, 42, 0.65);
+  background: var(--background-light);
   color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.25);
+  border-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .filter-search-input:focus {
-  border-color: rgba(125, 211, 252, 0.5);
-  box-shadow: 0 4px 12px rgba(125, 211, 252, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .medicines-container.dark-mode .filter-search-input::placeholder {
-  color: rgba(226, 232, 240, 0.5);
+  color: var(--text-secondary);
 }
 
 .medicines-container.dark-mode .clear-filters-inline-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.3);
+  background: var(--primary-color);
+  color: white;
 }
 
 .medicines-container.dark-mode .clear-filters-inline-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
+  background: var(--primary-hover);
+  color: white;
 }
 
 .medicines-container.dark-mode .filter-option {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.2);
+  background: var(--background-light);
+  border-color: var(--border-color);
 }
 
 .medicines-container.dark-mode .filter-option:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(125, 211, 252, 0.4);
+  background: var(--background-light);
+  border-color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .filter-option input[type="checkbox"] {
-  accent-color: rgba(125, 211, 252, 0.8);
+  accent-color: var(--primary-color);
 }
 
 .medicines-container.dark-mode .filter-option span {
@@ -1208,8 +1208,8 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .filter-more {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.2);
+  background: var(--background-light);
+  border-color: var(--border-color);
   color: var(--text-secondary);
 }
 
@@ -3466,7 +3466,7 @@ code, .mono, .font-mono {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -3476,22 +3476,24 @@ code, .mono, .font-mono {
 }
 
 .modal-content {
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
   padding: 0;
   max-width: 500px;
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideInUp 0.4s ease-out;
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 1.5rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
   border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3500,15 +3502,16 @@ code, .mono, .font-mono {
 .modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
-  font-weight: 600;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .modal-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -3517,20 +3520,21 @@ code, .mono, .font-mono {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: 500;
 }
 
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  color: white !important;
-  transform: scale(1.05);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .modal-body {
   padding: 1.5rem;
   max-height: 400px;
   overflow-y: auto;
+  background: var(--background-card);
 }
 
 .column-list {
@@ -3544,55 +3548,56 @@ code, .mono, .font-mono {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .column-checkbox:hover {
-  background: #e8e8e8;
-  border-color: #1a3c7c;
+  background: var(--background-light);
+  border-color: var(--primary-color);
 }
 
 .column-checkbox input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #1a3c7c;
+  accent-color: var(--primary-color);
   cursor: pointer;
 }
 
 .column-checkbox span {
-  color: #333;
-  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
 .modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-card);
   display: flex;
   justify-content: flex-end;
 }
 
 .modal-button {
-  padding: 0.75rem 1.5rem;
-  background: #1a3c7c;
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
 }
 
 .modal-button:hover {
-  background: #2c5aa0;
+  background: var(--primary-hover);
   color: white !important;
-  transform: translateY(-1px);
 }
 
 /* Template pentru modalele de filtre - Design consistent cu imaginea */
@@ -3613,9 +3618,10 @@ code, .mono, .font-mono {
 
 .filter-modal-section {
   position: relative;
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   overflow: hidden;
   animation: slideInUp 0.4s ease-out;
   max-width: 600px;
@@ -3625,13 +3631,14 @@ code, .mono, .font-mono {
 }
 
 .filter-modal-header {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
+  padding: 1.25rem 1.5rem;
+  background: var(--background-light);
+  color: var(--text-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .filter-modal-header-buttons {
@@ -3642,14 +3649,14 @@ code, .mono, .font-mono {
 
 .close-filters-btn {
   padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   width: 32px;
   height: 32px;
   display: flex;
@@ -3658,41 +3665,51 @@ code, .mono, .font-mono {
 }
 
 .close-filters-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 
 .filter-modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
-  font-weight: 600;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .clear-filters-btn {
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  background: var(--background-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .clear-filters-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .filter-modal-content {
   padding: 1.5rem;
   max-height: 300px;
   overflow-y: auto;
+  background: var(--background-card);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.filter-modal-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .filter-search-container {
@@ -3704,26 +3721,26 @@ code, .mono, .font-mono {
 }
 
 .filter-search-input {
-  padding: 0.75rem 1rem;
-  border: 2px solid #1a3c7c;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   flex: 1;
   max-width: 400px;
-  background: white;
-  box-shadow: 0 2px 8px rgba(26, 60, 124, 0.1);
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background-light);
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
 }
 
 .filter-search-input:focus {
   outline: none;
-  border-color: #2c5aa0;
-  box-shadow: 0 4px 12px rgba(26, 60, 124, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
 .filter-search-input::placeholder {
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .filter-options-grid {
@@ -3773,46 +3790,45 @@ code, .mono, .font-mono {
 
 .filter-more {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--text-secondary);
   font-style: italic;
   padding: 0.75rem;
   text-align: center;
-  background: #f5f5f5;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .filter-no-results {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   padding: 1rem;
   text-align: center;
-  background: rgba(255, 107, 107, 0.1);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 107, 107, 0.2);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
   font-style: italic;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Stiluri pentru butonul inline de ștergere filtre */
 .clear-filters-inline-btn {
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary-color);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .clear-filters-inline-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
+  background: var(--primary-hover);
 }
 
 /* Meniu de filtre centrat și interactiv - Design consistent cu imaginea */
@@ -3823,7 +3839,7 @@ code, .mono, .font-mono {
   right: 0;
   bottom: 0;
   z-index: 2000;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -3832,9 +3848,10 @@ code, .mono, .font-mono {
 }
 
 .filter-menu-modal {
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   max-width: 800px;
   width: 90%;
   max-height: 80vh;
@@ -3851,30 +3868,32 @@ code, .mono, .font-mono {
 }
 
 .filter-menu-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 1.5rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .filter-menu-header h3 {
   margin: 0;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .filter-menu-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -3883,13 +3902,14 @@ code, .mono, .font-mono {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: 500;
 }
 
 .filter-menu-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .filter-menu-content {
@@ -3900,10 +3920,10 @@ code, .mono, .font-mono {
 
 .filter-menu-description {
   margin: 0 0 1.5rem 0;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 1rem;
   text-align: left;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 400;
 }
 
@@ -3943,7 +3963,7 @@ code, .mono, .font-mono {
   margin-right: 1rem;
   min-width: 30px;
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .filter-menu-item-content {
@@ -3956,27 +3976,28 @@ code, .mono, .font-mono {
 .filter-menu-item-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.3;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .filter-menu-item-count {
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-secondary);
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .filter-menu-item-arrow {
   font-size: 1.2rem;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: bold;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .filter-menu-item:hover .filter-menu-item-arrow {
   transform: translateX(3px);
+  color: var(--primary-color);
 }
 
 /* Stiluri pentru secțiunea de produse selectate */
@@ -6399,7 +6420,7 @@ body.med-ai-dark .patient-notes-done-button:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -6409,66 +6430,60 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .new-patient-modal-content {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: var(--background-card);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   max-width: 450px;
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(26, 60, 124, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideInUp 0.4s ease-out;
 }
 
 .new-patient-modal-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
   position: relative;
 }
 
 .new-patient-modal-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  display: none;
 }
 
 .new-patient-modal-icon {
   font-size: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary-light);
   border-radius: 50%;
   width: 45px;
   height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10px);
 }
 
 .new-patient-modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.01em;
   flex: 1;
 }
 
 .new-patient-modal-close {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -6477,20 +6492,20 @@ body.med-ai-dark .patient-notes-done-button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: 500;
-  backdrop-filter: blur(10px);
 }
 
 .new-patient-modal-close:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.08);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .new-patient-modal-body {
-  padding: 1.25rem;
+  padding: 1.5rem;
   flex: 1;
-  background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+  background: var(--background-card);
   overflow-y: auto;
   min-height: 0;
 }
@@ -6516,16 +6531,16 @@ body.med-ai-dark .patient-notes-done-button:hover {
 
 .new-patient-modal-warning h4 {
   margin: 0 0 0.75rem 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 1.2rem;
   font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.3;
 }
 
 .new-patient-modal-warning p {
   margin: 0 0 0.75rem 0;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -6536,7 +6551,7 @@ body.med-ai-dark .patient-notes-done-button:hover {
   padding: 0;
   list-style: none;
   background: rgba(239, 68, 68, 0.05);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   border: 1px solid rgba(239, 68, 68, 0.1);
 }
@@ -6565,49 +6580,47 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .new-patient-modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid rgba(26, 60, 124, 0.1);
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  background: #ffffff;
-  border-radius: 0 0 16px 16px;
+  background: var(--background-card);
+  border-radius: 0 0 12px 12px;
   flex-shrink: 0;
   margin-top: auto;
 }
 
 .new-patient-cancel-button {
-  padding: 0.75rem 1.5rem;
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: var(--background-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
 }
 
 .new-patient-cancel-button:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #475569;
-  transform: translateY(-1px);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .new-patient-confirm-button {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 700;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 4px 12px rgba(26, 60, 124, 0.25);
-  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
@@ -6615,50 +6628,100 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .new-patient-confirm-button:hover {
-  background: linear-gradient(135deg, #2c5aa0, #1a3c7c);
+  background: var(--primary-hover);
   color: white !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(26, 60, 124, 0.35);
 }
 
-/* ChatBot Styles */
-.chat-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  border: none;
+/* ChatBot Styles - Butonul original este ascuns, folosim doar cel din sidebar */
+.chat-button:not(.chat-button-sidebar) {
+  display: none !important;
+}
+
+.chat-button svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
   color: white;
-  font-size: 24px;
+  stroke: white;
+}
+
+.chat-button:hover svg {
+  color: white;
+  stroke: white;
+}
+
+.medicines-container.dark-mode .chat-button svg {
+  color: white;
+  stroke: white;
+}
+
+.medicines-container.dark-mode .chat-button:hover svg {
+  color: white;
+  stroke: white;
+}
+
+/* Chat Button în Sidebar - pentru ambele moduri */
+.chat-button-sidebar {
+  position: static !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: white;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  margin-bottom: 1rem;
+  color: #334155;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(26, 60, 124, 0.3);
-  z-index: 1000;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.chat-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(26, 60, 124, 0.4);
+.chat-button-sidebar:hover {
+  color: var(--primary-color);
+  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+  transform: translateY(-1px);
 }
 
-/* Dark Mode ChatBot Styles */
-body.medai-dark-mode .chat-button {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 58, 138, 0.9)) !important;
-  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.65);
-  color: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+.chat-button-sidebar svg {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  stroke: currentColor;
 }
 
-body.medai-dark-mode .chat-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 25px rgba(2, 6, 23, 0.75);
-  border-color: #60a5fa;
+.chat-button-sidebar:hover svg {
+  color: inherit;
+  stroke: currentColor;
+}
+
+/* Dark Mode pentru Chat Button în Sidebar */
+.medicines-container.dark-mode .chat-button-sidebar {
+  background: #252525;
+  border-color: #333333;
+  color: #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.medicines-container.dark-mode .chat-button-sidebar:hover {
+  background: #333333;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.medicines-container.dark-mode .chat-button-sidebar svg {
+  color: #e5e5e5;
+  stroke: currentColor;
+}
+
+.medicines-container.dark-mode .chat-button-sidebar:hover svg {
+  color: #3b82f6;
+  stroke: currentColor;
 }
 
 .chat-modal-overlay {
@@ -6676,58 +6739,63 @@ body.medai-dark-mode .chat-button:hover {
   padding: 20px;
 }
 
-body.medai-dark-mode .chat-modal-overlay {
-  background: rgba(2, 6, 23, 0.75);
-  backdrop-filter: blur(12px);
+.medicines-container.dark-mode .chat-modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
 }
 
 .chat-modal {
-  background: white;
-  border-radius: 16px;
+  background: var(--background-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
   width: 95%;
   max-width: 1200px;
   height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
-body.medai-dark-mode .chat-modal {
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.75);
+.medicines-container.dark-mode .chat-modal {
+  background: #1a1a1a !important;
+  border-color: #333333 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
 }
 
 .chat-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 16px 20px;
+  background: var(--background-light);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-body.medai-dark-mode .chat-header {
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.3));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+.medicines-container.dark-mode .chat-header {
+  background: #252525 !important;
+  border-bottom-color: #333333 !important;
+  color: #e5e5e5 !important;
 }
 
 .chat-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
 }
 
-body.medai-dark-mode .chat-header h3 {
-  color: #f8fafc;
+.medicines-container.dark-mode .chat-header h3 {
+  color: #e5e5e5;
 }
 
 .chat-close-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -6735,32 +6803,47 @@ body.medai-dark-mode .chat-header h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  transition: background 0.2s ease;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
-body.medai-dark-mode .chat-close-button {
-  background: rgba(148, 163, 184, 0.2);
-  color: #f8fafc;
+.chat-close-button:hover {
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
-body.medai-dark-mode .chat-close-button:hover {
-  background: rgba(148, 163, 184, 0.4);
-  color: #cfe1ff;
+.medicines-container.dark-mode .chat-close-button {
+  background: transparent;
+  border-color: #333333;
+  color: #a3a3a3;
+}
+
+.medicines-container.dark-mode .chat-close-button:hover {
+  background: #252525;
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: var(--background-light);
+  background: var(--background-card);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-body.medai-dark-mode .chat-messages {
-  background: var(--background-main);
+.chat-messages::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.medicines-container.dark-mode .chat-messages {
+  background: #1a1a1a;
 }
 
 .chat-message {
@@ -6778,45 +6861,47 @@ body.medai-dark-mode .chat-messages {
 
 .message-content {
   max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   word-wrap: break-word;
-  line-height: 1.4;
+  line-height: 1.5;
+  font-size: 0.875rem;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .chat-message.user .message-content {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
+  background: var(--primary-color);
   color: white;
   border-bottom-right-radius: 4px;
 }
 
-body.medai-dark-mode .chat-message.user .message-content {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(96, 165, 250, 0.3));
-  color: #f8fafc;
-  border: 1px solid rgba(96, 165, 250, 0.5);
+.medicines-container.dark-mode .chat-message.user .message-content {
+  background: var(--primary-color);
+  color: white;
 }
 
 .chat-message.assistant .message-content {
-  background: #f1f3f4;
-  color: #333;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-bottom-left-radius: 4px;
 }
 
-body.medai-dark-mode .chat-message.assistant .message-content {
-  background: rgba(15, 23, 42, 0.8);
-  color: #cbd5f5;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+.medicines-container.dark-mode .chat-message.assistant .message-content {
+  background: #252525 !important;
+  color: #e5e5e5 !important;
+  border-color: #333333 !important;
 }
 
 .message-content.loading {
-  background: #f1f3f4;
-  color: #666;
+  background: var(--background-light);
+  color: var(--text-secondary);
   font-style: italic;
 }
 
-body.medai-dark-mode .message-content.loading {
-  background: rgba(15, 23, 42, 0.8);
-  color: #94a3b8;
+.medicines-container.dark-mode .message-content.loading {
+  background: #252525;
+  color: #a3a3a3;
 }
 
 .typing-indicator {
@@ -6834,104 +6919,106 @@ body.medai-dark-mode .message-content.loading {
 }
 
 .chat-input-container {
-  padding: 20px;
-  border-top: 1px solid #e0e0e0;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
   display: flex;
   gap: 12px;
   align-items: flex-end;
   background: var(--background-card);
 }
 
-body.medai-dark-mode .chat-input-container {
-  border-top: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.88);
+.medicines-container.dark-mode .chat-input-container {
+  border-top-color: #333333;
+  background: #1a1a1a;
 }
 
 .chat-input {
   flex: 1;
-  border: 2px solid #e0e0e0;
-  border-radius: 20px;
-  padding: 12px 16px;
-  font-size: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
   resize: none;
   outline: none;
-  transition: border-color 0.2s ease;
-  font-family: inherit;
-  min-height: 20px;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 44px;
   max-height: 100px;
   background: var(--background-light);
   color: var(--text-primary);
 }
 
-body.medai-dark-mode .chat-input {
-  border: 2px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.8);
-  color: #f8fafc;
+.medicines-container.dark-mode .chat-input {
+  border-color: #333333 !important;
+  background: #252525 !important;
+  color: #e5e5e5 !important;
 }
 
 .chat-input:focus {
-  border-color: #1a3c7c;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
-body.medai-dark-mode .chat-input:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+.medicines-container.dark-mode .chat-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .chat-input:disabled {
-  background: #f5f5f5;
+  background: var(--background-light);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-body.medai-dark-mode .chat-input:disabled {
-  background: rgba(15, 23, 42, 0.5);
-  color: #94a3b8;
+.medicines-container.dark-mode .chat-input:disabled {
+  background: #252525;
+  color: #a3a3a3;
 }
 
 .chat-send-button {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
+  border-radius: 8px;
+  background: var(--primary-color);
   border: none;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
-body.medai-dark-mode .chat-send-button {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(96, 165, 250, 0.5));
-  border: 1px solid rgba(96, 165, 250, 0.5);
-  color: #f8fafc;
+.chat-send-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .chat-send-button:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(26, 60, 124, 0.3);
+  background: var(--primary-hover);
 }
 
-body.medai-dark-mode .chat-send-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.7), rgba(59, 130, 246, 0.6));
-  border-color: #60a5fa;
-  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.65);
+.medicines-container.dark-mode .chat-send-button {
+  background: var(--primary-color);
+  color: white;
+}
+
+.medicines-container.dark-mode .chat-send-button:hover:not(:disabled) {
+  background: var(--primary-hover);
 }
 
 .chat-send-button:disabled {
-  background: #ccc;
+  background: var(--background-light);
+  color: var(--text-secondary);
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  opacity: 0.5;
 }
 
-body.medai-dark-mode .chat-send-button:disabled {
-  background: rgba(148, 163, 184, 0.3);
-  color: #94a3b8;
-  border-color: rgba(148, 163, 184, 0.2);
+.medicines-container.dark-mode .chat-send-button:disabled {
+  background: #252525;
+  color: #a3a3a3;
 }
 
 
