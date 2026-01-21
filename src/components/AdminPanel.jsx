@@ -562,7 +562,6 @@ const AdminPanel = ({ currentUser, onClose, isFullPage = false, onLogout }) => {
                           cursor: 'pointer',
                           fontSize: '12px'
                         }}
-                        title="Șterge rețetă"
                       >
                         🗑️ Șterge
                       </button>

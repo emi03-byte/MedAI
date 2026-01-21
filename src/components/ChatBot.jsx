@@ -20,11 +20,22 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
     role: 'assistant',
     content: 'Mulțumesc pentru interes! Contul tău este în curs de aprobare. Putem discuta imediat ce este aprobat.'
   }
+  const rejectedAccountMessage = {
+    role: 'assistant',
+    content: 'Ne pare rău, dar nu ai acces la chat-ul medical. Contul tău nu a fost aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări.'
+  }
+  const noAccountMessage = {
+    role: 'assistant',
+    content: 'Pentru a folosi chat-ul medical, trebuie să te autentifici sau să-ți creezi un cont.\n\nDupă autentificare și aprobare, vei putea accesa toate funcționalitățile aplicației.'
+  }
   const [messages, setMessages] = useState([defaultWelcomeMessage])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const isPendingApproval = currentUser?.status === 'pending'
+  const isRejected = currentUser?.status === 'rejected'
+  const hasNoAccount = !currentUser
+  const cannotUseChat = isPendingApproval || isRejected || hasNoAccount
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -45,12 +56,20 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
 
   useEffect(() => {
     if (!isOpen) return
+    if (isRejected) {
+      setMessages([rejectedAccountMessage])
+      return
+    }
+    if (hasNoAccount) {
+      setMessages([noAccountMessage])
+      return
+    }
     if (isPendingApproval) {
       setMessages([pendingApprovalMessage])
       return
     }
     setMessages([defaultWelcomeMessage])
-  }, [isOpen, isPendingApproval])
+  }, [isOpen, isPendingApproval, isRejected, hasNoAccount])
 
   // Ascultă pentru event-ul de deschidere chat din sidebar
   useEffect(() => {
@@ -64,7 +83,7 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
   }, [])
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading || isPendingApproval) return
+    if (!inputMessage.trim() || isLoading || cannotUseChat) return
 
     const userMessage = inputMessage.trim()
     setInputMessage('')
@@ -182,7 +201,6 @@ IMPORTANT:
         <button 
           className={`chat-button ${renderButtonInSidebar ? 'chat-button-sidebar' : ''}`}
           onClick={() => setIsOpen(true)}
-          title="Asistent AI Medical"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -237,18 +255,22 @@ IMPORTANT:
             <div className="chat-input-container">
               <textarea
                 className="chat-input"
-                placeholder={isPendingApproval ? 'Cont în așteptare aprobare' : 'Scrie un mesaj...'}
+                placeholder={
+                  isRejected ? 'Cont respins - nu ai acces la chat' :
+                  hasNoAccount ? 'Autentificare necesară' :
+                  isPendingApproval ? 'Cont în așteptare aprobare' : 
+                  'Scrie un mesaj...'
+                }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading || isPendingApproval}
+                disabled={isLoading || cannotUseChat}
                 rows={1}
               />
               <button 
                 className="chat-send-button"
                 onClick={sendMessage}
-                disabled={isLoading || isPendingApproval || !inputMessage.trim()}
-                title="Trimite mesaj"
+                disabled={isLoading || cannotUseChat || !inputMessage.trim()}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"></line>

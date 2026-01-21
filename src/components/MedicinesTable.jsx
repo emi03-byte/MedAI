@@ -2627,7 +2627,6 @@ Programează o consultație dacă simptomele persistă`
                 // Deschide chat-ul - trigger event pentru ChatBot
                 window.dispatchEvent(new CustomEvent('openChatBot'))
               }}
-              title="Asistent AI Medical"
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2640,7 +2639,6 @@ Programează o consultație dacă simptomele persistă`
           <div 
             className="sidebar-theme-toggle"
             onClick={() => setIsNightMode(prev => !prev)}
-            title={isNightMode ? 'Comută la modul zi' : 'Comută la modul noapte'}
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}
           >
             {isNightMode ? (
@@ -2658,7 +2656,6 @@ Programează o consultație dacă simptomele persistă`
             <button 
               className="sidebar-avatar"
               onClick={() => setShowAvatarMenu(!showAvatarMenu)}
-              title="Cont"
               aria-label="Cont"
             >
               {currentUser ? (
@@ -2744,7 +2741,6 @@ Programează o consultație dacă simptomele persistă`
                         setSelectedPrescriptions(prescriptionHistory.map(p => p.id))
                       }
                     }}
-                    title={selectedPrescriptions.length === prescriptionHistory.length ? 'Deselectează toate' : 'Selectează toate'}
                   >
                     {selectedPrescriptions.length === prescriptionHistory.length ? 'Selectate toate' : 'Selectează toate'}
                   </button>
@@ -2758,7 +2754,6 @@ Programează o consultație dacă simptomele persistă`
                       setShowDeleteConfirmModal(true)
                     }}
                     disabled={selectedPrescriptions.length === 0}
-                    title="Șterge rețetele selectate"
                   >
                     Șterge ({selectedPrescriptions.length})
                   </button>
@@ -2768,7 +2763,6 @@ Programează o consultație dacă simptomele persistă`
                       setIsDeleteMode(false)
                       setSelectedPrescriptions([])
                     }}
-                    title="Anulează"
                   >
                     ✕ Anulează
                   </button>
@@ -2777,7 +2771,6 @@ Programează o consultație dacă simptomele persistă`
                 <button
                   className="history-delete-button"
                   onClick={() => setIsDeleteMode(true)}
-                  title="Șterge rețete"
                 >
                   Șterge
                 </button>
@@ -2793,7 +2786,6 @@ Programează o consultație dacă simptomele persistă`
                     setHistoryViewMode('list')
                   }
                 }}
-                title={`Mod vizualizare: ${historyViewMode === 'list' ? 'Listă' : historyViewMode === 'compact' ? 'Compact' : 'Mare'}`}
               >
                 {historyViewMode === 'list' ? '☰' : historyViewMode === 'compact' ? '☷' : '☰☰'}
             </button>
@@ -2855,7 +2847,6 @@ Programează o consultație dacă simptomele persistă`
                     setHistorySpecificDate('')
                     setHistoryNameFilter('')
                   }}
-                  title="Șterge filtrele"
                 >
                   ✕ Șterge filtrele
                 </button>
@@ -2988,7 +2979,6 @@ Programează o consultație dacă simptomele persistă`
                               e.stopPropagation()
                               downloadPrescriptionPDF(prescription)
                             }}
-                            title="Descarcă PDF"
                             style={{ zIndex: 10, position: 'relative' }}
                           >
                             📄 PDF
@@ -3001,7 +2991,6 @@ Programează o consultație dacă simptomele persistă`
                                 console.log('Buton Arată apăsat pentru rețeta:', prescription.id)
                                 setExpandedCardId(prescription.id)
                               }}
-                              title="Arată"
                               style={{ zIndex: 10, position: 'relative' }}
                             >
                               Arată
@@ -3207,7 +3196,6 @@ Programează o consultație dacă simptomele persistă`
               <button
                 className="auth-button admin-button"
                 onClick={() => setShowAdminPanel(true)}
-                title="Panou Management"
               >
                 🔐 Management
               </button>
@@ -3279,7 +3267,6 @@ Programează o consultație dacă simptomele persistă`
                               type="button"
                               className="mic-cancel-button"
                               aria-label="Oprește înregistrarea"
-                              title="Oprește înregistrarea"
                               onClick={handleStopMicPatient}
                             >
                               STOP
@@ -3289,7 +3276,6 @@ Programează o consultație dacă simptomele persistă`
                             type="button"
                             className={`mic-record-button-simple ${isRecordingMicPatient ? 'recording' : ''}`}
                             aria-label={isRecordingMicPatient ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
-                            title={isRecordingMicPatient ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
                             onClick={handleMicRecordPatient}
                           >
                             🎙️
@@ -3380,7 +3366,6 @@ etc.`
                               type="button"
                               className="mic-cancel-button"
                               aria-label="Oprește înregistrarea"
-                              title="Oprește înregistrarea"
                               onClick={handleStopMic}
                             >
                               STOP
@@ -3390,7 +3375,6 @@ etc.`
                             type="button"
                             className={`mic-record-button-simple ${isRecordingMic ? 'recording' : ''}`}
                             aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
-                            title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
                             onClick={handleMicRecord}
                           >
                             🎙️
@@ -3547,7 +3531,6 @@ etc.`
                     type="button"
                     className="mic-cancel-button"
                     aria-label="Oprește înregistrarea"
-                    title="Oprește înregistrarea"
                     onClick={handleStopMicPatient}
                   >
                     STOP
@@ -3557,7 +3540,6 @@ etc.`
                   type="button"
                   className={`mic-record-button ${isRecordingMicPatient ? 'recording' : ''}`}
                   aria-label={isRecordingMicPatient ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
-                  title={isRecordingMicPatient ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
                   onClick={handleMicRecordPatient}
                 >
                   <span className="mic-emoji" aria-hidden="true">🎙️</span>
@@ -3673,7 +3655,6 @@ etc.`
                       type="button"
                       className="mic-cancel-button"
                       aria-label="Oprește înregistrarea"
-                      title="Oprește înregistrarea"
                       onClick={handleStopMic}
                     >
                       STOP
@@ -3683,7 +3664,6 @@ etc.`
                     type="button"
                     className={`mic-record-button ${isRecordingMic ? 'recording' : ''}`}
                     aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
-                    title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
                     onClick={handleMicRecord}
                   >
                     <span className="mic-emoji" aria-hidden="true">🎙️</span>
@@ -3810,7 +3790,6 @@ etc.`
                     }
                     setShowUnifiedIndications(true)
                   }}
-                  title="Indicații pacient/medic"
                 >
                   Indicații pacient/medic
                 </button>
@@ -3846,7 +3825,6 @@ etc.`
         <button 
                             className="medicine-table-action-btn medicine-table-add-medicine-btn"
                             onClick={openAddMedicineModal}
-                            title="Adaugă medicament personalizat"
         >
                             Adaugă medicament
         </button>
@@ -3856,7 +3834,6 @@ etc.`
         <button 
                         className="medicine-table-action-btn active"
           onClick={handleContextMenuClick}
-                        title="Filtre"
         >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -3865,7 +3842,6 @@ etc.`
           <button 
                         className="medicine-table-action-btn"
                         onClick={() => setShowColumnModal(true)}
-                        title="Coloane"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="3" width="7" height="7"/>
@@ -3888,7 +3864,6 @@ etc.`
                     clearAllFilters()
                     setSearchTerms({})
                   }}
-                  title="Șterge toate filtrele"
                 >
                   Șterge filtre
                 </button>
@@ -4159,18 +4134,19 @@ etc.`
                 </svg>
                 <h3>LISTA MEDICAMENTE ({selectedProducts.length})</h3>
               </div>
+              {selectedProducts.length > 0 && (
                 <button 
-                className="prescription-panel-print-btn"
-                    onClick={clearSelectedProducts}
-                title="Șterge toate medicamentele"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" y1="11" x2="10" y2="17"/>
-                  <line x1="14" y1="11" x2="14" y2="17"/>
-                </svg>
-                  </button>
+                  className="prescription-panel-print-btn"
+                  onClick={clearSelectedProducts}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                  </svg>
+                </button>
+              )}
             </div>
             
             {/* Content Scrollable */}
@@ -4198,7 +4174,6 @@ etc.`
                           <button 
                             className="prescription-medicine-remove"
                             onClick={() => removeSelectedProduct(product['Cod medicament'])}
-                            title="Șterge medicament"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -5109,7 +5084,6 @@ etc.`
                           fontSize: '18px',
                           color: 'var(--text-secondary)'
                         }}
-                        title={showLoginPassword ? 'Ascunde parola' : 'Afișează parola'}
                       >
                         {showLoginPassword ? '🙈' : '👁️'}
                       </button>
@@ -5436,7 +5410,6 @@ etc.`
                           fontSize: '18px',
                           color: 'var(--text-secondary)'
                         }}
-                        title={showSignUpPassword ? 'Ascunde parola' : 'Afișează parola'}
                       >
                         {showSignUpPassword ? '🙈' : '👁️'}
                       </button>
@@ -5485,7 +5458,6 @@ etc.`
                           fontSize: '18px',
                           color: 'var(--text-secondary)'
                         }}
-                        title={showSignUpConfirmPassword ? 'Ascunde parola' : 'Afișează parola'}
                       >
                         {showSignUpConfirmPassword ? '🙈' : '👁️'}
                       </button>
