@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import MedicinesTable from './components/MedicinesTable'
 import ChatBot from './components/ChatBot/ChatBot'
-import { API_BASE_URL } from './config/env'
-import { mapMedicationRowsToUi } from './domain/medications'
+import { loadAllMedicationsForUi } from './domain/medicationsLoader'
 import './App.css'
 
 function App() {
@@ -29,14 +28,8 @@ function App() {
   useEffect(() => {
     const fetchFromBackend = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        const data = await response.json()
-        const items = Array.isArray(data.items) ? data.items : []
-        const mapped = mapMedicationRowsToUi(items)
-        setMedicinesData(mapped)
+        const rows = await loadAllMedicationsForUi()
+        setMedicinesData(rows)
       } catch (error) {
         console.error('Error loading medications for chatbot from backend:', error)
       }

@@ -3,7 +3,7 @@ import html2pdf from 'html2pdf.js'
 import { API_BASE_URL } from '../config/env'
 import { createChatCompletion } from '../api/chatApi'
 import { deleteSelfAccount, getMe, recoverAccount } from '../api/authApi'
-import { getAllMedications } from '../api/medicationsApi'
+import { loadAllMedicationsForUi } from '../domain/medicationsLoader'
 import { createPrescription } from '../api/prescriptionsApi'
 import {
   createUserMedicine,
@@ -651,20 +651,8 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       setLoading(true)
       console.log('🔄 Încerc să încarc medicamentele din backend SQLite...')
 
-      // Luăm toate medicamentele din baza de date (6479+ înregistrări)
-      let data
-      try {
-        data = await getAllMedications()
-      } catch (error) {
-        if (error && typeof error.status === 'number') {
-          throw new Error(`HTTP error! status: ${error.status}`)
-        }
-        throw error
-      }
-      const items = Array.isArray(data.items) ? data.items : []
-
-      // Mapăm fiecare rând SQL la forma de obiect folosită deja în UI
-      const medicinesData = items.map(mapMedicationRowToUi)
+      // Prefer backend-ul când există; fallback automat la CSV (public) când backend-ul lipsește
+      const medicinesData = await loadAllMedicationsForUi()
 
       console.log(`✅ Încărcat din backend: ${medicinesData.length} medicamente`)
       if (medicinesData[0]) {
