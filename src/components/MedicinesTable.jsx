@@ -1,13 +1,32 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import html2pdf from 'html2pdf.js'
+import { API_BASE_URL } from '../config/env'
+import { createChatCompletion } from '../api/chatApi'
+import { deleteSelfAccount, getMe, recoverAccount } from '../api/authApi'
+import { getAllMedications } from '../api/medicationsApi'
+import { createPrescription } from '../api/prescriptionsApi'
+import {
+  createUserMedicine,
+  deleteUserMedicine,
+  listUserMedicines,
+  updateUserMedicine,
+} from '../api/userMedicinesApi'
+import {
+  clearCurrentUser as clearStoredCurrentUser,
+  getCurrentUser as getStoredCurrentUser,
+  setCurrentUser as setStoredCurrentUser,
+} from '../utils/storage'
+import AdminPanel from './AdminPanel/AdminPanel'
+import PlanModal from './MedicinesTable/PlanModal'
+import { getStorageItem, removeStorageItem, setStorageItem } from './MedicinesTable/storagePerUser'
+import { useSpeechToText } from './MedicinesTable/speech/useSpeechToText'
+import HistoryPage from './MedicinesTable/history/HistoryPage'
+import { downloadPrescriptionPDF as downloadPrescriptionPDFImpl } from './MedicinesTable/history/pdf'
+import CheckoutModal from './MedicinesTable/checkout/CheckoutModal'
+import { openCheckoutHtml } from './MedicinesTable/checkout/openCheckoutHtml'
+import { useCheckout } from './MedicinesTable/checkout/useCheckout'
+import AuthModals from './MedicinesTable/auth/AuthModals'
 import './MedicinesTable.css'
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:4',message:'Before AdminPanel import',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-// #endregion
-import AdminPanel from './AdminPanel'
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:6',message:'After AdminPanel import',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-// #endregion
 
 const hospitalFaviconSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Hospital icon">
@@ -26,37 +45,7 @@ const hospitalFaviconSvg = `
 
 const hospitalFaviconDataUrl = `data:image/svg+xml,${encodeURIComponent(hospitalFaviconSvg)}`
 
-// Baza URL pentru backend-ul Node/Express cu SQLite
-const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
-
-// Funcții helper pentru localStorage per user
-const getStorageKey = (key, userId) => {
-  return userId ? `${key}_user_${userId}` : key
-}
-
-const getStorageItem = (key, userId) => {
-  const storageKey = getStorageKey(key, userId)
-  return localStorage.getItem(storageKey)
-}
-
-const setStorageItem = (key, value, userId) => {
-  const storageKey = getStorageKey(key, userId)
-  if (value !== null && value !== undefined && value !== '') {
-    localStorage.setItem(storageKey, value)
-  } else {
-    localStorage.removeItem(storageKey)
-  }
-}
-
-const removeStorageItem = (key, userId) => {
-  const storageKey = getStorageKey(key, userId)
-  localStorage.removeItem(storageKey)
-}
-
 const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCategories = [], onCategoryChange = () => {}, onHistoryPageChange = () => {} }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:50',message:'MedicinesTable component starting',data:{ageCategory},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -178,27 +167,15 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
     try {
       setRecoverLoading(true)
-      const response = await fetch(`${API_BASE_URL}/api/auth/recover`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nume: signUpName,
-          email: signUpEmail,
-          parola: signUpPassword,
-          mode
-        })
+      const data = await recoverAccount({
+        name: signUpName,
+        email: signUpEmail,
+        password: signUpPassword,
+        mode,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Eroare la recuperarea contului')
-      }
-
       if (data.user) {
-        localStorage.setItem('currentUser', JSON.stringify(data.user))
+        setStoredCurrentUser(data.user)
         setCurrentUser(data.user)
         loadUserData(data.user.id)
       }
@@ -226,21 +203,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/delete?userId=${currentUser.id}`, {
-        method: 'DELETE'
-      })
-      const contentType = response.headers.get('content-type')
-      let data
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json()
-      } else {
-        const text = await response.text()
-        throw new Error(`Răspuns invalid de la server: ${text.slice(0, 120)}`)
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Eroare la ștergerea contului')
-      }
+      await deleteSelfAccount({ userId: currentUser.id })
 
       // Curăță datele locale și deloghează utilizatorul
       setPatientNotes('')
@@ -248,7 +211,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       setDoctorNotes('')
       setSelectedProducts([])
       setMedicinePlans({})
-      localStorage.removeItem('currentUser')
+      clearStoredCurrentUser()
       setCurrentUser(null)
       setShowStatsModal(false)
     } catch (error) {
@@ -258,42 +221,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   }
   const [historyNameFilter, setHistoryNameFilter] = useState('')
 
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:131',message:'All state declarations completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  } catch (e) {
-    console.error('Log error:', e);
-  }
-  // #endregion
-
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:139',message:'Before first useEffect',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  } catch (e) {
-    console.error('Log error before useEffect:', e);
-  }
-  // #endregion
-
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:148',message:'About to declare useEffect',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  } catch (e) {
-    console.error('Log error before useEffect declaration:', e);
-  }
-  // #endregion
-
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:156',message:'useEffect declared, about to execute',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  } catch (e) {
-    console.error('Log error after useEffect declaration:', e);
-  }
-  // #endregion
-
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:163',message:'useEffect isNightMode started',data:{isNightMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     document.body.classList.toggle('med-ai-dark', isNightMode)
 
     return () => {
@@ -302,9 +230,6 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   }, [isNightMode])
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:142',message:'useEffect cleanup started',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort()
@@ -367,43 +292,38 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
   // Verifică dacă există un utilizator autentificat la încărcarea paginii
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:212',message:'useEffect currentUser check started',data:{loadUserDataType:typeof loadUserData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
-    const savedUser = localStorage.getItem('currentUser')
+    const savedUser = getStoredCurrentUser()
     if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser)
-        setCurrentUser(user)
-        // Verifică dacă utilizatorul există încă în backend
-        fetch(`${API_BASE_URL}/api/auth/me?userId=${user.id}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.user) {
-              setCurrentUser(data.user)
-              localStorage.setItem('currentUser', JSON.stringify(data.user))
-              // Încarcă datele utilizatorului din localStorage
-              loadUserData(data.user.id)
-            } else {
-              // Utilizatorul nu mai există, șterge din localStorage
-              localStorage.removeItem('currentUser')
-              setCurrentUser(null)
-              // Încarcă datele pentru utilizator neautentificat
-              loadUserData(null)
-            }
-          })
-          .catch(() => {
-            // Eroare la verificare, păstrează utilizatorul din localStorage
+      const user = savedUser
+      setCurrentUser(user)
+      // Verifică dacă utilizatorul există încă în backend
+      getMe({ userId: user.id })
+        .then((data) => {
+          if (data.user) {
+            setCurrentUser(data.user)
+            setStoredCurrentUser(data.user)
             // Încarcă datele utilizatorului din localStorage
-            loadUserData(user.id)
-          })
-      } catch (error) {
-        console.error('Eroare la parsarea utilizatorului:', error)
-        localStorage.removeItem('currentUser')
-        setCurrentUser(null)
-        // Încarcă datele pentru utilizator neautentificat
-        loadUserData(null)
-      }
+            loadUserData(data.user.id)
+          } else {
+            // Utilizatorul nu mai există, șterge din localStorage
+            clearStoredCurrentUser()
+            setCurrentUser(null)
+            // Încarcă datele pentru utilizator neautentificat
+            loadUserData(null)
+          }
+        })
+        .catch((error) => {
+          // Dacă utilizatorul nu mai există, șterge din localStorage (comportament identic cu varianta pe fetch)
+          if (error && typeof error.status === 'number' && error.status === 404) {
+            clearStoredCurrentUser()
+            setCurrentUser(null)
+            loadUserData(null)
+            return
+          }
+          // Eroare la verificare, păstrează utilizatorul din localStorage
+          // Încarcă datele utilizatorului din localStorage
+          loadUserData(user.id)
+        })
     } else {
       // Nu există utilizator autentificat, încarcă datele pentru utilizator neautentificat
       loadUserData(null)
@@ -459,7 +379,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     setSelectedProducts([])
     setMedicinePlans({})
     setUserMedicines([])
-    localStorage.removeItem('currentUser')
+    clearStoredCurrentUser()
     setCurrentUser(null)
     setShowAdminPanel(false)
     setShowHistoryPage(false)
@@ -732,13 +652,15 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       console.log('🔄 Încerc să încarc medicamentele din backend SQLite...')
 
       // Luăm toate medicamentele din baza de date (6479+ înregistrări)
-      const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      let data
+      try {
+        data = await getAllMedications()
+      } catch (error) {
+        if (error && typeof error.status === 'number') {
+          throw new Error(`HTTP error! status: ${error.status}`)
+        }
+        throw error
       }
-
-      const data = await response.json()
       const items = Array.isArray(data.items) ? data.items : []
 
       // Mapăm fiecare rând SQL la forma de obiect folosită deja în UI
@@ -765,11 +687,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       return
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user-medicines?userId=${currentUser.id}`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
+      const data = await listUserMedicines({ userId: currentUser.id })
       const items = Array.isArray(data.medicines) ? data.medicines : []
       setUserMedicines(items)
     } catch (error) {
@@ -878,9 +796,6 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
 
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:616',message:'useEffect fetchDiseases/fetchMedicines started',data:{fetchDiseasesType:typeof fetchDiseases,fetchMedicinesType:typeof fetchMedicines},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     fetchDiseases()
     fetchMedicines()
     // Datele utilizatorului se vor încărca când se autentifică (vezi useEffect pentru currentUser)
@@ -941,17 +856,12 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     const advice = []
     
     try {
-      const response = await fetch('/api/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: `Ești un medic specialist cu experiență vastă. Analizează indicațiile pacientului și oferă 5-6 sfaturi medicale profesionale, concrete și practice.
+      const data = await createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `Ești un medic specialist cu experiență vastă. Analizează indicațiile pacientului și oferă 5-6 sfaturi medicale profesionale, concrete și practice.
 
 IMPORTANT:
 - Scrie ca un medic real, natural și familiar
@@ -971,42 +881,16 @@ Monitorizează temperatura regulat dacă ai febră
 Verifică tensiunea arterială dacă durerile persistă
 Consideră odihna și hidratarea abundentă
 Programează o consultație dacă simptomele persistă`
-            },
-            {
-              role: 'user',
-              content: `Indicațiile pacientului: "${patientNotesText}"`
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 500
-        })
+          },
+          {
+            role: 'user',
+            content: `Indicațiile pacientului: "${patientNotesText}"`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ OpenAI API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
-        
-        // Dacă este o eroare de autentificare, oferă un mesaj mai clar
-        if (response.status === 401 || response.status === 403) {
-          advice.push({ 
-            icon: '⚠️', 
-            text: 'Cheia API OpenAI nu este configurată sau este invalidă. Verifică fișierul .env' 
-          })
-        } else {
-          advice.push({ 
-            icon: '❌', 
-            text: `Eroare la conectarea la serviciul AI: ${response.status} ${response.statusText}` 
-          })
-        }
-        return advice
-      }
-
-      const data = await response.json()
-      
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         console.error('❌ Format răspuns OpenAI invalid:', data)
         advice.push({ icon: '❌', text: 'Format răspuns invalid de la serviciul AI' })
@@ -1033,6 +917,15 @@ Programează o consultație dacă simptomele persistă`
       
       // Gestionare specifică pentru diferite tipuri de erori
       let errorMessage = 'Nu s-a putut conecta la serviciul AI'
+      // Dacă este o eroare de autentificare, oferă un mesaj mai clar
+      if (error && (error.status === 401 || error.status === 403)) {
+        advice.push({
+          icon: '⚠️',
+          text: 'Cheia API OpenAI nu este configurată sau este invalidă. Verifică fișierul .env',
+        })
+        console.log('✅ AI: Sfaturi finale generate:', advice.slice(0, 6))
+        return advice.slice(0, 6)
+      }
       
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
         errorMessage = 'Serverul de dezvoltare nu este disponibil. Asigură-te că rulează "npm run dev" și că serverul Vite este pornit pe portul 5546.'
@@ -1040,6 +933,8 @@ Programează o consultație dacă simptomele persistă`
         errorMessage = 'Eroare de rețea. Verifică conexiunea la internet.'
       } else if (error.message.includes('CORS')) {
         errorMessage = 'Eroare CORS. Verifică configurația proxy-ului în vite.config.js.'
+      } else if (error && typeof error.status === 'number') {
+        errorMessage = `Eroare la conectarea la serviciul AI: ${error.status}`
       } else {
         errorMessage = `Eroare: ${error.message || 'Eroare necunoscută'}`
       }
@@ -1286,253 +1181,18 @@ Programează o consultație dacă simptomele persistă`
     }
   }
 
-  const handleCheckoutBack = () => {
-    setIsCheckoutOpen(false)
-  }
+  const { handleCheckoutBack } = useCheckout({ setIsCheckoutOpen })
 
   // Funcție pentru deschiderea produselor selectate într-o pagină de checkout (HTML, fără PDF)
   const downloadSelectedProducts = useCallback(async () => {
-    console.log('🔄 Pregătesc pagina de checkout...')
-    const hasMedicines = selectedProducts.length > 0
-    const hasPatientNotes = patientNotes && patientNotes.trim() !== ''
-    const hasDoctorNotes = doctorNotes && doctorNotes.trim() !== ''
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <link rel="icon" type="image/svg+xml" href="${hospitalFaviconDataUrl}">
-          <title>Checkout rețetă</title>
-          <style>
-            * {
-              box-sizing: border-box;
-            }
-            html, body {
-              background-color: #ffffff !important;
-              color: #333333 !important;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              margin: 28px;
-              color: #333 !important;
-              background-color: #ffffff !important;
-            }
-            .pdf-container {
-              margin-top: 35px;
-              padding: 24px 30px 36px;
-              background-color: #ffffff !important;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 28px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 10px;
-              background-color: #ffffff !important;
-            }
-            .header h1 {
-              color: #1a3c7c !important;
-              margin: 0;
-              font-size: 24.5px;
-            }
-            .header p {
-              margin: 6px 0 0 0;
-              color: #666666 !important;
-              font-size: 14px;
-            }
-            .table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-              background-color: #ffffff !important;
-            }
-            .table th {
-              background-color: #f5f5f5 !important;
-              color: #555555 !important;
-              padding: 12px 10px;
-              text-align: left;
-              font-weight: 600;
-              border-bottom: 1px solid #d0d7e4;
-              font-size: 13.6px;
-            }
-            .table td {
-              padding: 11px 9px;
-              border-bottom: 1px solid #e1e5ed;
-              font-size: 13px;
-              color: #333333 !important;
-              background-color: #ffffff !important;
-            }
-            .table td:nth-child(2),
-            .table td:nth-child(3),
-            .table td:nth-child(4) {
-              font-size: 14.5px;
-            }
-            .table tr:nth-child(even) {
-              background-color: #f9f9f9 !important;
-            }
-            .table tr:nth-child(even) td {
-              background-color: #f9f9f9 !important;
-            }
-            .table tr:hover {
-              background-color: #f0f8ff !important;
-            }
-            .table tr:hover td {
-              background-color: #f0f8ff !important;
-            }
-            .patient-indications-section {
-              margin-top: 30px;
-              page-break-inside: avoid;
-            }
-            .patient-indications-section h2 {
-              color: #1a3c7c !important;
-              font-size: 18.2px;
-              margin-bottom: 15px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 5px;
-            }
-            .patient-indications-content {
-              background-color: #f8f9fa !important;
-              border: 1px solid #e9ecef !important;
-              border-radius: 5px;
-              padding: 16px;
-              font-size: 14.7px;
-              line-height: 1.6;
-              color: #333333 !important;
-              white-space: pre-line;
-              text-align: left;
-              text-indent: 0 !important;
-              margin: 0 !important;
-              padding-left: 10px !important;
-            }
-            .patient-indications-content p {
-              margin: 0 !important;
-              padding: 0 !important;
-              text-indent: 0 !important;
-              color: #333333 !important;
-            }
-            .patient-indications-content::first-line {
-              text-indent: 0 !important;
-            }
-            .doctor-indications-section {
-              margin-top: 30px;
-              page-break-inside: avoid;
-            }
-            .doctor-indications-section h2 {
-              color: #1a3c7c !important;
-              font-size: 18.2px;
-              margin-bottom: 15px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 5px;
-            }
-            .doctor-indications-content {
-              background-color: #f8f9fa !important;
-              border: 1px solid #e9ecef !important;
-              border-radius: 5px;
-              padding: 16px;
-              font-size: 14.7px;
-              line-height: 1.6;
-              color: #333333 !important;
-              white-space: pre-line;
-              text-align: left;
-              text-indent: 0 !important;
-              margin: 0 !important;
-              padding-left: 10px !important;
-            }
-            .doctor-indications-content p {
-              margin: 0 !important;
-              padding: 0 !important;
-              text-indent: 0 !important;
-              color: #333333 !important;
-            }
-            .doctor-indications-content::first-line {
-              text-indent: 0 !important;
-            }
-            .footer {
-              margin-top: 30px;
-              text-align: center;
-              font-size: 12.5px;
-              color: #666666 !important;
-              border-top: 1px solid #dddddd;
-              padding-top: 10px;
-              background-color: #ffffff !important;
-            }
-            .footer p {
-              color: #666666 !important;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="pdf-container">
-            <div class="header">
-              <h1>${hasMedicines ? 'Rețetă' : 'Notițe Medicale'}</h1>
-              <p>Generat la: ${new Date().toLocaleString('ro-RO')}</p>
-              ${hasMedicines ? `<p>Total medicamente: ${selectedProducts.length}</p>` : ''}
-            </div>
-            
-            ${hasMedicines ? `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Nr.</th>
-                  <th>Denumire Medicament</th>
-                  <th>Cod Medicament</th>
-                  <th>Plan de Tratament</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${selectedProducts.map((product, index) => {
-                  const plan = medicinePlans[product['Cod medicament']] || {}
-                  const planText = plan.duration ? `${plan.duration} ${plan.unit || 'zile'}, ${plan.frequency || '1x/zi'}` : ''
-                  return `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td>${product['Denumire medicament'] || ''}</td>
-                      <td>${product['Cod medicament'] || ''}</td>
-                      <td>${planText}</td>
-                    </tr>
-                  `
-                }).join('')}
-              </tbody>
-            </table>
-            ` : ''}
-            
-            ${hasPatientNotes ? `
-            <div class="patient-indications-section">
-              <h2>Indicații Pacient</h2>
-              <div class="patient-indications-content">
-                ${patientName && patientName.trim() !== '' ? `Nume: ${patientName}\n\n` : ''}${patientNotes}
-              </div>
-            </div>
-            ` : ''}
-            
-            ${hasDoctorNotes ? `
-            <div class="doctor-indications-section">
-              <h2>Indicații Medic</h2>
-              <div class="doctor-indications-content">
-                ${doctorNotes}
-              </div>
-            </div>
-            ` : ''}
-            
-            <div class="footer">
-              <p>Document generat automat de aplicația MedAI</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
-
-    try {
-      const blob = new Blob([htmlContent], { type: 'text/html' })
-      const blobUrl = URL.createObjectURL(blob)
-
-      window.open(blobUrl, '_blank', 'noopener,noreferrer')
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000)
-    } catch (error) {
-      console.error('❌ Eroare la generarea PDF-ului:', error)
-      alert('A apărut o eroare la generarea PDF-ului. Încearcă din nou.')
-    }
+    await openCheckoutHtml({
+      faviconDataUrl: hospitalFaviconDataUrl,
+      selectedProducts,
+      medicinePlans,
+      patientNotes,
+      doctorNotes,
+      patientName,
+    })
   }, [selectedProducts, medicinePlans, patientNotes, doctorNotes, patientName])
 
   // Funcție pentru ștergerea tuturor datelor (pacient nou) - MUTATĂ AICI PENTRU A FI DISPONIBILĂ ÎNAINTE DE handleCheckoutConfirm
@@ -1575,9 +1235,6 @@ Programează o consultație dacă simptomele persistă`
   }, [currentUser, showAccountStatusMessage])
 
   const handleCheckoutConfirm = useCallback(async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1307',message:'handleCheckoutConfirm called',data:{downloadSelectedProductsType:typeof downloadSelectedProducts,hasDownloadSelectedProducts:!!downloadSelectedProducts},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     // Verifică dacă există cel puțin unul dintre: medicamente, nume pacient, indicații pacient, indicații medic
     const hasMedicines = selectedProducts && selectedProducts.length > 0
     const hasPatientName = patientName && patientName.trim() !== ''
@@ -1603,34 +1260,30 @@ Programează o consultație dacă simptomele persistă`
           indicatiiPacient: patientNotes || null,
           indicatiiMedic: doctorNotes || null
         })
-        
-        const response = await fetch(`${API_BASE_URL}/api/prescriptions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.id,
-            numePacient: patientName || null,
-            medicamente: selectedProducts || [],
-            planuriTratament: medicinePlans,
-            indicatiiPacient: patientNotes || null,
-            indicatiiMedic: doctorNotes || null
-          })
-        })
 
-        const data = await response.json()
-        if (response.ok && data.success) {
+        const data = await createPrescription({
+          userId: currentUser.id,
+          numePacient: patientName || null,
+          medicamente: selectedProducts || [],
+          planuriTratament: medicinePlans,
+          indicatiiPacient: patientNotes || null,
+          indicatiiMedic: doctorNotes || null,
+        })
+        if (data && data.success) {
           console.log('✅ [FRONTEND] Rețetă salvată cu succes:', data.prescription)
           // Nu afișăm alert aici, continuăm cu generarea PDF-ului
         } else {
-          console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', data.error)
-          alert(`Eroare la salvarea rețetei: ${data.error || 'Eroare necunoscută'}`)
+          console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', data?.error)
+          alert(`Eroare la salvarea rețetei: ${data?.error || 'Eroare necunoscută'}`)
           return
         }
       } catch (error) {
         console.error('❌ [FRONTEND] Eroare la salvarea rețetei:', error)
-        alert(`Eroare de conexiune la salvarea rețetei: ${error.message}`)
+        if (error && typeof error.status === 'number') {
+          alert(`Eroare la salvarea rețetei: ${error.message || 'Eroare necunoscută'}`)
+        } else {
+          alert(`Eroare de conexiune la salvarea rețetei: ${error.message}`)
+        }
         return
       }
     } else {
@@ -1638,13 +1291,7 @@ Programează o consultație dacă simptomele persistă`
     }
 
     // Generează PDF-ul exact ca înainte, apoi șterge datele și închide checkout-ul
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1313',message:'Before calling downloadSelectedProducts',data:{downloadSelectedProductsType:typeof downloadSelectedProducts,hasDownloadSelectedProducts:!!downloadSelectedProducts},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     await downloadSelectedProducts()
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:1316',message:'After calling downloadSelectedProducts',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     clearAllPatientData()
     setIsCheckoutOpen(false)
   }, [selectedProducts, patientName, patientNotes, doctorNotes, currentUser, showAccountStatusMessage, medicinePlans, downloadSelectedProducts, clearAllPatientData])
@@ -1879,23 +1526,9 @@ Programează o consultație dacă simptomele persistă`
         note: newMedicineNote.trim() || null
       }
 
-      const url = editingUserMedicine
-        ? `${API_BASE_URL}/api/user-medicines/${editingUserMedicine.id}`
-        : `${API_BASE_URL}/api/user-medicines`
-      const method = editingUserMedicine ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      })
-
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Eroare la salvarea medicamentului')
-      }
+      const data = editingUserMedicine
+        ? await updateUserMedicine({ id: editingUserMedicine.id, ...payload })
+        : await createUserMedicine(payload)
 
       if (data.medicine) {
         setUserMedicines(prev => {
@@ -1919,7 +1552,6 @@ Programează o consultație dacă simptomele persistă`
       alert(error.message || 'Eroare la salvarea medicamentului')
     }
   }, [
-    API_BASE_URL,
     currentUser?.id,
     editingUserMedicine,
     mapUserMedicineToUi,
@@ -1961,14 +1593,7 @@ Programează o consultație dacă simptomele persistă`
       return
     }
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/user-medicines/${userMedicineId}?userId=${currentUser.id}`,
-        { method: 'DELETE' }
-      )
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Eroare la ștergerea medicamentului')
-      }
+      await deleteUserMedicine({ id: userMedicineId, userId: currentUser.id })
       const medicineCode = `USER-${userMedicineId}`
       setUserMedicines(prev => prev.filter(item => item.id !== userMedicineId))
       setSelectedProducts(prev => prev.filter(item => item['Cod medicament'] !== medicineCode))
@@ -1981,319 +1606,11 @@ Programează o consultație dacă simptomele persistă`
       console.error('❌ Eroare la ștergerea medicamentului personalizat:', error)
       alert(error.message || 'Eroare la ștergerea medicamentului')
     }
-  }, [API_BASE_URL, currentUser?.id])
+  }, [currentUser?.id])
 
   // Funcție pentru generarea PDF-ului unei rețete din istoric
   const downloadPrescriptionPDF = useCallback(async (prescription) => {
-    console.log('🔄 Generez PDF pentru rețeta din istoric:', prescription.id)
-    
-    const hasMedicines = prescription.medicamente && prescription.medicamente.length > 0
-    const hasPatientNotes = prescription.indicatii_pacient && prescription.indicatii_pacient.trim() !== ''
-    const hasDoctorNotes = prescription.indicatii_medic && prescription.indicatii_medic.trim() !== ''
-    const planuriTratament = prescription.planuri_tratament || {}
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <link rel="icon" type="image/svg+xml" href="${hospitalFaviconDataUrl}">
-          <title>Rețetă ${prescription.nume_pacient || ''}</title>
-          <style>
-            * {
-              box-sizing: border-box;
-            }
-            html, body {
-              background-color: #ffffff !important;
-              color: #333333 !important;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              margin: 28px;
-              color: #333 !important;
-              background-color: #ffffff !important;
-            }
-            .pdf-container {
-              margin-top: 35px;
-              padding: 24px 30px 36px;
-              background-color: #ffffff !important;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 28px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 10px;
-              background-color: #ffffff !important;
-            }
-            .header h1 {
-              color: #1a3c7c !important;
-              margin: 0;
-              font-size: 24.5px;
-            }
-            .header p {
-              margin: 6px 0 0 0;
-              color: #666666 !important;
-              font-size: 14px;
-            }
-            .table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-              background-color: #ffffff !important;
-            }
-            .table th {
-              background-color: #f5f5f5 !important;
-              color: #555555 !important;
-              padding: 12px 10px;
-              text-align: left;
-              font-weight: 600;
-              border-bottom: 1px solid #d0d7e4;
-              font-size: 13.6px;
-            }
-            .table td {
-              padding: 11px 9px;
-              border-bottom: 1px solid #e1e5ed;
-              font-size: 13px;
-              color: #333333 !important;
-              background-color: #ffffff !important;
-            }
-            .table td:nth-child(2),
-            .table td:nth-child(3),
-            .table td:nth-child(4) {
-              font-size: 14.5px;
-            }
-            .table tr:nth-child(even) {
-              background-color: #f9f9f9 !important;
-            }
-            .table tr:nth-child(even) td {
-              background-color: #f9f9f9 !important;
-            }
-            .table tr:hover {
-              background-color: #f0f8ff !important;
-            }
-            .table tr:hover td {
-              background-color: #f0f8ff !important;
-            }
-            .patient-indications-section {
-              margin-top: 30px;
-              page-break-inside: avoid;
-            }
-            .patient-indications-section h2 {
-              color: #1a3c7c !important;
-              font-size: 18.2px;
-              margin-bottom: 15px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 5px;
-            }
-            .patient-indications-content {
-              background-color: #f8f9fa !important;
-              border: 1px solid #e9ecef !important;
-              border-radius: 5px;
-              padding: 16px;
-              font-size: 14.7px;
-              line-height: 1.6;
-              color: #333333 !important;
-              white-space: pre-line;
-              text-align: left;
-              text-indent: 0 !important;
-              margin: 0 !important;
-              padding-left: 10px !important;
-            }
-            .patient-indications-content p {
-              margin: 0 !important;
-              padding: 0 !important;
-              text-indent: 0 !important;
-              color: #333333 !important;
-            }
-            .patient-indications-content::first-line {
-              text-indent: 0 !important;
-            }
-            .doctor-indications-section {
-              margin-top: 30px;
-              page-break-inside: avoid;
-            }
-            .doctor-indications-section h2 {
-              color: #1a3c7c !important;
-              font-size: 18.2px;
-              margin-bottom: 15px;
-              border-bottom: 2px solid #1a3c7c;
-              padding-bottom: 5px;
-            }
-            .doctor-indications-content {
-              background-color: #f8f9fa !important;
-              border: 1px solid #e9ecef !important;
-              border-radius: 5px;
-              padding: 16px;
-              font-size: 14.7px;
-              line-height: 1.6;
-              color: #333333 !important;
-              white-space: pre-line;
-              text-align: left;
-              text-indent: 0 !important;
-              margin: 0 !important;
-              padding-left: 10px !important;
-            }
-            .doctor-indications-content p {
-              margin: 0 !important;
-              padding: 0 !important;
-              text-indent: 0 !important;
-              color: #333333 !important;
-            }
-            .doctor-indications-content::first-line {
-              text-indent: 0 !important;
-            }
-            .footer {
-              margin-top: 30px;
-              text-align: center;
-              font-size: 12.5px;
-              color: #666666 !important;
-              border-top: 1px solid #dddddd;
-              padding-top: 10px;
-              background-color: #ffffff !important;
-            }
-            .footer p {
-              color: #666666 !important;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="pdf-container">
-            <div class="header">
-              <h1>${hasMedicines ? 'Rețetă' : 'Notițe Medicale'}</h1>
-              <p>Generat la: ${new Date(prescription.data_creare).toLocaleString('ro-RO')}</p>
-              ${hasMedicines ? `<p>Total medicamente: ${prescription.medicamente.length}</p>` : ''}
-            </div>
-            
-            ${hasMedicines ? `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Nr.</th>
-                  <th>Denumire Medicament</th>
-                  <th>Cod Medicament</th>
-                  <th>Plan de Tratament</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${prescription.medicamente.map((product, index) => {
-                  const medicineCode = product['Cod medicament'] || product.cod_medicament
-                  const plan = planuriTratament[medicineCode] || planuriTratament[product['Denumire medicament']] || planuriTratament[product.denumire_medicament]
-                  let planDescription = 'Fără plan'
-                  
-                  if (plan) {
-                    const parts = []
-                    
-                    if (plan.duration) {
-                      parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
-                    }
-                    
-                    if (plan.frequency) {
-                      if (plan.isCustomFrequency) {
-                        parts.push(`${plan.frequency} ori pe zi`)
-                      } else {
-                        const frequencyMap = {
-                          '1': 'o dată pe zi',
-                          '2': 'de două ori pe zi',
-                          '3': 'de trei ori pe zi',
-                          '4': 'de patru ori pe zi'
-                        }
-                        parts.push(frequencyMap[plan.frequency] || `${plan.frequency} ori pe zi`)
-                      }
-                    }
-                    
-                    if (plan.times && plan.times.length > 0) {
-                      const timesText = plan.times.map(time => {
-                        const timeMap = {
-                          'dimineata': 'dimineața',
-                          'amiaza': 'amiaza',
-                          'seara': 'seara',
-                          'noaptea': 'noaptea',
-                          'la4ore': 'la 4 ore',
-                          'la6ore': 'la 6 ore',
-                          'la8ore': 'la 8 ore',
-                          'la12ore': 'la 12 ore'
-                        }
-                        return timeMap[time] || time
-                      }).join(', ')
-                      parts.push(timesText)
-                    }
-                    
-                    planDescription = parts.join(', ')
-                  }
-                  
-                  const denumire = product['Denumire medicament'] || product.denumire_medicament || ''
-                  const cod = product['Cod medicament'] || product.cod_medicament || ''
-                  
-                  return `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td>${denumire}</td>
-                      <td>${cod}</td>
-                      <td>${planDescription}</td>
-                    </tr>
-                  `
-                }).join('')}
-              </tbody>
-            </table>
-            ` : ''}
-            
-            ${hasPatientNotes ? `
-            <div class="patient-indications-section">
-              <h2>Indicații Pacient</h2>
-              <div class="patient-indications-content">
-                ${prescription.nume_pacient && prescription.nume_pacient.trim() !== '' ? `Nume: ${prescription.nume_pacient}\n\n` : ''}${prescription.indicatii_pacient}
-              </div>
-            </div>
-            ` : ''}
-            
-            ${hasDoctorNotes ? `
-            <div class="doctor-indications-section">
-              <h2>Indicații Medic</h2>
-              <div class="doctor-indications-content">
-                ${prescription.indicatii_medic}
-              </div>
-            </div>
-            ` : ''}
-            
-            <div class="footer">
-              <p>Document generat automat de aplicația MedAI</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
-
-    const dateStr = new Date(prescription.data_creare).toISOString().slice(0, 19).replace(/[:T]/g, '-')
-    const filename = `reteta-${prescription.nume_pacient ? prescription.nume_pacient.replace(/\s+/g, '-') : 'pacient'}-${dateStr}.pdf`
-
-    try {
-      const worker = html2pdf()
-        .set({
-          margin: 0,
-          filename,
-          html2canvas: { scale: 2, dpi: 192, letterRendering: true, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(htmlContent)
-        .toPdf()
-
-      await worker.save()
-
-      const pdfBlob = await worker.output('blob')
-      const blobUrl = URL.createObjectURL(pdfBlob)
-
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      link.click()
-
-      window.open(blobUrl, '_blank', 'noopener,noreferrer')
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000)
-    } catch (error) {
-      console.error('❌ Eroare la generarea PDF-ului:', error)
-      alert('A apărut o eroare la generarea PDF-ului. Încearcă din nou.')
-    }
+    await downloadPrescriptionPDFImpl({ prescription, faviconDataUrl: hospitalFaviconDataUrl })
   }, [])
 
   const handleFinalize = useCallback(async () => {
@@ -2335,197 +1652,25 @@ Programează o consultație dacă simptomele persistă`
   const canGenerateAIAdvice = patientNotes && patientNotes.trim() !== ''
 
 
-  const handleMicRecord = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      alert('Browserul tău nu suportă recunoașterea vocală. Folosește Chrome sau Edge.')
-      return
-    }
+  const { toggleRecording: handleMicRecord, stop: handleStopMic } = useSpeechToText({
+    recognitionRef,
+    isRecording: isRecordingMic,
+    setIsRecording: setIsRecordingMic,
+    text: doctorNotes,
+    setText: setDoctorNotes,
+    recordedText,
+    setRecordedText,
+  })
 
-    if (!recognitionRef.current) {
-      const recognition = new SpeechRecognition()
-      recognition.lang = 'ro-RO'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.maxAlternatives = 1
-      recognitionRef.current = recognition
-    }
-
-    const recognition = recognitionRef.current
-
-    if (isRecordingMic) {
-      setIsRecordingMic(false)
-      recognition.stop()
-      
-      // Adaugă textul înregistrat la început
-      if (recordedText.trim()) {
-        const existingText = doctorNotes.replace(recordedText, '').trim()
-        setDoctorNotes(recordedText + (existingText ? `\n\n${existingText}` : ''))
-        setRecordedText('')
-      }
-      return
-    }
-
-    // Salvează textul existent (fără textul înregistrat)
-    const existingText = doctorNotes.replace(recordedText, '').trim()
-    setRecordedText('')
-
-    recognition.onresult = (event) => {
-      let interimTranscript = ''
-      let newRecordedText = recordedText
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          newRecordedText = (newRecordedText ? `${newRecordedText} ${transcript}` : transcript).trim()
-          setRecordedText(newRecordedText)
-        } else {
-          interimTranscript += transcript
-        }
-      }
-
-      // Afișează textul live: textul înregistrat + interim + textul existent
-      const displayText = newRecordedText + (interimTranscript ? ` ${interimTranscript}` : '') + (existingText ? `\n\n${existingText}` : '')
-      setDoctorNotes(displayText)
-    }
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error)
-      if (event.error !== 'no-speech') {
-        alert('Nu am putut prelua vocea. Încearcă din nou.')
-      }
-      setIsRecordingMic(false)
-    }
-
-    recognition.onend = () => {
-      if (isRecordingMic) {
-        try {
-          recognition.start()
-        } catch (error) {
-          console.error('Speech recognition restart error:', error)
-          setIsRecordingMic(false)
-        }
-      }
-    }
-
-    try {
-      recognition.start()
-      setIsRecordingMic(true)
-    } catch (error) {
-      console.error('Speech recognition start error:', error)
-      setIsRecordingMic(false)
-    }
-  }, [isRecordingMic, doctorNotes, recordedText])
-
-  const handleStopMic = useCallback(() => {
-    if (recognitionRef.current && isRecordingMic) {
-      setIsRecordingMic(false)
-      recognitionRef.current.stop()
-      
-      // Adaugă textul înregistrat la început
-      if (recordedText.trim()) {
-        const existingText = doctorNotes.replace(recordedText, '').trim()
-        setDoctorNotes(recordedText + (existingText ? `\n\n${existingText}` : ''))
-        setRecordedText('')
-      }
-    }
-  }, [isRecordingMic, recordedText, doctorNotes])
-
-  const handleMicRecordPatient = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      alert('Browserul tău nu suportă recunoașterea vocală. Folosește Chrome sau Edge.')
-      return
-    }
-
-    if (!recognitionPatientRef.current) {
-      const recognition = new SpeechRecognition()
-      recognition.lang = 'ro-RO'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.maxAlternatives = 1
-      recognitionPatientRef.current = recognition
-    }
-
-    const recognition = recognitionPatientRef.current
-
-    if (isRecordingMicPatient) {
-      setIsRecordingMicPatient(false)
-      recognition.stop()
-      
-      // Adaugă textul înregistrat la început
-      if (recordedTextPatient.trim()) {
-        const existingText = patientNotes.replace(recordedTextPatient, '').trim()
-        setPatientNotes(recordedTextPatient + (existingText ? `\n\n${existingText}` : ''))
-        setRecordedTextPatient('')
-      }
-      return
-    }
-
-    // Salvează textul existent (fără textul înregistrat)
-    const existingText = patientNotes.replace(recordedTextPatient, '').trim()
-    setRecordedTextPatient('')
-
-    recognition.onresult = (event) => {
-      let interimTranscript = ''
-      let newRecordedText = recordedTextPatient
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          newRecordedText = (newRecordedText ? `${newRecordedText} ${transcript}` : transcript).trim()
-          setRecordedTextPatient(newRecordedText)
-        } else {
-          interimTranscript += transcript
-        }
-      }
-
-      // Afișează textul live: textul înregistrat + interim + textul existent
-      const displayText = newRecordedText + (interimTranscript ? ` ${interimTranscript}` : '') + (existingText ? `\n\n${existingText}` : '')
-      setPatientNotes(displayText)
-    }
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error)
-      if (event.error !== 'no-speech') {
-        alert('Nu am putut prelua vocea. Încearcă din nou.')
-      }
-      setIsRecordingMicPatient(false)
-    }
-
-    recognition.onend = () => {
-      if (isRecordingMicPatient) {
-        try {
-          recognition.start()
-        } catch (error) {
-          console.error('Speech recognition restart error:', error)
-          setIsRecordingMicPatient(false)
-        }
-      }
-    }
-
-    try {
-      recognition.start()
-      setIsRecordingMicPatient(true)
-    } catch (error) {
-      console.error('Speech recognition start error:', error)
-      setIsRecordingMicPatient(false)
-    }
-  }, [isRecordingMicPatient, patientNotes, recordedTextPatient])
-
-  const handleStopMicPatient = useCallback(() => {
-    if (recognitionPatientRef.current && isRecordingMicPatient) {
-      setIsRecordingMicPatient(false)
-      recognitionPatientRef.current.stop()
-      
-      // Adaugă textul înregistrat la început
-      if (recordedTextPatient.trim()) {
-        const existingText = patientNotes.replace(recordedTextPatient, '').trim()
-        setPatientNotes(recordedTextPatient + (existingText ? `\n\n${existingText}` : ''))
-        setRecordedTextPatient('')
-      }
-    }
-  }, [isRecordingMicPatient, recordedTextPatient, patientNotes])
+  const { toggleRecording: handleMicRecordPatient, stop: handleStopMicPatient } = useSpeechToText({
+    recognitionRef: recognitionPatientRef,
+    isRecording: isRecordingMicPatient,
+    setIsRecording: setIsRecordingMicPatient,
+    text: patientNotes,
+    setText: setPatientNotes,
+    recordedText: recordedTextPatient,
+    setRecordedText: setRecordedTextPatient,
+  })
 
   // Handler pentru oprirea înregistrării la apăsarea spațiului în textarea-ul pentru notele pacientului
   const handlePatientNotesKeyDown = useCallback((e) => {
@@ -2565,15 +1710,8 @@ Programează o consultație dacă simptomele persistă`
 
   const allColumns = getAllColumns()
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2155',message:'Before return checks',data:{loading,error:!!error,currentUser:!!currentUser},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
-
   // Loading și Error states DUPĂ toate hook-urile
   if (loading) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2158',message:'Returning loading state',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     return (
       <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
         <div className="loading">Se încarcă datele...</div>
@@ -2582,9 +1720,6 @@ Programează o consultație dacă simptomele persistă`
   }
 
   if (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2166',message:'Returning error state',data:{error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     return (
       <div className="medicines-container">
         <div className="error">Eroare: {error}</div>
@@ -2604,9 +1739,6 @@ Programează o consultație dacă simptomele persistă`
     )
   }
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:2174',message:'Starting main return',data:{showHistoryPage},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   return (
     <div className={`medicines-container ${isNightMode ? 'dark-mode' : ''}`}>
       {/* Sidebar stânga - Navigare */}
@@ -2717,473 +1849,35 @@ Programează o consultație dacă simptomele persistă`
       <div className="main-content-wrapper">
       {/* Pagina de istoric rețete */}
       {showHistoryPage && (
-        <div className={`history-page-container ${expandedCardId ? 'blurred' : ''}`}>
-          <div className="history-page-header">
-            <button 
-              className="history-back-button"
-              onClick={() => {
-                setShowHistoryPage(false)
-                onHistoryPageChange(false)
-              }}
-            >
-              Înapoi
-            </button>
-            <h2 className="history-page-title">Istoric Rețete</h2>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {isDeleteMode ? (
-                <>
-                  <button
-                    className="history-select-all-button"
-                    onClick={() => {
-                      if (selectedPrescriptions.length === prescriptionHistory.length) {
-                        setSelectedPrescriptions([])
-                      } else {
-                        setSelectedPrescriptions(prescriptionHistory.map(p => p.id))
-                      }
-                    }}
-                  >
-                    {selectedPrescriptions.length === prescriptionHistory.length ? 'Selectate toate' : 'Selectează toate'}
-                  </button>
-                  <button
-                    className="history-delete-selected-button"
-                    onClick={() => {
-                      if (selectedPrescriptions.length === 0) {
-                        alert('Te rugăm să selectezi cel puțin o rețetă de șters')
-                        return
-                      }
-                      setShowDeleteConfirmModal(true)
-                    }}
-                    disabled={selectedPrescriptions.length === 0}
-                  >
-                    Șterge ({selectedPrescriptions.length})
-                  </button>
-                  <button
-                    className="history-cancel-delete-button"
-                    onClick={() => {
-                      setIsDeleteMode(false)
-                      setSelectedPrescriptions([])
-                    }}
-                  >
-                    ✕ Anulează
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="history-delete-button"
-                  onClick={() => setIsDeleteMode(true)}
-                >
-                  Șterge
-                </button>
-              )}
-              <button
-                className="history-view-mode-toggle"
-                onClick={() => {
-                  if (historyViewMode === 'list') {
-                    setHistoryViewMode('compact')
-                  } else if (historyViewMode === 'compact') {
-                    setHistoryViewMode('large')
-                  } else {
-                    setHistoryViewMode('list')
-                  }
-                }}
-              >
-                {historyViewMode === 'list' ? '☰' : historyViewMode === 'compact' ? '☷' : '☰☰'}
-            </button>
-            </div>
-          </div>
-          
-          {/* Filtre pentru istoric */}
-          <div className="history-filters-container">
-            <div className="history-filters-row">
-              <div className="history-filter-group">
-                <label htmlFor="history-date-filter" className="history-filter-label">Filtrare după dată:</label>
-                <select
-                  id="history-date-filter"
-                  className="history-filter-select"
-                  value={historyDateFilter}
-                  onChange={(e) => {
-                    setHistoryDateFilter(e.target.value)
-                    if (e.target.value !== 'specifica') {
-                      setHistorySpecificDate('')
-                    }
-                  }}
-                >
-                  <option value="toate">Toate</option>
-                  <option value="azi">Astăzi</option>
-                  <option value="saptamana">Ultima săptămână</option>
-                  <option value="luna">Ultima lună</option>
-                  <option value="anul">Ultimul an</option>
-                  <option value="specifica">Dată specifică</option>
-                </select>
-              </div>
-              {historyDateFilter === 'specifica' && (
-                <div className="history-filter-group">
-                  <label htmlFor="history-specific-date" className="history-filter-label">Selectează dată:</label>
-                  <input
-                    id="history-specific-date"
-                    type="date"
-                    className="history-filter-date-input"
-                    value={historySpecificDate}
-                    onChange={(e) => setHistorySpecificDate(e.target.value)}
-                  />
-                </div>
-              )}
-              <div className="history-filter-group">
-                <label htmlFor="history-name-filter" className="history-filter-label">Filtrare după nume:</label>
-                <input
-                  id="history-name-filter"
-                  type="text"
-                  className="history-filter-input"
-                  placeholder="Caută după nume pacient..."
-                  value={historyNameFilter}
-                  onChange={(e) => setHistoryNameFilter(e.target.value)}
-                />
-              </div>
-              {(historyDateFilter !== 'toate' || historySpecificDate || historyNameFilter) && (
-                <button
-                  className="history-filter-clear-button"
-                  onClick={() => {
-                    setHistoryDateFilter('toate')
-                    setHistorySpecificDate('')
-                    setHistoryNameFilter('')
-                  }}
-                >
-                  ✕ Șterge filtrele
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="history-page-content">
-            {isDeleteMode && (
-              <div className="history-selection-info">
-                <span>{selectedPrescriptions.length} rețete selectate</span>
-              </div>
-            )}
-            {loadingHistory ? (
-              <div className="history-loading">
-                <p>Se încarcă istoricul...</p>
-              </div>
-            ) : prescriptionHistory.length === 0 ? (
-              <div className="history-empty">
-                <p>Nu ai rețete salvate încă.</p>
-              </div>
-            ) : (() => {
-              // Filtrare rețete
-              let filteredHistory = prescriptionHistory
-              
-              // Filtrare după dată
-              if (historyDateFilter !== 'toate' || historySpecificDate) {
-                const now = new Date()
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-                
-                filteredHistory = filteredHistory.filter(prescription => {
-                  const prescriptionDate = new Date(prescription.data_creare)
-                  const prescriptionDateOnly = new Date(prescriptionDate.getFullYear(), prescriptionDate.getMonth(), prescriptionDate.getDate())
-                  
-                  if (historyDateFilter === 'specifica' && historySpecificDate) {
-                    const selectedDate = new Date(historySpecificDate)
-                    const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
-                    return prescriptionDateOnly.getTime() === selectedDateOnly.getTime()
-                  } else if (historyDateFilter === 'azi') {
-                    return prescriptionDateOnly.getTime() === today.getTime()
-                  } else if (historyDateFilter === 'saptamana') {
-                    const weekAgo = new Date(today)
-                    weekAgo.setDate(weekAgo.getDate() - 7)
-                    return prescriptionDate >= weekAgo
-                  } else if (historyDateFilter === 'luna') {
-                    const monthAgo = new Date(today)
-                    monthAgo.setMonth(monthAgo.getMonth() - 1)
-                    return prescriptionDate >= monthAgo
-                  } else if (historyDateFilter === 'anul') {
-                    const yearAgo = new Date(today)
-                    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
-                    return prescriptionDate >= yearAgo
-                  }
-                  return true
-                })
-              }
-              
-              // Filtrare după nume
-              if (historyNameFilter) {
-                const nameFilterLower = historyNameFilter.toLowerCase().trim()
-                filteredHistory = filteredHistory.filter(prescription => {
-                  const patientName = (prescription.nume_pacient || '').toLowerCase()
-                  return patientName.includes(nameFilterLower)
-                })
-              }
-              
-              if (filteredHistory.length === 0) {
-                return (
-                  <div className="history-empty">
-                    <p>Nu s-au găsit rețete care să corespundă filtrelor.</p>
-                  </div>
-                )
-              }
-              
-              return (
-                <div className={`history-cards-grid history-view-${historyViewMode} ${isDeleteMode ? 'delete-mode-active' : ''}`}>
-                  {filteredHistory.map((prescription, index) => {
-                    const isSelected = selectedPrescriptions.includes(prescription.id)
-                    return (
-                    <div 
-                      key={prescription.id} 
-                      className={`history-card history-card-${historyViewMode} ${isSelected ? 'history-card-selected' : ''}`}
-                      onClick={(e) => {
-                        // Permite selecția doar dacă suntem în modul de ștergere și click-ul nu este pe butonul "Arată"
-                        if (isDeleteMode && !e.target.closest('.history-card-view-button')) {
-                          if (isSelected) {
-                            setSelectedPrescriptions(selectedPrescriptions.filter(id => id !== prescription.id))
-                          } else {
-                            setSelectedPrescriptions([...selectedPrescriptions, prescription.id])
-                          }
-                        }
-                      }}
-                      style={{ cursor: isDeleteMode ? 'pointer' : 'default', position: 'relative' }}
-                    >
-                      {isDeleteMode && (
-                        <div className="history-card-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              if (e.target.checked) {
-                                setSelectedPrescriptions([...selectedPrescriptions, prescription.id])
-                              } else {
-                                setSelectedPrescriptions(selectedPrescriptions.filter(id => id !== prescription.id))
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      )}
-                      <div className="history-card-header">
-                        <div className="history-card-header-content">
-                          <h4 className="history-card-title">
-                            Rețetă #{prescriptionHistory.length - index}
-                            {prescription.nume_pacient && (
-                              <span className="history-card-patient-name">
-                                {' '}- {prescription.nume_pacient}
-                              </span>
-                            )}
-                          </h4>
-                          <p className="history-card-date">
-                            {new Date(prescription.data_creare).toLocaleString('ro-RO')}
-                          </p>
-                        </div>
-                        <div className="history-card-header-buttons">
-                          <button
-                            className="history-card-pdf-button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              downloadPrescriptionPDF(prescription)
-                            }}
-                            style={{ zIndex: 10, position: 'relative' }}
-                          >
-                            📄 PDF
-                          </button>
-                          {historyViewMode === 'compact' && (
-                            <button
-                              className="history-card-view-button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                console.log('Buton Arată apăsat pentru rețeta:', prescription.id)
-                                setExpandedCardId(prescription.id)
-                              }}
-                              style={{ zIndex: 10, position: 'relative' }}
-                            >
-                              Arată
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {prescription.medicamente && prescription.medicamente.length > 0 && (
-                        <div className="history-card-section">
-                          <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
-                          <ul className="history-card-list">
-                            {prescription.medicamente.slice(0, historyViewMode === 'large' ? prescription.medicamente.length : (historyViewMode === 'list' ? 5 : 3)).map((med, idx) => (
-                              <li key={idx} className="history-card-list-item">
-                                {med['Denumire medicament'] || med.denumire_medicament || ''}
-                              </li>
-                            ))}
-                            {historyViewMode !== 'large' && prescription.medicamente.length > (historyViewMode === 'list' ? 5 : 3) && (
-                              <li className="history-card-list-item" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                                ... și încă {prescription.medicamente.length - (historyViewMode === 'list' ? 5 : 3)} medicamente
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {(historyViewMode === 'large' || historyViewMode === 'list') && (
-                        <>
-                          {prescription.indicatii_pacient && (
-                            <div className="history-card-section history-card-indications">
-                              <strong className="history-card-label">Indicații Pacient:</strong>
-                              <p className="history-card-text">
-                                {prescription.indicatii_pacient}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {prescription.indicatii_medic && (
-                            <div className="history-card-section history-card-indications">
-                              <strong className="history-card-label">Indicații Medic:</strong>
-                              <p className="history-card-text">
-                                {prescription.indicatii_medic}
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    )
-                  })}
-                </div>
-              )
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Modal pentru vizualizare detaliată rețetă */}
-      {expandedCardId && showHistoryPage && (
-        <div className="history-card-modal-overlay" onClick={() => setExpandedCardId(null)}>
-          <div className="history-card-modal-content" onClick={(e) => e.stopPropagation()}>
-            {prescriptionHistory.find(p => p.id === expandedCardId) && (() => {
-              const prescription = prescriptionHistory.find(p => p.id === expandedCardId)
-              const index = prescriptionHistory.findIndex(p => p.id === expandedCardId)
-              return (
-                <>
-                  <div className="history-card-modal-header">
-                    <h3>
-                      Rețetă #{prescriptionHistory.length - index}
-                      {prescription.nume_pacient && (
-                        <span className="history-card-patient-name">
-                          {' '}- {prescription.nume_pacient}
-                        </span>
-                      )}
-                    </h3>
-                    <button
-                      className="history-card-modal-close"
-                      onClick={() => setExpandedCardId(null)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  
-                  <div className="history-card-modal-body">
-                    <div className="history-card-modal-section">
-                      <p className="history-card-modal-date">
-                        {new Date(prescription.data_creare).toLocaleString('ro-RO')}
-                      </p>
-                    </div>
-                    
-                    {prescription.indicatii_pacient && (
-                      <div className="history-card-modal-section history-card-indications">
-                        <strong className="history-card-label">Indicații Pacient:</strong>
-                        <p className="history-card-text">
-                          {prescription.indicatii_pacient}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {prescription.indicatii_medic && (
-                      <div className="history-card-modal-section history-card-indications">
-                        <strong className="history-card-label">Indicații Medic:</strong>
-                        <p className="history-card-text">
-                          {prescription.indicatii_medic}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {prescription.medicamente && prescription.medicamente.length > 0 && (
-                      <div className="history-card-modal-section">
-                        <strong className="history-card-label">Medicamente ({prescription.medicamente.length}):</strong>
-                        <ul className="history-card-list">
-                          {prescription.medicamente.map((med, idx) => (
-                            <li key={idx} className="history-card-list-item">
-                                {med['Denumire medicament'] || med.denumire_medicament || ''}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Modal de confirmare pentru ștergerea rețetelor */}
-      {showDeleteConfirmModal && (
-        <div className="history-card-modal-overlay" onClick={() => setShowDeleteConfirmModal(false)}>
-          <div className="history-card-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="history-card-modal-header">
-              <h3>Confirmare ștergere</h3>
-              <button
-                className="history-card-modal-close"
-                onClick={() => setShowDeleteConfirmModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="history-card-modal-body">
-              <p style={{ fontSize: '16px', marginBottom: '20px', color: 'var(--text-primary)' }}>
-                Ești sigur că vrei să ștergi {selectedPrescriptions.length} {selectedPrescriptions.length === 1 ? 'rețetă' : 'rețete'}?
-              </p>
-              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Această acțiune nu poate fi anulată.
-              </p>
-              
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                  className="history-cancel-delete-button"
-                  onClick={() => setShowDeleteConfirmModal(false)}
-                >
-                  Anulează
-                </button>
-                <button
-                  className="history-delete-selected-button"
-                  onClick={async () => {
-                    setShowDeleteConfirmModal(false)
-                    try {
-                      const deletePromises = selectedPrescriptions.map(id =>
-                        fetch(`${API_BASE_URL}/api/prescriptions/${id}?userId=${currentUser.id}`, {
-                          method: 'DELETE'
-                        })
-                      )
-                      
-                      const results = await Promise.all(deletePromises)
-                      const allSuccess = results.every(r => r.ok)
-                      
-                      if (allSuccess) {
-                        setPrescriptionHistory(prescriptionHistory.filter(p => !selectedPrescriptions.includes(p.id)))
-                        setSelectedPrescriptions([])
-                        setIsDeleteMode(false)
-                        alert(`${selectedPrescriptions.length} rețete au fost șterse cu succes!`)
-                      } else {
-                        const errorData = await Promise.all(results.map(r => r.ok ? null : r.json().catch(() => ({ error: 'Eroare necunoscută' }))))
-                        console.error('Eroare la ștergerea rețetelor:', errorData)
-                        alert('Eroare la ștergerea unor rețete. Verifică consola pentru detalii.')
-                      }
-                    } catch (error) {
-                      console.error('Eroare la ștergerea rețetelor:', error)
-                      alert(`Eroare la ștergerea rețetelor: ${error.message}`)
-                    }
-                  }}
-                >
-                  Șterge
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <HistoryPage
+          showHistoryPage={showHistoryPage}
+          onBack={() => {
+            setShowHistoryPage(false)
+            onHistoryPageChange(false)
+          }}
+          expandedCardId={expandedCardId}
+          setExpandedCardId={setExpandedCardId}
+          isDeleteMode={isDeleteMode}
+          setIsDeleteMode={setIsDeleteMode}
+          selectedPrescriptions={selectedPrescriptions}
+          setSelectedPrescriptions={setSelectedPrescriptions}
+          showDeleteConfirmModal={showDeleteConfirmModal}
+          setShowDeleteConfirmModal={setShowDeleteConfirmModal}
+          historyViewMode={historyViewMode}
+          setHistoryViewMode={setHistoryViewMode}
+          historyDateFilter={historyDateFilter}
+          setHistoryDateFilter={setHistoryDateFilter}
+          historySpecificDate={historySpecificDate}
+          setHistorySpecificDate={setHistorySpecificDate}
+          historyNameFilter={historyNameFilter}
+          setHistoryNameFilter={setHistoryNameFilter}
+          loadingHistory={loadingHistory}
+          prescriptionHistory={prescriptionHistory}
+          downloadPrescriptionPDF={downloadPrescriptionPDF}
+          apiBaseUrl={API_BASE_URL}
+          currentUser={currentUser}
+          setPrescriptionHistory={setPrescriptionHistory}
+        />
       )}
 
 
@@ -3297,17 +1991,12 @@ Programează o consultație dacă simptomele persistă`
                             }
                             
                             try {
-                              const response = await fetch('/api/openai/v1/chat/completions', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                  model: 'gpt-3.5-turbo',
-                                  messages: [
-                                    {
-                                      role: 'system',
-                                      content: `Ești un asistent medical care formatează textul medical. 
+                              const data = await createChatCompletion({
+                                model: 'gpt-3.5-turbo',
+                                messages: [
+                                  {
+                                    role: 'system',
+                                    content: `Ești un asistent medical care formatează textul medical. 
 
 IMPORTANT:
 - Formatează textul într-un mod plăcut și organizat
@@ -3323,22 +2012,15 @@ Formatul răspunsului:
 - A doua informație importantă
 - A treia informație importantă
 etc.`
-                                    },
-                                    {
-                                      role: 'user',
-                                      content: `Formatează următorul text medical: "${doctorNotes}"`
-                                    }
-                                  ],
-                                  temperature: 0.3,
-                                  max_tokens: 800
-                                })
+                                  },
+                                  {
+                                    role: 'user',
+                                    content: `Formatează următorul text medical: "${doctorNotes}"`,
+                                  },
+                                ],
+                                temperature: 0.3,
+                                max_tokens: 800,
                               })
-
-                              if (!response.ok) {
-                                throw new Error('Eroare la formatarea textului')
-                              }
-
-                              const data = await response.json()
                               const formattedText = data.choices[0].message.content
                               
                               setDoctorNotes(formattedText)
@@ -3586,17 +2268,12 @@ etc.`
                       }
                       
                       try {
-                        const response = await fetch('/api/openai/v1/chat/completions', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify({
-                            model: 'gpt-3.5-turbo',
-                            messages: [
-                              {
-                                role: 'system',
-                                content: `Ești un asistent medical care formatează textul medical. 
+                        const data = await createChatCompletion({
+                          model: 'gpt-3.5-turbo',
+                          messages: [
+                            {
+                              role: 'system',
+                              content: `Ești un asistent medical care formatează textul medical. 
 
 IMPORTANT:
 - Formatează textul într-un mod plăcut și organizat
@@ -3612,22 +2289,15 @@ Formatul răspunsului:
 - A doua informație importantă
 - A treia informație importantă
 etc.`
-                              },
-                              {
-                                role: 'user',
-                                content: `Formatează următorul text medical: "${doctorNotes}"`
-                              }
-                            ],
-                            temperature: 0.3,
-                            max_tokens: 800
-                          })
+                            },
+                            {
+                              role: 'user',
+                              content: `Formatează următorul text medical: "${doctorNotes}"`,
+                            },
+                          ],
+                          temperature: 0.3,
+                          max_tokens: 800,
                         })
-
-                        if (!response.ok) {
-                          throw new Error('Eroare la formatarea textului')
-                        }
-
-                        const data = await response.json()
                         const formattedText = data.choices[0].message.content
                         
                         // Înlocuiește textul vechi cu cel formatat
@@ -4282,132 +2952,19 @@ etc.`
           </div>
           </div>
 
-          {/* Previzualizare rețetă - overlay în aplicație */}
-          {isCheckoutOpen && (
-            <div className="checkout-overlay" onClick={handleCheckoutBack}>
-          <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="checkout-header">
-              <h2>
-                Previzualizare rețetă
-                {patientName && patientName.trim() !== '' && (
-                  <span style={{ marginLeft: '10px', fontSize: '18px', fontWeight: 'normal', color: '#64748b' }}>
-                    - {patientName}
-                  </span>
-                )}
-              </h2>
-            </div>
-
-            <div className="checkout-body">
-              <div className="checkout-section">
-                <h3>Medicamente selectate ({selectedProducts.length})</h3>
-                {selectedProducts.length === 0 ? (
-                  <p>Nu ai selectat niciun medicament.</p>
-                ) : (
-                  <div className="checkout-medicines-list">
-                    {selectedProducts.map((product, index) => {
-                      const code = product['Cod medicament']
-                      const plan = code ? medicinePlans[code] : null
-                      const parts = []
-
-                      if (plan) {
-                        if (plan.duration) {
-                          parts.push(plan.duration === '1' ? '1 zi' : `${plan.duration} zile`)
-                        }
-
-                        if (plan.frequency) {
-                          if (plan.isCustomFrequency) {
-                            parts.push(`${plan.frequency} ori pe zi`)
-                          } else {
-                            parts.push(getFrequencyText(plan.frequency))
-                          }
-                        }
-
-                        // Afișează orele - fie din times array, fie din customTime
-                        if (plan.times && plan.times.length > 0) {
-                          const timesText = plan.times.map(time => {
-                            // Verifică dacă este o oră personalizată (format HH:MM) sau o opțiune predefinită
-                            if (time.match(/^\d{1,2}:\d{2}$/)) {
-                              return time // O oră personalizată în format HH:MM
-                            }
-                            return getTimeText(time) // O opțiune predefinită
-                          }).join(' | ')
-                          parts.push(timesText)
-                        } else if (plan.customTime) {
-                          // Dacă nu există times dar există customTime, afișează-l
-                          parts.push(plan.customTime)
-                        }
-                      }
-
-                      const planText = parts.length > 0 ? parts.join(' | ') : 'Fără plan'
-
-                      return (
-                        <div
-                          key={`${code || product['Denumire medicament'] || index}-checkout`}
-                          className="checkout-medicine-chip"
-                        >
-                          <div className="checkout-medicine-chip-main">
-                            <span className="checkout-medicine-chip-name">
-                              {product['Denumire medicament']}
-                            </span>
-                            {product['Cod medicament'] && (
-                              <span className="checkout-medicine-chip-code">
-                                Cod: {product['Cod medicament']}
-                              </span>
-                            )}
-                            {product['Lista de compensare'] && (
-                              <span className="checkout-medicine-chip-comp">
-                                Compensare: {getCompensationPercentage(product['Lista de compensare'])}
-                              </span>
-                            )}
-                          </div>
-                          <div className="checkout-medicine-chip-plan">
-                            Plan: {planText}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="checkout-section">
-                <h3>Notițe pacient</h3>
-                {patientNotes && patientNotes.trim() ? (
-                  <p className="checkout-notes-text">{patientNotes}</p>
-                ) : (
-                  <p className="checkout-notes-empty">Nu există notițe pentru pacient.</p>
-                )}
-              </div>
-
-              <div className="checkout-section">
-                <h3>Notițe medic</h3>
-                {doctorNotes && doctorNotes.trim() ? (
-                  <p className="checkout-notes-text">{doctorNotes}</p>
-                ) : (
-                  <p className="checkout-notes-empty">Nu există notițe ale medicului.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="checkout-actions">
-              <button
-                type="button"
-                className="checkout-button checkout-button-secondary"
-                onClick={handleCheckoutBack}
-              >
-                Înapoi la listă
-              </button>
-              <button
-                type="button"
-                className="checkout-button checkout-button-primary"
-              onClick={handleCheckoutConfirm}
-              >
-                Finalizează rețeta
-              </button>
-            </div>
-          </div>
-          </div>
-          )}
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={handleCheckoutBack}
+            onConfirm={handleCheckoutConfirm}
+            patientName={patientName}
+            selectedProducts={selectedProducts}
+            medicinePlans={medicinePlans}
+            patientNotes={patientNotes}
+            doctorNotes={doctorNotes}
+            getFrequencyText={getFrequencyText}
+            getTimeText={getTimeText}
+            getCompensationPercentage={getCompensationPercentage}
+          />
 
           {/* Template pentru modalele de filtre */}
           {Object.entries(showFilters).map(([filterKey, isVisible]) => {
@@ -4725,946 +3282,59 @@ etc.`
         </div>
           )}
 
-          {/* Modal pentru Stări */}
-          {showStatsModal && (
-            <div className="new-patient-modal-overlay" onClick={() => setShowStatsModal(false)}>
-          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon new-patient-modal-icon--plain" aria-hidden="true" />
-              <h3>Setări</h3>
-              <button 
-                className="new-patient-modal-close"
-                onClick={() => setShowStatsModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="new-patient-modal-body">
-              <div className="settings-modal-body-content">
-                {/* Status cont */}
-                {currentUser && (
-                  <div className="settings-status-card">
-                    <h4 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>Status cont</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                      {currentUser.status === 'pending' && (
-                        <span className="status-badge status-pending">În așteptare</span>
-                      )}
-                      {currentUser.status === 'approved' && (
-                        <span className="status-badge status-approved">Aprobat</span>
-                      )}
-                      {currentUser.status === 'rejected' && (
-                        <span className="status-badge status-rejected">Respins</span>
-                      )}
-                    </div>
-                    {currentUser.status === 'pending' && (
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-                        Contul tău este în așteptare aprobare. Vei primi acces la toate funcțiile după aprobare.
-                      </p>
-                    )}
-                    {currentUser.status === 'approved' && (
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-                        Contul tău a fost aprobat. Ai acces la toate funcțiile aplicației.
-                      </p>
-                    )}
-                    {currentUser.status === 'rejected' && (
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-                        Contul tău a fost respins. Contactează administratorul pentru mai multe informații.
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>Contul meu</h4>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                  Gestionează informațiile contului tău, vezi statusul aprobării și accesează istoricul rețetelor tale.
-                </p>
-                {!currentUser && (
-                  <div style={{ marginTop: '20px' }}>
-                    <button
-                      onClick={() => {
-                        setShowStatsModal(false)
-                        setShowLoginModal(true)
-                      }}
-                      className="settings-modal-button"
-                      style={{
-                        width: '100%',
-                        padding: '0.625rem 1.25rem',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        marginTop: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      Conectare
-                    </button>
-                  </div>
-                )}
-                {currentUser && (
-                  <div className="settings-actions">
-                    <button
-                      className="settings-action-button"
-                      onClick={async () => {
-                        if (!showAccountStatusMessage()) {
-                          return
-                        }
-                        setShowStatsModal(false)
-                        setShowHistoryPage(true)
-                        onHistoryPageChange(true)
-                        setLoadingHistory(true)
-                        try {
-                          const response = await fetch(`${API_BASE_URL}/api/prescriptions?userId=${currentUser.id}`)
-                          const data = await response.json()
-                          if (response.ok) {
-                            setPrescriptionHistory(data.prescriptions || [])
-                          } else {
-                            console.error('Eroare la încărcarea istoricului:', data.error)
-                          }
-                        } catch (error) {
-                          console.error('Eroare la încărcarea istoricului:', error)
-                        } finally {
-                          setLoadingHistory(false)
-                        }
-                      }}
-                    >
-                      Vizualizare istoric
-                    </button>
-                    <button
-                      className="settings-action-button settings-action-button--danger"
-                      onClick={handleDeleteAccount}
-                    >
-                      Șterge contul
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="new-patient-modal-footer">
-              <button 
-                className="settings-modal-button"
-                onClick={() => setShowStatsModal(false)}
-                style={{ 
-                  width: '100%',
-                  padding: '0.625rem 1.25rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Închide
-              </button>
-            </div>
-          </div>
-        </div>
-          )}
-
-          {/* Modal pentru status cont */}
-          {showAccountStatusModal && (
-            <div className="new-patient-modal-overlay" onClick={() => setShowAccountStatusModal(false)}>
-          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon new-patient-modal-icon--plain" aria-hidden="true" />
-              <h3>{accountStatusTitle}</h3>
-              <button 
-                className="new-patient-modal-close"
-                onClick={() => setShowAccountStatusModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="new-patient-modal-body">
-              <div style={{ padding: '20px' }}>
-                {!currentUser ? (
-                  <>
-                    <p style={{ 
-                      color: 'var(--text-primary)', 
-                      fontSize: '16px',
-                      marginBottom: '20px',
-                      whiteSpace: 'pre-line',
-                      lineHeight: '1.6'
-                    }}>
-                      {accountStatusMessage}
-                    </p>
-                    <div style={{
-                      background: 'var(--background-light)',
-                      padding: '15px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      marginBottom: '20px'
-                    }}>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px', fontWeight: '500' }}>
-                        După autentificare vei putea:
-                      </p>
-                      <ul style={{ 
-                        color: 'var(--text-secondary)', 
-                        fontSize: '14px',
-                        textAlign: 'left',
-                        marginTop: '10px',
-                        paddingLeft: '20px',
-                        lineHeight: '1.8'
-                      }}>
-                        <li>Adăuga medicamente în rețetă</li>
-                        <li>Salva planuri de medicamente</li>
-                        <li>Gestiona pacienți și notițe</li>
-                        <li>Descărca rețete medicale</li>
-                        <li>Accesa istoricul rețetelor</li>
-                      </ul>
-                    </div>
-                  </>
-                ) : (
-                  <p style={{ 
-                    color: 'var(--text-primary)', 
-                    fontSize: '16px',
-                    whiteSpace: 'pre-line',
-                    lineHeight: '1.6'
-                  }}>
-                    {accountStatusMessage}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="new-patient-modal-footer">
-              {!currentUser ? (
-                <>
-                  <button 
-                    className="new-patient-confirm-button"
-                    onClick={() => {
-                      setShowAccountStatusModal(false)
-                      setShowLoginModal(true)
-                    }}
-                    style={{ width: '100%', marginBottom: '10px' }}
-                  >
-                    Autentificare
-                  </button>
-                  <button 
-                    className="new-patient-cancel-button"
-                    onClick={() => {
-                      setShowAccountStatusModal(false)
-                      setShowSignUpModal(true)
-                    }}
-                    style={{ width: '100%' }}
-                  >
-                    Creează cont nou
-                  </button>
-                </>
-              ) : (
-                <button 
-                  className="new-patient-confirm-button"
-                  onClick={() => setShowAccountStatusModal(false)}
-                  style={{ width: '100%' }}
-                >
-                  OK
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-          )}
-
-          {/* Modal pentru Login */}
-          {showLoginModal && (
-            <div className="new-patient-modal-overlay" onClick={() => {
-              setShowLoginModal(false)
-              setLoginEmail('')
-              setLoginPassword('')
-              setLoginError('')
-              setShowLoginPassword(false)
-            }}>
-          <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">🔐</div>
-              <h3>Autentificare</h3>
-              <button 
-                className="new-patient-modal-close"
-                onClick={() => {
-                  setShowLoginModal(false)
-                  setLoginEmail('')
-                  setLoginPassword('')
-                  setLoginError('')
-                  setShowLoginPassword(false)
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="new-patient-modal-body" style={{ paddingTop: loginError ? '0' : undefined }}>
-              {loginError && (
-                <div style={{
-                  padding: '0 16px 8px 16px',
-                  margin: '0',
-                  background: 'transparent',
-                  border: 'none',
-                  borderRadius: '0',
-                  color: '#dc2626',
-                  fontSize: '14px',
-                  textAlign: 'center',
-                  lineHeight: '1.4',
-                  width: '100%'
-                }}>
-                  {loginError}
-                </div>
-              )}
-              <div style={{ padding: loginError ? '0 20px 10px 20px' : '10px 20px' }}>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="Introduceți email-ul"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--background-light)',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Parolă
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showLoginPassword ? 'text' : 'password'}
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="Introduceți parola"
-                      style={{
-                        width: '100%',
-                        padding: '12px' + (loginPassword ? ' 45px 12px 12px' : ''),
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--background-light)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    {loginPassword && (
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '5px',
-                          fontSize: '18px',
-                          color: 'var(--text-secondary)'
-                        }}
-                      >
-                        {showLoginPassword ? '🙈' : '👁️'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="new-patient-modal-footer">
-              <button 
-                className="new-patient-confirm-button"
-                onClick={async () => {
-                  setLoginError('')
-                  if (!loginEmail || !loginPassword) {
-                    setLoginError('Te rugăm să completezi toate câmpurile')
-                    return
-                  }
-
-                  try {
-                    console.log('🔐 [FRONTEND] Trimite cerere de login la backend...')
-                    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        email: loginEmail,
-                        parola: loginPassword
-                      })
-                    })
-
-                    console.log('📥 [FRONTEND] Răspuns primit de la backend:', response.status)
-                    const data = await response.json()
-                    console.log('📦 [FRONTEND] Date primite:', data)
-
-                    if (response.ok && data.success) {
-                      // Salvează utilizatorul în localStorage
-                      console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
-                      localStorage.setItem('currentUser', JSON.stringify(data.user))
-                      setCurrentUser(data.user)
-                      // Încarcă datele utilizatorului din localStorage
-                      loadUserData(data.user.id)
-                      setShowLoginModal(false)
-                      setLoginEmail('')
-                      setLoginPassword('')
-                      console.log('✅ [FRONTEND] Login reușit!')
-                    } else {
-                      console.log('❌ [FRONTEND] Eroare la login:', data.error)
-                      if (data.code === 'ACCOUNT_DELETED') {
-                        setLoginError(data.error)
-                      } else {
-                      setLoginError(data.error || 'Eroare la autentificare')
-                      }
-                    }
-                  } catch (error) {
-                    console.error('❌ [FRONTEND] Eroare la login:', error)
-                    setLoginError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
-                  }
-                }}
-                style={{ width: '100%', marginBottom: '10px', padding: '0.625rem 1.25rem', fontSize: '0.8125rem', fontWeight: '500' }}
-              >
-                Autentificare
-              </button>
-              <div style={{ 
-                textAlign: 'center', 
-                paddingTop: '15px',
-                borderTop: '1px solid var(--border-color)'
-              }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                  Nu ai cont?
-                </p>
-                <button
-                  onClick={() => {
-                    setShowLoginModal(false)
-                    setLoginEmail('')
-                    setLoginPassword('')
-                    setLoginError('')
-                    setShowLoginPassword(false)
-                    setShowSignUpModal(true)
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--primary-color)',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  Înregistrează-te
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-          )}
-
-          {/* Modal pentru autentificare necesară */}
-          {showLoginRequiredModal && (
-            <div className="new-patient-modal-overlay" onClick={() => setShowLoginRequiredModal(false)}>
-          <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">🔐</div>
-              <h3>Autentificare necesară</h3>
-              <button 
-                className="new-patient-modal-close"
-                onClick={() => setShowLoginRequiredModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="new-patient-modal-body">
-              <div style={{ padding: '20px' }}>
-                <p style={{ 
-                  color: 'var(--text-primary)', 
-                  fontSize: '16px',
-                  marginBottom: '20px',
-                  whiteSpace: 'pre-line',
-                  lineHeight: '1.6'
-                }}>
-                  Pentru a finaliza și a descărca rețeta, trebuie să te autentifici sau să-ți creezi un cont.
-                </p>
-                <div style={{
-                  background: 'var(--background-light)',
-                  padding: '15px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color)',
-                  marginBottom: '20px'
-                }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '10px', fontWeight: '500' }}>
-                    După autentificare vei putea:
-                  </p>
-                  <ul style={{ 
-                    color: 'var(--text-secondary)', 
-                    fontSize: '14px',
-                    textAlign: 'left',
-                    marginTop: '10px',
-                    paddingLeft: '20px',
-                    lineHeight: '1.8'
-                  }}>
-                    <li>Finaliza și descărca rețeta</li>
-                    <li>Adăuga medicamente în rețetă</li>
-                    <li>Salva planuri de medicamente</li>
-                    <li>Gestiona pacienți și notițe</li>
-                    <li>Accesa istoricul rețetelor</li>
-                    <li>Adăuga indicații pentru pacienți și medici</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="new-patient-modal-footer">
-              <button 
-                className="new-patient-confirm-button"
-                onClick={() => {
-                  setShowLoginRequiredModal(false)
-                  setShowLoginModal(true)
-                }}
-                style={{ width: '100%', marginBottom: '10px' }}
-              >
-                Autentificare
-              </button>
-              <button 
-                className="new-patient-cancel-button"
-                onClick={() => {
-                  setShowLoginRequiredModal(false)
-                  setShowSignUpModal(true)
-                }}
-                style={{ width: '100%' }}
-              >
-                Creează cont nou
-              </button>
-            </div>
-          </div>
-        </div>
-          )}
-
-          {/* Modal pentru Sign Up */}
-          {showSignUpModal && (
-            <div className="new-patient-modal-overlay" onClick={() => {
-              setShowSignUpModal(false)
-              setSignUpName('')
-              setSignUpEmail('')
-              setSignUpPassword('')
-              setSignUpConfirmPassword('')
-              setSignUpError('')
-              setShowSignUpPassword(false)
-              setShowSignUpConfirmPassword(false)
-            }}>
-              <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="new-patient-modal-header">
-                  <div className="new-patient-modal-icon">📝</div>
-                  <h3>Înregistrare</h3>
-                  <button 
-                    className="new-patient-modal-close"
-                    onClick={() => {
-                      setShowSignUpModal(false)
-                      setSignUpName('')
-                      setSignUpEmail('')
-                      setSignUpPassword('')
-                      setSignUpConfirmPassword('')
-                      setSignUpError('')
-                      setShowSignUpPassword(false)
-                      setShowSignUpConfirmPassword(false)
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-            
-            <div className="new-patient-modal-body" style={{ paddingTop: signUpError ? '0' : undefined }}>
-              {signUpError && (
-                <div style={{
-                  padding: '0 16px 8px 16px',
-                  margin: '0',
-                  background: 'transparent',
-                  border: 'none',
-                  borderRadius: '0',
-                  color: '#dc2626',
-                  fontSize: '14px',
-                  textAlign: 'center',
-                  lineHeight: '1.4',
-                  width: '100%',
-                  marginTop: '0',
-                  marginBottom: '0'
-                }}>
-                  {signUpError}
-                </div>
-              )}
-                  <div style={{ padding: signUpError ? '0 20px 10px 20px' : '10px 20px', marginTop: signUpError ? '0' : undefined }}>
-                    <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Nume complet
-                  </label>
-                  <input
-                    type="text"
-                    value={signUpName}
-                    onChange={(e) => setSignUpName(e.target.value)}
-                    placeholder="Introduceți numele complet"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--background-light)',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
-                    placeholder="Introduceți email-ul"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--background-light)',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Parolă
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showSignUpPassword ? 'text' : 'password'}
-                      value={signUpPassword}
-                      onChange={(e) => setSignUpPassword(e.target.value)}
-                      placeholder="Introduceți parola"
-                      style={{
-                        width: '100%',
-                        padding: '12px' + (signUpPassword ? ' 45px 12px 12px' : ''),
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--background-light)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    {signUpPassword && (
-                      <button
-                        type="button"
-                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '5px',
-                          fontSize: '18px',
-                          color: 'var(--text-secondary)'
-                        }}
-                      >
-                        {showSignUpPassword ? '🙈' : '👁️'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
-                    color: 'var(--text-primary)',
-                    fontWeight: '500'
-                  }}>
-                    Confirmă parola
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showSignUpConfirmPassword ? 'text' : 'password'}
-                      value={signUpConfirmPassword}
-                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
-                      placeholder="Confirmați parola"
-                      style={{
-                        width: '100%',
-                        padding: '12px' + (signUpConfirmPassword ? ' 45px 12px 12px' : ''),
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--background-light)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    {signUpConfirmPassword && (
-                      <button
-                        type="button"
-                        onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '5px',
-                          fontSize: '18px',
-                          color: 'var(--text-secondary)'
-                        }}
-                      >
-                        {showSignUpConfirmPassword ? '🙈' : '👁️'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="new-patient-modal-footer">
-              <button 
-                className="new-patient-confirm-button"
-                onClick={async () => {
-                  setSignUpError('')
-                  
-                  // Validare
-                  if (!signUpName || !signUpEmail || !signUpPassword || !signUpConfirmPassword) {
-                    setSignUpError('Te rugăm să completezi toate câmpurile')
-                    return
-                  }
-
-                  if (signUpPassword.length < 6) {
-                    setSignUpError('Parola trebuie să aibă cel puțin 6 caractere')
-                    return
-                  }
-
-                  if (signUpPassword !== signUpConfirmPassword) {
-                    setSignUpError('Parolele nu coincid')
-                    return
-                  }
-
-                  try {
-                    console.log('📝 [FRONTEND] Trimite cerere de signup la backend...', { 
-                      nume: signUpName, 
-                      email: signUpEmail
-                    })
-                    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        nume: signUpName,
-                        email: signUpEmail,
-                        parola: signUpPassword
-                      })
-                    })
-
-                    console.log('📥 [FRONTEND] Răspuns primit de la backend:', response.status)
-                    const data = await response.json()
-                    console.log('📦 [FRONTEND] Date primite:', data)
-
-                    if (response.ok && data.success) {
-                      // Salvează utilizatorul în localStorage
-                      console.log('💾 [FRONTEND] Salvare utilizator în localStorage:', data.user)
-                      localStorage.setItem('currentUser', JSON.stringify(data.user))
-                      setCurrentUser(data.user)
-                      // Încarcă datele utilizatorului din localStorage (pentru utilizatori noi va fi gol)
-                      loadUserData(data.user.id)
-                      setShowSignUpModal(false)
-                      setSignUpName('')
-                      setSignUpEmail('')
-                      setSignUpPassword('')
-                      setSignUpConfirmPassword('')
-                      console.log('✅ [FRONTEND] Signup reușit!')
-                      // Dacă contul este în așteptare, deschide setările pentru a vedea statusul
-                      if (data.user.status === 'pending') {
-                        setTimeout(() => {
-                          setShowStatsModal(true)
-                        }, 500)
-                      }
-                    } else {
-                      console.log('❌ [FRONTEND] Eroare la signup:', data.error)
-                      if (data.code === 'ACCOUNT_DELETED') {
-                        setSignUpError('')
-                        setRecoverError('')
-                        setShowRecoverModal(true)
-                      } else {
-                      setSignUpError(data.error || 'Eroare la crearea contului')
-                      }
-                    }
-                  } catch (error) {
-                    console.error('❌ [FRONTEND] Eroare la signup:', error)
-                    setSignUpError(`Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`)
-                  }
-                }}
-                style={{ width: '100%', marginBottom: '10px', padding: '0.625rem 1.25rem', fontSize: '0.8125rem', fontWeight: '500' }}
-              >
-                Înregistrează-te
-              </button>
-              <div style={{ 
-                textAlign: 'center', 
-                paddingTop: '15px',
-                borderTop: '1px solid var(--border-color)'
-              }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                  Ai deja cont?
-                </p>
-                <button
-                  onClick={() => {
-                    setShowSignUpModal(false)
-                    setSignUpName('')
-                    setSignUpEmail('')
-                    setSignUpPassword('')
-                    setSignUpConfirmPassword('')
-                    setSignUpError('')
-                    setShowSignUpPassword(false)
-                    setShowSignUpConfirmPassword(false)
-                    setShowLoginModal(true)
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--primary-color)',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  Autentifică-te
-                </button>
-              </div>
-                  </div>
-                </div>
-              </div>
-          )}
-
-          {/* Modal pentru recuperare cont șters */}
-          {showRecoverModal && (
-            <div
-              className="new-patient-modal-overlay"
-              onClick={() => {
-                setShowRecoverModal(false)
-                setRecoverError('')
-              }}
-            >
-              <div className="new-patient-modal-content auth-modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="new-patient-modal-header">
-                  <div className="new-patient-modal-icon">🧭</div>
-                  <h3>Cont șters detectat</h3>
-                  <button 
-                    className="new-patient-modal-close"
-                    onClick={() => {
-                      setShowRecoverModal(false)
-                      setRecoverError('')
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="new-patient-modal-body">
-                  <div style={{ padding: '20px' }}>
-                    <p style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
-                      Email-ul <strong>{signUpEmail}</strong> are un cont șters.
-                    </p>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                      Poți restaura contul vechi sau poți crea un cont nou de la zero pe același email.
-                    </p>
-                  </div>
-                </div>
-
-                {recoverError && (
-                  <div style={{
-                    padding: '12px',
-                    margin: '0 20px 15px 20px',
-                    background: '#fee2e2',
-                    border: '1px solid #fca5a5',
-                    borderRadius: '8px',
-                    color: '#dc2626',
-                    fontSize: '14px'
-                  }}>
-                    {recoverError}
-                  </div>
-                )}
-
-                <div className="new-patient-modal-footer">
-                  <button
-                    className="new-patient-confirm-button"
-                    onClick={() => handleRecoverAccount('restore')}
-                    disabled={recoverLoading}
-                    style={{ width: '100%', marginBottom: '10px' }}
-                  >
-                    {recoverLoading ? 'Se procesează...' : 'Restaurează contul'}
-                  </button>
-                  <button
-                    className="new-patient-cancel-button"
-                    onClick={() => handleRecoverAccount('new')}
-                    disabled={recoverLoading}
-                    style={{ width: '100%', marginBottom: '10px' }}
-                  >
-                    Cont nou (de la zero)
-                  </button>
-                  <button
-                    className="new-patient-cancel-button"
-                    onClick={() => {
-                      setShowRecoverModal(false)
-                      setRecoverError('')
-                    }}
-                    style={{ width: '100%' }}
-                  >
-                    Anulează
-                  </button>
-                  </div>
-                </div>
-              </div>
-          )}
+          <AuthModals
+            API_BASE_URL={API_BASE_URL}
+            currentUser={currentUser}
+            accountStatusTitle={accountStatusTitle}
+            accountStatusMessage={accountStatusMessage}
+            showAccountStatusMessage={showAccountStatusMessage}
+            showStatsModal={showStatsModal}
+            setShowStatsModal={setShowStatsModal}
+            showAccountStatusModal={showAccountStatusModal}
+            setShowAccountStatusModal={setShowAccountStatusModal}
+            showLoginModal={showLoginModal}
+            setShowLoginModal={setShowLoginModal}
+            showLoginRequiredModal={showLoginRequiredModal}
+            setShowLoginRequiredModal={setShowLoginRequiredModal}
+            showSignUpModal={showSignUpModal}
+            setShowSignUpModal={setShowSignUpModal}
+            showRecoverModal={showRecoverModal}
+            setShowRecoverModal={setShowRecoverModal}
+            recoverError={recoverError}
+            setRecoverError={setRecoverError}
+            recoverLoading={recoverLoading}
+            handleRecoverAccount={handleRecoverAccount}
+            handleDeleteAccount={handleDeleteAccount}
+            onHistoryPageChange={onHistoryPageChange}
+            setShowHistoryPage={setShowHistoryPage}
+            setLoadingHistory={setLoadingHistory}
+            setPrescriptionHistory={setPrescriptionHistory}
+            setStoredCurrentUser={setStoredCurrentUser}
+            setCurrentUser={setCurrentUser}
+            loadUserData={loadUserData}
+            loginEmail={loginEmail}
+            setLoginEmail={setLoginEmail}
+            loginPassword={loginPassword}
+            setLoginPassword={setLoginPassword}
+            loginError={loginError}
+            setLoginError={setLoginError}
+            showLoginPassword={showLoginPassword}
+            setShowLoginPassword={setShowLoginPassword}
+            signUpName={signUpName}
+            setSignUpName={setSignUpName}
+            signUpEmail={signUpEmail}
+            setSignUpEmail={setSignUpEmail}
+            signUpPassword={signUpPassword}
+            setSignUpPassword={setSignUpPassword}
+            signUpConfirmPassword={signUpConfirmPassword}
+            setSignUpConfirmPassword={setSignUpConfirmPassword}
+            signUpError={signUpError}
+            setSignUpError={setSignUpError}
+            showSignUpPassword={showSignUpPassword}
+            setShowSignUpPassword={setShowSignUpPassword}
+            showSignUpConfirmPassword={showSignUpConfirmPassword}
+            setShowSignUpConfirmPassword={setShowSignUpConfirmPassword}
+          />
 
           {/* Admin Panel */}
           {showAdminPanel && (
@@ -5675,359 +3345,6 @@ etc.`
           )}
         </>
       )}
-      </div>
-      {/* #region agent log */}
-      {(() => { fetch('http://127.0.0.1:7242/ingest/cf22f2ee-2fc6-4f7d-a6e7-95c0aad9a0ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MedicinesTable.jsx:4514',message:'MedicinesTable return completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{}); return null; })()}
-      {/* #endregion */}
-    </div>
-  )
-}
-
-// Componenta pentru modalul de plan de tratament
-const PlanModal = ({ medicine, onClose, onSave, existingPlan }) => {
-  const [selectedDuration, setSelectedDuration] = useState('')
-  const [selectedFrequency, setSelectedFrequency] = useState('')
-  const [selectedTimes, setSelectedTimes] = useState([])
-  const [customDuration, setCustomDuration] = useState('')
-  const [customFrequency, setCustomFrequency] = useState('')
-  const [customTime, setCustomTime] = useState('')
-  const [showCustomDuration, setShowCustomDuration] = useState(false)
-  const [showCustomFrequency, setShowCustomFrequency] = useState(false)
-  const [showCustomTime, setShowCustomTime] = useState(false)
-
-  // Inițializează modalul cu planul existent dacă există
-  useEffect(() => {
-    if (existingPlan) {
-      setSelectedDuration(existingPlan.duration || '')
-      setSelectedFrequency(existingPlan.frequency || '')
-      setSelectedTimes(existingPlan.times || [])
-      setCustomDuration(existingPlan.customDuration || '')
-      setCustomFrequency(existingPlan.customFrequency || '')
-      
-      // Identifică orele personalizate din times array și le setează în customTime pentru afișare
-      if (existingPlan.times && existingPlan.times.length > 0) {
-        const timeOptionsValues = ['dimineata', 'amiaza', 'seara', 'noaptea', 'la4ore', 'la6ore', 'la8ore', 'la12ore']
-        const customTimes = existingPlan.times.filter(time => {
-          const isPredefined = timeOptionsValues.includes(time)
-          const isCustomFormat = time.match(/^\d{1,2}:\d{2}(,\s*\d{1,2}:\d{2})*$/)
-          return !isPredefined && (isCustomFormat || time.trim() !== '')
-        })
-        if (customTimes.length > 0) {
-          setCustomTime(customTimes.join(', '))
-        } else {
-          setCustomTime(existingPlan.customTime || '')
-        }
-      } else {
-        setCustomTime(existingPlan.customTime || '')
-      }
-    }
-  }, [existingPlan])
-
-  const durationOptions = [
-    { value: '7', label: '7 zile' },
-    { value: '10', label: '10 zile' },
-    { value: '14', label: '14 zile' },
-    { value: '21', label: '21 zile' },
-    { value: '30', label: '30 zile' },
-    { value: '40', label: '40 zile' },
-    { value: '60', label: '60 zile' },
-    { value: '90', label: '90 zile' }
-  ]
-
-  const frequencyOptions = [
-    { value: '1', label: 'O dată pe zi' },
-    { value: '2', label: 'De două ori pe zi' },
-    { value: '3', label: 'De trei ori pe zi' },
-    { value: '4', label: 'De patru ori pe zi' },
-    { value: '6', label: 'La 4 ore' },
-    { value: '8', label: 'La 8 ore' },
-    { value: '12', label: 'La 12 ore' }
-  ]
-
-  const timeOptions = [
-    { value: 'dimineata', label: 'Dimineața' },
-    { value: 'amiaza', label: 'Amiaza' },
-    { value: 'seara', label: 'Seara' },
-    { value: 'noaptea', label: 'Noaptea' },
-    { value: 'la4ore', label: 'La 4 ore' },
-    { value: 'la6ore', label: 'La 6 ore' },
-    { value: 'la8ore', label: 'La 8 ore' },
-    { value: 'la12ore', label: 'La 12 ore' }
-  ]
-
-  const handleTimeToggle = (timeValue) => {
-    setSelectedTimes(prev => 
-      prev.includes(timeValue) 
-        ? prev.filter(t => t !== timeValue) // Deselectează dacă e deja selectat
-        : [...prev, timeValue] // Selectează dacă nu e selectat
-    )
-  }
-
-  const handleCustomDuration = () => {
-    if (customDuration && !isNaN(customDuration) && customDuration > 0) {
-      setSelectedDuration('') // Șterge selecția predefinită
-      setShowCustomDuration(false)
-    }
-  }
-
-  const handleCustomFrequency = () => {
-    if (customFrequency && !isNaN(customFrequency) && customFrequency > 0) {
-      setSelectedFrequency('') // Șterge selecția predefinită
-      setShowCustomFrequency(false)
-    }
-  }
-
-  const handleCustomTime = () => {
-    if (customTime.trim()) {
-      setSelectedTimes(prev => [...prev, customTime.trim()])
-      setCustomTime('')
-      setShowCustomTime(false)
-    }
-  }
-
-  const handleSave = () => {
-    const hasDuration = selectedDuration || customDuration
-    const hasFrequency = selectedFrequency || customFrequency
-    const hasTimes = selectedTimes.length > 0 || customTime
-    
-    // Verifică dacă există vreo selecție sau personalizare
-    if (!hasDuration && !hasFrequency && !hasTimes) {
-      // Nu salva nimic dacă nu s-a selectat sau personalizat nimic
-      onClose()
-      return
-    }
-
-    const plan = {
-      duration: selectedDuration || customDuration || '',
-      frequency: selectedFrequency || customFrequency || '',
-      times: selectedTimes,
-      customDuration: customDuration,
-      customFrequency: customFrequency,
-      customTime: customTime,
-      isCustomFrequency: !!customFrequency, // Flag pentru a ști dacă e personalizare
-      medicineName: medicine['Denumire medicament'],
-      medicineCode: medicine['Cod medicament']
-    }
-
-    onSave(medicine['Cod medicament'], plan)
-  }
-
-  return (
-    <div className="plan-modal-overlay" onClick={onClose}>
-      <div className="plan-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="plan-modal-header">
-          <h3>📋 Plan de tratament</h3>
-          <button className="plan-modal-close" onClick={onClose}>✕</button>
-        </div>
-        
-        <div className="plan-modal-body">
-          <div className="medicine-info">
-            <h4>{medicine['Denumire medicament']}</h4>
-            <p>Cod: {medicine['Cod medicament']}</p>
-          </div>
-
-          <div className="plan-options">
-            <div className="plan-section">
-              <h5>Durata tratamentului:</h5>
-              <div className="plan-buttons-grid">
-                {durationOptions.map(option => (
-                  <button
-                    key={option.value}
-                    className={`plan-option-button ${selectedDuration === option.value && !customDuration ? 'selected' : ''}`}
-                    onClick={() => {
-                      if (selectedDuration === option.value) {
-                        setSelectedDuration('') // Deselectează dacă e deja selectat
-                      } else {
-                        setSelectedDuration(option.value)
-                        setCustomDuration('')
-                      }
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-                <button
-                  className="plan-custom-button"
-                  onClick={() => setShowCustomDuration(!showCustomDuration)}
-                >
-                  ✏️ Personalizează
-                </button>
-              </div>
-              {showCustomDuration && (
-                <div className="custom-input-section">
-                  <input
-                    type="number"
-                    placeholder="Introdu numărul de zile"
-                    value={customDuration}
-                    onChange={(e) => setCustomDuration(e.target.value)}
-                    className="custom-input"
-                    min="1"
-                  />
-                  <button
-                    className="custom-save-button"
-                    onClick={handleCustomDuration}
-                  >
-                    Salvează
-                  </button>
-                  <button
-                    className="custom-cancel-button"
-                    onClick={() => {
-                      setShowCustomDuration(false)
-                      setCustomDuration('')
-                    }}
-                  >
-                    Anulează
-                  </button>
-                </div>
-              )}
-              {customDuration && (
-                <div className="custom-display">
-                  <span className="custom-label">Personalizat:</span>
-                  <span className="custom-value">{customDuration} zile</span>
-                </div>
-              )}
-            </div>
-
-            <div className="plan-section">
-              <h5>Frecvența administrării:</h5>
-              <div className="plan-buttons-grid">
-                {frequencyOptions.map(option => (
-                  <button
-                    key={option.value}
-                    className={`plan-option-button ${selectedFrequency === option.value && !customFrequency ? 'selected' : ''}`}
-                    onClick={() => {
-                      if (selectedFrequency === option.value) {
-                        setSelectedFrequency('') // Deselectează dacă e deja selectat
-                      } else {
-                        setSelectedFrequency(option.value)
-                        setCustomFrequency('')
-                      }
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-                <button
-                  className="plan-custom-button"
-                  onClick={() => setShowCustomFrequency(!showCustomFrequency)}
-                >
-                  ✏️ Personalizează
-                </button>
-              </div>
-              {showCustomFrequency && (
-                <div className="custom-input-section">
-                  <input
-                    type="number"
-                    placeholder="Introdu numărul de administrări pe zi"
-                    value={customFrequency}
-                    onChange={(e) => setCustomFrequency(e.target.value)}
-                    className="custom-input"
-                    min="1"
-                    max="24"
-                  />
-                  <button
-                    className="custom-save-button"
-                    onClick={handleCustomFrequency}
-                  >
-                    Salvează
-                  </button>
-                  <button
-                    className="custom-cancel-button"
-                    onClick={() => {
-                      setShowCustomFrequency(false)
-                      setCustomFrequency('')
-                    }}
-                  >
-                    Anulează
-                  </button>
-                </div>
-              )}
-              {customFrequency && (
-                <div className="custom-display">
-                  <span className="custom-label">Personalizat:</span>
-                  <span className="custom-value">{customFrequency} ori pe zi</span>
-                </div>
-              )}
-            </div>
-
-            <div className="plan-section">
-              <h5>Orele administrării:</h5>
-              <div className="plan-buttons-grid">
-                {timeOptions.map(option => (
-                  <button
-                    key={option.value}
-                    className={`plan-option-button ${selectedTimes.includes(option.value) ? 'selected' : ''}`}
-                    onClick={() => handleTimeToggle(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-                <button
-                  className="plan-custom-button"
-                  onClick={() => setShowCustomTime(!showCustomTime)}
-                >
-                  ✏️ Personalizează
-                </button>
-              </div>
-              {showCustomTime && (
-                <div className="custom-input-section">
-                  <input
-                    type="text"
-                    placeholder="Ex: 08:00, 14:00, 20:00"
-                    value={customTime}
-                    onChange={(e) => setCustomTime(e.target.value)}
-                    className="custom-input"
-                  />
-                  <button
-                    className="custom-save-button"
-                    onClick={handleCustomTime}
-                  >
-                    Adaugă
-                  </button>
-                  <button
-                    className="custom-cancel-button"
-                    onClick={() => {
-                      setShowCustomTime(false)
-                      setCustomTime('')
-                    }}
-                  >
-                    Anulează
-                  </button>
-                </div>
-              )}
-              {(() => {
-                // Identifică orele personalizate (cele care nu sunt în timeOptions)
-                const customTimes = selectedTimes.filter(time => {
-                  const isPredefined = timeOptions.some(option => option.value === time)
-                  // Verifică dacă este un format de oră personalizată (HH:MM sau HH:MM, HH:MM)
-                  const isCustomFormat = time.match(/^\d{1,2}:\d{2}(,\s*\d{1,2}:\d{2})*$/)
-                  return !isPredefined && (isCustomFormat || time.trim() !== '')
-                })
-                
-                // Dacă există customTime sau ore personalizate în selectedTimes, afișează-le
-                if (customTime || customTimes.length > 0) {
-                  const displayValue = customTime || customTimes.join(', ')
-                  return (
-                    <div className="custom-display">
-                      <span className="custom-label">Personalizat:</span>
-                      <span className="custom-value">{displayValue}</span>
-                    </div>
-                  )
-                }
-                return null
-              })()}
-            </div>
-          </div>
-        </div>
-
-        <div className="plan-modal-footer">
-          <button className="plan-cancel-button" onClick={onClose}>
-            Anulează
-          </button>
-          <button className="plan-save-button" onClick={handleSave}>
-            Salvează Plan
-          </button>
-        </div>
       </div>
     </div>
   )
