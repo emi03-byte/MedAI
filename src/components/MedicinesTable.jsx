@@ -97,6 +97,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [patientName, setPatientName] = useState('')
   const [patientNameError, setPatientNameError] = useState('')
   const [showDoctorNotes, setShowDoctorNotes] = useState(false)
+  const [showUnifiedIndications, setShowUnifiedIndications] = useState(false)
   const [doctorNotes, setDoctorNotes] = useState('')
   const [aiAdvice, setAiAdvice] = useState([])
   const [isLoadingAI, setIsLoadingAI] = useState(false)
@@ -159,6 +160,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
   const [historyViewMode, setHistoryViewMode] = useState('compact') // 'list', 'compact', 'large'
   const [selectedPrescriptions, setSelectedPrescriptions] = useState([])
   const [isDeleteMode, setIsDeleteMode] = useState(false)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
   // Filtre pentru istoric
   const [historyDateFilter, setHistoryDateFilter] = useState('toate') // 'toate', 'azi', 'saptamana', 'luna', 'anul', 'specifica'
   const [historySpecificDate, setHistorySpecificDate] = useState('')
@@ -1958,9 +1960,6 @@ Programează o consultație dacă simptomele persistă`
     if (!currentUser?.id) {
       return
     }
-    if (!window.confirm('Ești sigur că vrei să ștergi acest medicament personalizat?')) {
-      return
-    }
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/user-medicines/${userMedicineId}?userId=${currentUser.id}`,
@@ -1970,8 +1969,14 @@ Programează o consultație dacă simptomele persistă`
       if (!response.ok) {
         throw new Error(data.error || 'Eroare la ștergerea medicamentului')
       }
+      const medicineCode = `USER-${userMedicineId}`
       setUserMedicines(prev => prev.filter(item => item.id !== userMedicineId))
-      setSelectedProducts(prev => prev.filter(item => item['Cod medicament'] !== `USER-${userMedicineId}`))
+      setSelectedProducts(prev => prev.filter(item => item['Cod medicament'] !== medicineCode))
+      setMedicinePlans(prev => {
+        const updated = { ...prev }
+        delete updated[medicineCode]
+        return updated
+      })
     } catch (error) {
       console.error('❌ Eroare la ștergerea medicamentului personalizat:', error)
       alert(error.message || 'Eroare la ștergerea medicamentului')
@@ -2522,6 +2527,36 @@ Programează o consultație dacă simptomele persistă`
     }
   }, [isRecordingMicPatient, recordedTextPatient, patientNotes])
 
+  // Handler pentru oprirea înregistrării la apăsarea spațiului în textarea-ul pentru notele pacientului
+  const handlePatientNotesKeyDown = useCallback((e) => {
+    if (e.key === ' ' && isRecordingMicPatient) {
+      e.preventDefault()
+      handleStopMicPatient()
+    }
+  }, [isRecordingMicPatient, handleStopMicPatient])
+
+  // Handler pentru oprirea înregistrării la apăsarea spațiului în textarea-ul pentru notele medicului
+  const handleDoctorNotesKeyDown = useCallback((e) => {
+    if (e.key === ' ' && isRecordingMic) {
+      e.preventDefault()
+      handleStopMic()
+    }
+  }, [isRecordingMic, handleStopMic])
+
+  // Handler pentru oprirea înregistrărilor la apăsarea spațiului în input-ul pentru numele pacientului
+  const handlePatientNameKeyDown = useCallback((e) => {
+    if (e.key === ' ') {
+      if (isRecordingMicPatient) {
+        e.preventDefault()
+        handleStopMicPatient()
+      }
+      if (isRecordingMic) {
+        e.preventDefault()
+        handleStopMic()
+      }
+    }
+  }, [isRecordingMicPatient, isRecordingMic, handleStopMicPatient, handleStopMic])
+
   // Obține toate coloanele pentru modal
   const getAllColumns = () => {
     if (medicines.length === 0) return []
@@ -2694,9 +2729,9 @@ Programează o consultație dacă simptomele persistă`
                 onHistoryPageChange(false)
               }}
             >
-              ← Înapoi
+              Înapoi
             </button>
-            <h2 className="history-page-title">📋 Istoric Rețete</h2>
+            <h2 className="history-page-title">Istoric Rețete</h2>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               {isDeleteMode ? (
                 <>
@@ -2711,49 +2746,21 @@ Programează o consultație dacă simptomele persistă`
                     }}
                     title={selectedPrescriptions.length === prescriptionHistory.length ? 'Deselectează toate' : 'Selectează toate'}
                   >
-                    {selectedPrescriptions.length === prescriptionHistory.length ? '☑ Selectate toate' : '☐ Selectează toate'}
+                    {selectedPrescriptions.length === prescriptionHistory.length ? 'Selectate toate' : 'Selectează toate'}
                   </button>
                   <button
                     className="history-delete-selected-button"
-                    onClick={async () => {
+                    onClick={() => {
                       if (selectedPrescriptions.length === 0) {
                         alert('Te rugăm să selectezi cel puțin o rețetă de șters')
                         return
                       }
-                      
-                      if (!confirm(`Ești sigur că vrei să ștergi ${selectedPrescriptions.length} rețete?`)) {
-                        return
-                      }
-                      
-                      try {
-                        const deletePromises = selectedPrescriptions.map(id =>
-                          fetch(`${API_BASE_URL}/api/prescriptions/${id}?userId=${currentUser.id}`, {
-                            method: 'DELETE'
-                          })
-                        )
-                        
-                        const results = await Promise.all(deletePromises)
-                        const allSuccess = results.every(r => r.ok)
-                        
-                        if (allSuccess) {
-                          setPrescriptionHistory(prescriptionHistory.filter(p => !selectedPrescriptions.includes(p.id)))
-                          setSelectedPrescriptions([])
-                          setIsDeleteMode(false)
-                          alert(`${selectedPrescriptions.length} rețete au fost șterse cu succes!`)
-                        } else {
-                          const errorData = await Promise.all(results.map(r => r.ok ? null : r.json().catch(() => ({ error: 'Eroare necunoscută' }))))
-                          console.error('Eroare la ștergerea rețetelor:', errorData)
-                          alert('Eroare la ștergerea unor rețete. Verifică consola pentru detalii.')
-                        }
-                      } catch (error) {
-                        console.error('Eroare la ștergerea rețetelor:', error)
-                        alert(`Eroare la ștergerea rețetelor: ${error.message}`)
-                      }
+                      setShowDeleteConfirmModal(true)
                     }}
                     disabled={selectedPrescriptions.length === 0}
                     title="Șterge rețetele selectate"
                   >
-                    🗑️ Șterge ({selectedPrescriptions.length})
+                    Șterge ({selectedPrescriptions.length})
                   </button>
                   <button
                     className="history-cancel-delete-button"
@@ -2772,7 +2779,7 @@ Programează o consultație dacă simptomele persistă`
                   onClick={() => setIsDeleteMode(true)}
                   title="Șterge rețete"
                 >
-                  🗑️ Șterge
+                  Șterge
                 </button>
               )}
               <button
@@ -2788,27 +2795,7 @@ Programează o consultație dacă simptomele persistă`
                 }}
                 title={`Mod vizualizare: ${historyViewMode === 'list' ? 'Listă' : historyViewMode === 'compact' ? 'Compact' : 'Mare'}`}
               >
-              {historyViewMode === 'list' ? (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="3" y1="5" x2="17" y2="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="3" y1="15" x2="17" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              ) : historyViewMode === 'compact' ? (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="2" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <rect x="11" y="2" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <rect x="2" y="11" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <rect x="11" y="11" width="7" height="7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="2" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <line x1="2" y1="6" x2="18" y2="6" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="2" y1="10" x2="18" y2="10" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="2" y1="14" x2="18" y2="14" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              )}
+                {historyViewMode === 'list' ? '☰' : historyViewMode === 'compact' ? '☷' : '☰☰'}
             </button>
             </div>
           </div>
@@ -3045,7 +3032,7 @@ Programează o consultație dacă simptomele persistă`
                         <>
                           {prescription.indicatii_pacient && (
                             <div className="history-card-section history-card-indications">
-                              <strong className="history-card-label">📝 Indicații Pacient:</strong>
+                              <strong className="history-card-label">Indicații Pacient:</strong>
                               <p className="history-card-text">
                                 {prescription.indicatii_pacient}
                               </p>
@@ -3054,7 +3041,7 @@ Programează o consultație dacă simptomele persistă`
                           
                           {prescription.indicatii_medic && (
                             <div className="history-card-section history-card-indications">
-                              <strong className="history-card-label">👨‍⚕️ Indicații Medic:</strong>
+                              <strong className="history-card-label">Indicații Medic:</strong>
                               <p className="history-card-text">
                                 {prescription.indicatii_medic}
                               </p>
@@ -3107,7 +3094,7 @@ Programează o consultație dacă simptomele persistă`
                     
                     {prescription.indicatii_pacient && (
                       <div className="history-card-modal-section history-card-indications">
-                        <strong className="history-card-label">📝 Indicații Pacient:</strong>
+                        <strong className="history-card-label">Indicații Pacient:</strong>
                         <p className="history-card-text">
                           {prescription.indicatii_pacient}
                         </p>
@@ -3116,7 +3103,7 @@ Programează o consultație dacă simptomele persistă`
                     
                     {prescription.indicatii_medic && (
                       <div className="history-card-modal-section history-card-indications">
-                        <strong className="history-card-label">👨‍⚕️ Indicații Medic:</strong>
+                        <strong className="history-card-label">Indicații Medic:</strong>
                         <p className="history-card-text">
                           {prescription.indicatii_medic}
                         </p>
@@ -3143,6 +3130,73 @@ Programează o consultație dacă simptomele persistă`
         </div>
       )}
 
+      {/* Modal de confirmare pentru ștergerea rețetelor */}
+      {showDeleteConfirmModal && (
+        <div className="history-card-modal-overlay" onClick={() => setShowDeleteConfirmModal(false)}>
+          <div className="history-card-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="history-card-modal-header">
+              <h3>Confirmare ștergere</h3>
+              <button
+                className="history-card-modal-close"
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="history-card-modal-body">
+              <p style={{ fontSize: '16px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+                Ești sigur că vrei să ștergi {selectedPrescriptions.length} {selectedPrescriptions.length === 1 ? 'rețetă' : 'rețete'}?
+              </p>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Această acțiune nu poate fi anulată.
+              </p>
+              
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  className="history-cancel-delete-button"
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                >
+                  Anulează
+                </button>
+                <button
+                  className="history-delete-selected-button"
+                  onClick={async () => {
+                    setShowDeleteConfirmModal(false)
+                    try {
+                      const deletePromises = selectedPrescriptions.map(id =>
+                        fetch(`${API_BASE_URL}/api/prescriptions/${id}?userId=${currentUser.id}`, {
+                          method: 'DELETE'
+                        })
+                      )
+                      
+                      const results = await Promise.all(deletePromises)
+                      const allSuccess = results.every(r => r.ok)
+                      
+                      if (allSuccess) {
+                        setPrescriptionHistory(prescriptionHistory.filter(p => !selectedPrescriptions.includes(p.id)))
+                        setSelectedPrescriptions([])
+                        setIsDeleteMode(false)
+                        alert(`${selectedPrescriptions.length} rețete au fost șterse cu succes!`)
+                      } else {
+                        const errorData = await Promise.all(results.map(r => r.ok ? null : r.json().catch(() => ({ error: 'Eroare necunoscută' }))))
+                        console.error('Eroare la ștergerea rețetelor:', errorData)
+                        alert('Eroare la ștergerea unor rețete. Verifică consola pentru detalii.')
+                      }
+                    } catch (error) {
+                      console.error('Eroare la ștergerea rețetelor:', error)
+                      alert(`Eroare la ștergerea rețetelor: ${error.message}`)
+                    }
+                  }}
+                >
+                  Șterge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Conținut principal - ascuns când este deschisă pagina de istoric */}
       {!showHistoryPage && (
@@ -3161,6 +3215,280 @@ Programează o consultație dacă simptomele persistă`
           </div>
 
 
+
+          {/* Fereastră modală unificată pentru Indicații */}
+          {showUnifiedIndications && (
+            <div className="unified-indications-overlay">
+              <div className="unified-indications-content">
+                <div className="unified-indications-header">
+                  <h3>Indicații</h3>
+                  <button 
+                    className="unified-indications-close"
+                    onClick={() => setShowUnifiedIndications(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="unified-indications-main">
+                  {/* Coloana stângă - Indicații Pacient și Medic */}
+                  <div className="unified-indications-left">
+                    {/* Secțiunea Indicații Pacient */}
+                    <div className="unified-patient-section">
+                      <h4>Indicații Pacient</h4>
+                      <div className="patient-name-section">
+                        <label htmlFor="unified-patient-name-input" className="patient-name-label">
+                          Nume pacient <span className="required-asterisk">*</span>
+                        </label>
+                        <input
+                          id="unified-patient-name-input"
+                          type="text"
+                          className="patient-name-input"
+                          placeholder="Introdu numele pacientului"
+                          value={patientName}
+                          onChange={(e) => {
+                            setPatientName(e.target.value)
+                            if (patientNameError && e.target.value.trim() !== '') {
+                              setPatientNameError('')
+                            }
+                            // Șterge mesajul de eroare AI dacă utilizatorul începe să scrie numele
+                            if (e.target.value.trim() !== '') {
+                              setAiAdvice(prevAdvice => 
+                                prevAdvice.filter(advice => 
+                                  !advice.text.includes('Te rugăm să introduci numele pacientului')
+                                )
+                              )
+                            }
+                          }}
+                          onKeyDown={handlePatientNameKeyDown}
+                        />
+                        {patientNameError && (
+                          <div className="patient-name-error">{patientNameError}</div>
+                        )}
+                      </div>
+                      <div className="patient-notes-textarea-wrapper">
+                        <textarea
+                          className="patient-notes-textarea"
+                          placeholder="Scrie aici exact ce spune pacientul - simptomele, durerile, observațiile lui."
+                          value={patientNotes}
+                          onChange={(e) => setPatientNotes(e.target.value)}
+                          onKeyDown={handlePatientNotesKeyDown}
+                        />
+                        <div className="mic-buttons-container">
+                          {isRecordingMicPatient && (
+                            <button
+                              type="button"
+                              className="mic-cancel-button"
+                              aria-label="Oprește înregistrarea"
+                              title="Oprește înregistrarea"
+                              onClick={handleStopMicPatient}
+                            >
+                              STOP
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`mic-record-button-simple ${isRecordingMicPatient ? 'recording' : ''}`}
+                            aria-label={isRecordingMicPatient ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                            title={isRecordingMicPatient ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
+                            onClick={handleMicRecordPatient}
+                          >
+                            🎙️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secțiunea Indicații Medic */}
+                    <div className="unified-doctor-section">
+                      <div className="doctor-notes-section-header">
+                        <h4>Indicații Medic</h4>
+                        <button 
+                          className="format-notes-button"
+                          onClick={async () => {
+                            if (!doctorNotes || doctorNotes.trim() === '') {
+                              alert('Nu există text de formatat!')
+                              return
+                            }
+                            
+                            try {
+                              const response = await fetch('/api/openai/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                  model: 'gpt-3.5-turbo',
+                                  messages: [
+                                    {
+                                      role: 'system',
+                                      content: `Ești un asistent medical care formatează textul medical. 
+
+IMPORTANT:
+- Formatează textul într-un mod plăcut și organizat
+- Folosește bullet points (-) pentru a organiza informațiile
+- NU folosi emoji-uri
+- NU folosi numerotare (1., 2., etc.)
+- Păstrează toate informațiile importante
+- Organizează textul logic și clar
+- Fiecare bullet point să fie pe o linie separată
+
+Formatul răspunsului:
+- Prima informație importantă
+- A doua informație importantă
+- A treia informație importantă
+etc.`
+                                    },
+                                    {
+                                      role: 'user',
+                                      content: `Formatează următorul text medical: "${doctorNotes}"`
+                                    }
+                                  ],
+                                  temperature: 0.3,
+                                  max_tokens: 800
+                                })
+                              })
+
+                              if (!response.ok) {
+                                throw new Error('Eroare la formatarea textului')
+                              }
+
+                              const data = await response.json()
+                              const formattedText = data.choices[0].message.content
+                              
+                              setDoctorNotes(formattedText)
+                              
+                            } catch (error) {
+                              console.error('Eroare la formatarea textului:', error)
+                              alert('Eroare la formatarea textului. Încearcă din nou.')
+                            }
+                          }}
+                        >
+                          Formatează
+                        </button>
+                      </div>
+                      <div className="doctor-notes-textarea-wrapper">
+                        <textarea
+                          className="doctor-notes-textarea"
+                          placeholder="Scrie aici indicațiile medicale, recomandările, observațiile..."
+                          value={doctorNotes}
+                          onChange={(e) => setDoctorNotes(e.target.value)}
+                          onKeyDown={handleDoctorNotesKeyDown}
+                        />
+                        <div className="mic-buttons-container">
+                          {isRecordingMic && (
+                            <button
+                              type="button"
+                              className="mic-cancel-button"
+                              aria-label="Oprește înregistrarea"
+                              title="Oprește înregistrarea"
+                              onClick={handleStopMic}
+                            >
+                              STOP
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`mic-record-button-simple ${isRecordingMic ? 'recording' : ''}`}
+                            aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                            title={isRecordingMic ? 'Înregistrare în curs - apasă pentru a opri' : 'Înregistrează notițe vocale'}
+                            onClick={handleMicRecord}
+                          >
+                            🎙️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Coloana dreaptă - Sfaturile AI */}
+                  <div className="unified-ai-section">
+                    <div className="ai-advice-section-header">
+                      <h4>Sfaturi AI</h4>
+                      <button
+                        className="ai-generate-button"
+                        onClick={handleGenerateAIAdvice}
+                        disabled={!canGenerateAIAdvice || isLoadingAI}
+                      >
+                        {isLoadingAI ? 'Se generează...' : 'Generează sfaturi'}
+                      </button>
+                    </div>
+                    <div className="ai-advice-content">
+                      {aiAdvice.length > 0 && aiAdvice.map((advice, index) => {
+                        const isErrorMessage = advice.text.includes('Te rugăm să introduci numele pacientului')
+                        return (
+                          <div key={`${advice.text}-${index}`} className="ai-advice-item">
+                            {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
+                            <span className="ai-advice-text">{advice.text}</span>
+                            {!isErrorMessage && (
+                              <div className="ai-advice-actions">
+                                <button 
+                                  className="ai-advice-delete-btn"
+                                  onClick={() => {
+                                    const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                    setAiAdvice(newAdvice)
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                                <button 
+                                  className="ai-advice-save-btn"
+                                  onClick={() => {
+                                    const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
+                                    setDoctorNotes(newDoctorNotes)
+                                    const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                    setAiAdvice(newAdvice)
+                                  }}
+                                >
+                                  ✓
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+
+                      {isLoadingAI && (
+                        <div className="ai-advice-loading">
+                          <div className="ai-loading-spinner">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </div>
+                          <span className="ai-loading-text">AI-ul analizează indicațiile și generează sfaturi medicale...</span>
+                        </div>
+                      )}
+
+                      {!isLoadingAI && aiAdvice.length === 0 && (
+                    <div className="ai-advice-empty">
+                      <span className="ai-advice-text">
+                        {canGenerateAIAdvice
+                          ? 'Apasă „Generează sfaturi" pentru a obține recomandări AI bazate pe indicațiile pacientului'
+                          : 'Scrie indicațiile pacientului pentru a primi sfaturi AI personalizate'}
+                      </span>
+                    </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="unified-indications-footer">
+                  <p>Notițele se salvează automat</p>
+                  <button 
+                    className="unified-indications-done-button"
+                    onClick={() => {
+                      if (!patientName || patientName.trim() === '') {
+                        setPatientNameError('Te rugăm să introduci numele pacientului')
+                        return
+                      }
+                      setPatientNameError('')
+                      setShowUnifiedIndications(false)
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Zona de notițe pentru pacient */}
           {showPatientNotes && (
@@ -3190,7 +3518,16 @@ Programează o consultație dacă simptomele persistă`
                   if (patientNameError && e.target.value.trim() !== '') {
                     setPatientNameError('')
                   }
+                  // Șterge mesajul de eroare AI dacă utilizatorul începe să scrie numele
+                  if (e.target.value.trim() !== '') {
+                    setAiAdvice(prevAdvice => 
+                      prevAdvice.filter(advice => 
+                        !advice.text.includes('Te rugăm să introduci numele pacientului')
+                      )
+                    )
+                  }
                 }}
+                onKeyDown={handlePatientNameKeyDown}
               />
               {patientNameError && (
                 <div className="patient-name-error">{patientNameError}</div>
@@ -3202,6 +3539,7 @@ Programează o consultație dacă simptomele persistă`
                 placeholder="Scrie aici exact ce spune pacientul - simptomele, durerile, observațiile lui."
                 value={patientNotes}
                 onChange={(e) => setPatientNotes(e.target.value)}
+                onKeyDown={handlePatientNotesKeyDown}
               />
               <div className="mic-buttons-container">
                 {isRecordingMicPatient && (
@@ -3327,6 +3665,7 @@ etc.`
                   placeholder="Scrie aici indicațiile medicale, recomandările, observațiile..."
                   value={doctorNotes}
                   onChange={(e) => setDoctorNotes(e.target.value)}
+                  onKeyDown={handleDoctorNotesKeyDown}
                 />
                 <div className="mic-buttons-container">
                   {isRecordingMic && (
@@ -3365,47 +3704,52 @@ etc.`
                   </button>
                 </div>
                 <div className="ai-advice-content">
-                  {aiAdvice.length > 0 && aiAdvice.map((advice, index) => (
-                    <div key={`${advice.text}-${index}`} className="ai-advice-item">
-                      {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
-                      <span className="ai-advice-text">{advice.text}</span>
-                      <div className="ai-advice-actions">
-                        <button 
-                          className="ai-advice-delete-btn"
-                          onClick={() => {
-                            const newAdvice = aiAdvice.filter((_, i) => i !== index)
-                            setAiAdvice(newAdvice)
-                          }}
-                        >
-                          ✕
-                        </button>
-                        <button 
-                          className="ai-advice-save-btn"
-                          onClick={() => {
-                            console.log('💾 Salvând sfatul:', advice)
-                            console.log('📝 Notițele medicului înainte:', doctorNotes)
-                            
-                            // Adaugă sfatul la notițele medicului pe un rând nou
-                            const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
-                            console.log('📝 Notițele medicului după:', newDoctorNotes)
-                            
-                            // Actualizează state-ul
-                            setDoctorNotes(newDoctorNotes)
-                            
-                            // Șterge sfatul din lista AI
-                            const newAdvice = aiAdvice.filter((_, i) => i !== index)
-                            console.log('🗑️ Sfaturi AI după ștergere:', newAdvice)
-                            setAiAdvice(newAdvice)
-                            
-                            // Mesaj de confirmare
-                            console.log('✅ Sfatul a fost salvat în notițele medicului!')
-                          }}
-                        >
-                          ✓
-                        </button>
+                  {aiAdvice.length > 0 && aiAdvice.map((advice, index) => {
+                    const isErrorMessage = advice.text.includes('Te rugăm să introduci numele pacientului')
+                    return (
+                      <div key={`${advice.text}-${index}`} className="ai-advice-item">
+                        {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
+                        <span className="ai-advice-text">{advice.text}</span>
+                        {!isErrorMessage && (
+                          <div className="ai-advice-actions">
+                            <button 
+                              className="ai-advice-delete-btn"
+                              onClick={() => {
+                                const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                setAiAdvice(newAdvice)
+                              }}
+                            >
+                              ✕
+                            </button>
+                            <button 
+                              className="ai-advice-save-btn"
+                              onClick={() => {
+                                console.log('💾 Salvând sfatul:', advice)
+                                console.log('📝 Notițele medicului înainte:', doctorNotes)
+                                
+                                // Adaugă sfatul la notițele medicului pe un rând nou
+                                const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
+                                console.log('📝 Notițele medicului după:', newDoctorNotes)
+                                
+                                // Actualizează state-ul
+                                setDoctorNotes(newDoctorNotes)
+                                
+                                // Șterge sfatul din lista AI
+                                const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                console.log('🗑️ Sfaturi AI după ștergere:', newAdvice)
+                                setAiAdvice(newAdvice)
+                                
+                                // Mesaj de confirmare
+                                console.log('✅ Sfatul a fost salvat în notițele medicului!')
+                              }}
+                            >
+                              ✓
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {isLoadingAI && (
                     <div className="ai-advice-loading">
@@ -3458,32 +3802,18 @@ etc.`
 
             <div className="top-navigation-right">
               {currentUser && (
-                <>
-                  <button 
-                    className="top-navigation-action-btn"
-                    onClick={() => {
-                      if (!showAccountStatusMessage()) {
-                        return
-                      }
-                      setShowPatientNotes(true)
-                    }}
-                    title="Indicații Pacient"
-                  >
-                    Indicații Pacient
-                  </button>
-                  <button 
-                    className="top-navigation-action-btn"
-                    onClick={() => {
-                      if (!showAccountStatusMessage()) {
-                        return
-                      }
-                      setShowDoctorNotes(true)
-                    }}
-                    title="Indicații Medic"
-                  >
-                    Indicații Medic
-                  </button>
-                </>
+                <button 
+                  className="top-navigation-action-btn"
+                  onClick={() => {
+                    if (!showAccountStatusMessage()) {
+                      return
+                    }
+                    setShowUnifiedIndications(true)
+                  }}
+                  title="Indicații pacient/medic"
+                >
+                  Indicații pacient/medic
+                </button>
               )}
             </div>
           </div>
@@ -3672,7 +4002,7 @@ etc.`
                         <td 
                           key={headerIndex}
                           className={isNameColumn ? 'medicine-name-cell' : undefined}
-                          style={isCodeColumn ? { textAlign: 'right' } : isCompensationColumn ? { textAlign: 'center' } : {}}
+                          style={isCodeColumn || isCompensationColumn ? { textAlign: 'left' } : {}}
                         >
                           {header === 'Coduri_Boli' ? (
                             <div className="diseases-cell">
@@ -4268,7 +4598,7 @@ etc.`
             <div className="add-medicine-modal-overlay" onClick={closeAddMedicineModal}>
           <div className="add-medicine-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="add-medicine-modal-header">
-              <h3>{editingUserMedicine ? '✏️ Editează medicament personalizat' : '➕ Adaugă medicament personalizat'}</h3>
+              <h3>{editingUserMedicine ? 'Editează medicament personalizat' : 'Adaugă medicament personalizat'}</h3>
               <button className="add-medicine-modal-close" onClick={closeAddMedicineModal}>✕</button>
             </div>
             

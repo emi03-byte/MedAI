@@ -132,33 +132,62 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--background-light);
+  padding: 0.375rem 0.75rem;
+  border-radius: 12px;
+  border: 0.5px solid var(--border-color);
+  background: transparent;
   color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+  white-space: nowrap;
+  height: fit-content;
+  min-height: auto;
 }
 
 .top-navigation-action-btn:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.05);
+  border-color: var(--border-color);
+}
+
+.top-navigation-action-btn:focus {
+  outline: none;
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.top-navigation-action-btn:active {
+  outline: none;
+  border-color: var(--border-color);
+  box-shadow: none;
 }
 
 .medicines-container.dark-mode .top-navigation-action-btn {
-  background: #252525;
-  border-color: #333333;
+  background: transparent;
+  border: 0.5px solid var(--border-color);
   color: #a3a3a3;
 }
 
 .medicines-container.dark-mode .top-navigation-action-btn:hover {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background: transparent;
+  color: #e5e5e5;
+  border: 0.5px solid var(--border-color);
+}
+
+.medicines-container.dark-mode .top-navigation-action-btn:focus {
+  outline: none;
+  border-color: #333333;
+  box-shadow: none;
+}
+
+.medicines-container.dark-mode .top-navigation-action-btn:active {
+  outline: none;
+  border-color: #333333;
+  box-shadow: none;
 }
 
 .top-navigation-actions {
@@ -479,7 +508,7 @@ button:focus-visible {
 .sidebar-avatar-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 2001; /* Mai mare decât pagina de istoric (1000) */
   background: transparent;
 }
 
@@ -491,10 +520,12 @@ button:focus-visible {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 180px;
-  z-index: 50;
-  overflow: hidden;
+  min-width: 200px; /* Mărit pentru a afișa textul complet */
+  width: max-content; /* Se extinde pentru a încăpea textul */
+  z-index: 2002; /* Mai mare decât overlay-ul */
+  overflow: visible; /* Permite textului să fie vizibil */
   animation: slideUp 0.2s ease-out;
+  white-space: nowrap; /* Previne wrap-ul textului */
 }
 
 @keyframes slideUp {
@@ -612,7 +643,7 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .main-content-wrapper {
-  background: #0f0f0f;
+  background: rgba(15, 15, 15, 1);
 }
 
 .medicines-container.dark-mode h1,
@@ -797,6 +828,46 @@ code, .mono, .font-mono {
   color: var(--text-primary);
 }
 
+.medicines-container.dark-mode .patient-notes-textarea:focus,
+.medicines-container.dark-mode .doctor-notes-textarea:focus {
+  background: #0a0a0a;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.medicines-container.dark-mode .patient-notes-textarea {
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.medicines-container.dark-mode .patient-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+}
+
+.medicines-container.dark-mode .patient-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .patient-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+.medicines-container.dark-mode .doctor-notes-textarea {
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.medicines-container.dark-mode .doctor-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+}
+
+.medicines-container.dark-mode .doctor-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .doctor-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
 .medicines-container.dark-mode .patient-notes-footer,
 .medicines-container.dark-mode .doctor-notes-footer {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.12));
@@ -805,18 +876,43 @@ code, .mono, .font-mono {
 
 .medicines-container.dark-mode .patient-notes-close,
 .medicines-container.dark-mode .doctor-notes-close,
-.medicines-container.dark-mode .format-notes-button,
+.medicines-container.dark-mode .format-notes-button {
+  background: rgba(75, 85, 99, 0.15);
+  border-color: rgba(75, 85, 99, 0.3);
+  color: var(--text-primary);
+}
+
 .medicines-container.dark-mode .ai-generate-button {
-  background: rgba(125, 211, 252, 0.1);
-  border-color: rgba(125, 211, 252, 0.4);
+  background: rgba(75, 85, 99, 0.15);
+  border-color: rgba(75, 85, 99, 0.3);
   color: var(--text-primary);
 }
 
 .medicines-container.dark-mode .patient-notes-close:hover,
 .medicines-container.dark-mode .doctor-notes-close:hover,
-.medicines-container.dark-mode .format-notes-button:hover,
+.medicines-container.dark-mode .format-notes-button:hover {
+  background: rgba(75, 85, 99, 0.25);
+  border-color: rgba(75, 85, 99, 0.5);
+}
+
 .medicines-container.dark-mode .ai-generate-button:hover:not(:disabled) {
-  background: rgba(125, 211, 252, 0.25);
+  background: rgba(75, 85, 99, 0.25);
+  border-color: rgba(75, 85, 99, 0.5);
+  color: var(--text-primary) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.medicines-container.dark-mode .ai-generate-button:disabled {
+  background: rgba(75, 85, 99, 0.15) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: var(--text-primary) !important;
+}
+
+.medicines-container.dark-mode .ai-generate-button:disabled:hover {
+  background: rgba(75, 85, 99, 0.15) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: var(--text-primary) !important;
+  box-shadow: none;
 }
 
 .medicines-container.dark-mode .ai-advice-item {
@@ -832,7 +928,7 @@ code, .mono, .font-mono {
 }
 
 .medicines-container.dark-mode .ai-advice-loading .ai-loading-text {
-  color: #34d399;
+  color: white;
 }
 
 /* Dark mode pentru meniul de filtre */
@@ -1319,97 +1415,134 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 /* Dark mode pentru modalul de adăugare medicament */
-.medicines-container.dark-mode .add-medicine-modal-content {
-  background: rgba(8, 13, 27, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
+.medicines-container.dark-mode .add-medicine-modal-content,
+body.med-ai-dark .add-medicine-modal-content,
+body.medai-dark-mode .add-medicine-modal-content {
+  background: var(--background-card);
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.medicines-container.dark-mode .add-medicine-modal-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+.medicines-container.dark-mode .add-medicine-modal-header,
+body.med-ai-dark .add-medicine-modal-header,
+body.medai-dark-mode .add-medicine-modal-header {
+  background: var(--background-light);
+  border-bottom-color: var(--border-color);
 }
 
-.medicines-container.dark-mode .add-medicine-modal-header h3 {
+.medicines-container.dark-mode .add-medicine-modal-header h3,
+body.med-ai-dark .add-medicine-modal-header h3,
+body.medai-dark-mode .add-medicine-modal-header h3 {
   color: var(--text-primary);
 }
 
-.medicines-container.dark-mode .add-medicine-modal-close {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-}
-
-.medicines-container.dark-mode .add-medicine-modal-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(148, 163, 184, 0.5);
-}
-
-.medicines-container.dark-mode .add-medicine-modal-body {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 13, 27, 0.95) 100%);
-}
-
-.medicines-container.dark-mode .add-medicine-form label {
-  color: var(--text-primary);
-}
-
-.medicines-container.dark-mode .add-medicine-input {
-  background: rgba(15, 23, 42, 0.65);
-  color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.25);
-}
-
-.medicines-container.dark-mode .add-medicine-textarea {
-  background: rgba(15, 23, 42, 0.65);
-  color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.25);
-}
-
-.medicines-container.dark-mode .add-medicine-input:focus {
-  border-color: rgba(125, 211, 252, 0.5);
-  box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.medicines-container.dark-mode .add-medicine-textarea:focus {
-  border-color: rgba(125, 211, 252, 0.5);
-  box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.medicines-container.dark-mode .add-medicine-input::placeholder {
-  color: rgba(226, 232, 240, 0.5);
-}
-
-.medicines-container.dark-mode .add-medicine-textarea::placeholder {
-  color: rgba(226, 232, 240, 0.5);
-}
-
-.medicines-container.dark-mode .add-medicine-modal-footer {
-  background: rgba(8, 13, 27, 0.95);
-  border-top-color: rgba(148, 163, 184, 0.25);
-}
-
-.medicines-container.dark-mode .add-medicine-cancel-button {
-  background: rgba(15, 23, 42, 0.8);
+.medicines-container.dark-mode .add-medicine-modal-close,
+body.med-ai-dark .add-medicine-modal-close,
+body.medai-dark-mode .add-medicine-modal-close {
+  background: transparent;
   color: var(--text-secondary);
-  border-color: rgba(148, 163, 184, 0.3);
+  border-color: var(--border-color);
 }
 
-.medicines-container.dark-mode .add-medicine-cancel-button:hover {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(148, 163, 184, 0.5);
+.medicines-container.dark-mode .add-medicine-modal-close:hover,
+body.med-ai-dark .add-medicine-modal-close:hover,
+body.medai-dark-mode .add-medicine-modal-close:hover {
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-body,
+body.med-ai-dark .add-medicine-modal-body,
+body.medai-dark-mode .add-medicine-modal-body {
+  background: var(--background-card);
+}
+
+.medicines-container.dark-mode .add-medicine-form label,
+body.med-ai-dark .add-medicine-form label,
+body.medai-dark-mode .add-medicine-form label {
   color: var(--text-primary);
 }
 
-.medicines-container.dark-mode .add-medicine-save-button {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(59, 130, 246, 0.2));
-  border-color: rgba(125, 211, 252, 0.4);
-  color: #7dd3fc;
+.medicines-container.dark-mode .add-medicine-input,
+body.med-ai-dark .add-medicine-input,
+body.medai-dark-mode .add-medicine-input {
+  background: var(--background-light);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
-.medicines-container.dark-mode .add-medicine-save-button:hover {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(59, 130, 246, 0.3));
-  border-color: rgba(125, 211, 252, 0.6);
-  color: #38bdf8;
+.medicines-container.dark-mode .add-medicine-textarea,
+body.med-ai-dark .add-medicine-textarea,
+body.medai-dark-mode .add-medicine-textarea {
+  background: var(--background-light);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .add-medicine-input:focus,
+body.med-ai-dark .add-medicine-input:focus,
+body.medai-dark-mode .add-medicine-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.medicines-container.dark-mode .add-medicine-textarea:focus,
+body.med-ai-dark .add-medicine-textarea:focus,
+body.medai-dark-mode .add-medicine-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.medicines-container.dark-mode .add-medicine-input::placeholder,
+body.med-ai-dark .add-medicine-input::placeholder,
+body.medai-dark-mode .add-medicine-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .add-medicine-textarea::placeholder,
+body.med-ai-dark .add-medicine-textarea::placeholder,
+body.medai-dark-mode .add-medicine-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.medicines-container.dark-mode .add-medicine-modal-footer,
+body.med-ai-dark .add-medicine-modal-footer,
+body.medai-dark-mode .add-medicine-modal-footer {
+  background: var(--background-card);
+  border-top-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .add-medicine-cancel-button,
+body.med-ai-dark .add-medicine-cancel-button,
+body.medai-dark-mode .add-medicine-cancel-button {
+  background: var(--background-light);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .add-medicine-cancel-button:hover,
+body.med-ai-dark .add-medicine-cancel-button:hover,
+body.medai-dark-mode .add-medicine-cancel-button:hover {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.medicines-container.dark-mode .add-medicine-save-button,
+body.med-ai-dark .add-medicine-save-button,
+body.medai-dark-mode .add-medicine-save-button {
+  background: var(--primary-color);
+  color: white;
+}
+
+.medicines-container.dark-mode .add-medicine-save-button:hover,
+body.med-ai-dark .add-medicine-save-button:hover,
+body.medai-dark-mode .add-medicine-save-button:hover {
+  background: var(--primary-hover);
+  color: white;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
 }
 
 /* Dark mode pentru modalul de plan de tratament */
@@ -1726,11 +1859,13 @@ body.medai-dark-mode .new-patient-modal-body {
 .medicine-table-actions {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.125rem;
   background: var(--background-light);
-  padding: 0.25rem;
+  padding: 0.125rem;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .medicines-container.dark-mode .medicine-table-actions {
@@ -1795,24 +1930,34 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 .medicine-table-add-medicine-btn {
-  background: #f5f5f5 !important;
-  color: #666666 !important;
-  padding: 0.5rem 0.75rem !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  padding: 0.375rem 0.75rem !important;
   font-size: 0.875rem;
   font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  height: fit-content;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .medicines-container.dark-mode .medicine-table-add-medicine-btn {
-  background: #252525 !important;
+  background: transparent !important;
   color: #a3a3a3 !important;
 }
 
 .medicine-table-add-medicine-btn:hover {
-  background: #e5e5e5 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: var(--text-primary) !important;
 }
 
 .medicines-container.dark-mode .medicine-table-add-medicine-btn:hover {
-  background: #333333 !important;
+  background: #252525 !important;
+  color: #e5e5e5 !important;
 }
 
 .medicine-table-actions-separator {
@@ -3071,7 +3216,7 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 .medicines-table th {
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 0.5rem 0.75rem 0.25rem;
   text-align: left;
   font-size: 0.75rem;
   font-weight: 700;
@@ -3142,7 +3287,7 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 .medicines-table td {
-  padding: 1rem 1.5rem;
+  padding: 1rem 0.5rem 1rem 0.25rem;
   border-bottom: 1px solid #f5f5f5;
   border-right: 1px solid var(--border-color);
   vertical-align: top;
@@ -3450,7 +3595,9 @@ body.medai-dark-mode .new-patient-modal-body {
 .checkout-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3458,26 +3605,31 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 .checkout-modal {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--background-card);
+  border-radius: 12px;
   padding: 32px 40px;
   max-width: 1250px;
   width: 96%;
   max-height: 100vh;
   overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
+body.med-ai-dark .checkout-modal,
+body.medai-dark-mode .checkout-modal,
 .med-ai-dark .checkout-modal,
 .medicines-container.dark-mode .checkout-modal {
-  background: #020617;
-  color: #e5e7eb;
+  background: var(--background-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
 .checkout-header h2 {
   margin: 0;
   font-size: 1.4rem;
-  color: #1f2937;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -3485,14 +3637,23 @@ body.medai-dark-mode .new-patient-modal-body {
   margin-bottom: 2.5rem;
 }
 
+body.med-ai-dark .checkout-header h2,
+body.medai-dark-mode .checkout-header h2,
 .med-ai-dark .checkout-header h2,
 .medicines-container.dark-mode .checkout-header h2 {
-  color: #e5e7eb;
+  color: var(--text-primary);
 }
 
 .checkout-header p {
   margin: 4px 0 16px;
-  color: #6b7280;
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .checkout-header p,
+body.medai-dark-mode .checkout-header p,
+.med-ai-dark .checkout-header p,
+.medicines-container.dark-mode .checkout-header p {
+  color: var(--text-secondary);
 }
 
 .checkout-body {
@@ -3504,6 +3665,14 @@ body.medai-dark-mode .new-patient-modal-body {
 .checkout-section h3 {
   margin: 0 0 8px;
   font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .checkout-section h3,
+body.medai-dark-mode .checkout-section h3,
+.med-ai-dark .checkout-section h3,
+.medicines-container.dark-mode .checkout-section h3 {
+  color: var(--text-primary);
 }
 
 .checkout-medicines-list {
@@ -3518,6 +3687,14 @@ body.medai-dark-mode .new-patient-modal-body {
 
 .checkout-medicine-name {
   font-weight: 600;
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .checkout-medicine-name,
+body.medai-dark-mode .checkout-medicine-name,
+.med-ai-dark .checkout-medicine-name,
+.medicines-container.dark-mode .checkout-medicine-name {
+  color: var(--text-primary);
 }
 
 .checkout-medicine-details {
@@ -3525,7 +3702,14 @@ body.medai-dark-mode .new-patient-modal-body {
   flex-wrap: wrap;
   gap: 8px;
   font-size: 0.9rem;
-  color: #4b5563;
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .checkout-medicine-details,
+body.medai-dark-mode .checkout-medicine-details,
+.med-ai-dark .checkout-medicine-details,
+.medicines-container.dark-mode .checkout-medicine-details {
+  color: var(--text-secondary);
 }
 
 .checkout-medicine-plan {
@@ -3538,30 +3722,36 @@ body.medai-dark-mode .new-patient-modal-body {
   vertical-align: top;
   padding: 0.5rem 0.7rem;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
+  border: 1px solid var(--border-color);
+  background: var(--background-light);
   max-width: 320px;
   white-space: normal;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  color: var(--text-primary);
 }
 
+body.med-ai-dark .checkout-medicine-chip,
+body.medai-dark-mode .checkout-medicine-chip,
 .med-ai-dark .checkout-medicine-chip,
 .medicines-container.dark-mode .checkout-medicine-chip {
-  border-color: #4b5563;
-  background: #020617;
+  border-color: var(--border-color);
+  background: var(--background-light);
+  color: var(--text-primary);
 }
 
 .checkout-medicine-chip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
-  border-color: #1f2937;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--border-color);
 }
 
+body.med-ai-dark .checkout-medicine-chip:hover,
+body.medai-dark-mode .checkout-medicine-chip:hover,
 .med-ai-dark .checkout-medicine-chip:hover,
 .medicines-container.dark-mode .checkout-medicine-chip:hover {
-  border-color: #60a5fa;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.8);
-  background: #020617;
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: var(--background-light);
 }
 
 .checkout-medicine-chip-main {
@@ -3584,28 +3774,30 @@ body.medai-dark-mode .new-patient-modal-body {
 .med-ai-dark .checkout-medicine-chip-code,
 .medicines-container.dark-mode .checkout-medicine-chip-code,
 .med-ai-dark .checkout-medicine-chip-comp,
-.medicines-container.dark-mode .checkout-medicine-chip-comp {
-  color: #9ca3af;
-}
-
-.checkout-medicine-chip-plan {
-  font-size: 0.8rem;
-  color: #4b5563;
-}
-
-.med-ai-dark .checkout-medicine-chip-plan,
-.medicines-container.dark-mode .checkout-medicine-chip-plan {
-  color: #e5e7eb;
-}
 
 .checkout-notes-text {
   white-space: pre-wrap;
   font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .checkout-notes-text,
+body.medai-dark-mode .checkout-notes-text,
+.med-ai-dark .checkout-notes-text,
+.medicines-container.dark-mode .checkout-notes-text {
+  color: var(--text-primary);
 }
 
 .checkout-notes-empty {
   font-size: 0.9rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .checkout-notes-empty,
+body.medai-dark-mode .checkout-notes-empty,
+.med-ai-dark .checkout-notes-empty,
+.medicines-container.dark-mode .checkout-notes-empty {
+  color: var(--text-secondary);
 }
 
 .checkout-actions {
@@ -3624,7 +3816,7 @@ body.medai-dark-mode .new-patient-modal-body {
 }
 
 .checkout-button-primary {
-  background: #1a3c7c;
+  background: var(--primary-color);
   color: #ffffff;
 }
 
@@ -3633,10 +3825,37 @@ body.medai-dark-mode .new-patient-modal-body {
   cursor: not-allowed;
 }
 
+.checkout-button-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  color: #ffffff !important;
+}
+
 .checkout-button-secondary {
-  background: #ffffff;
-  border-color: #d1d5db;
-  color: #111827;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.checkout-button-secondary:hover {
+  background: var(--background-card);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .checkout-button-secondary,
+body.medai-dark-mode .checkout-button-secondary,
+.med-ai-dark .checkout-button-secondary,
+.medicines-container.dark-mode .checkout-button-secondary {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .checkout-button-secondary:hover,
+body.medai-dark-mode .checkout-button-secondary:hover,
+.med-ai-dark .checkout-button-secondary:hover,
+.medicines-container.dark-mode .checkout-button-secondary:hover {
+  background: var(--background-card);
+  border-color: var(--border-color);
 }
 
 .loading, .error {
@@ -5374,6 +5593,10 @@ body.medai-dark-mode .settings-modal-button:hover {
   margin-left: auto;
 }
 
+.settings-action-button--danger:hover {
+  color: rgba(220, 38, 38, 0.7); /* Roșu transparent */
+}
+
 .medicines-container.dark-mode .settings-action-button,
 body.med-ai-dark .settings-action-button,
 body.medai-dark-mode .settings-action-button {
@@ -5387,6 +5610,13 @@ body.med-ai-dark .settings-action-button:hover,
 body.medai-dark-mode .settings-action-button:hover {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
   border-color: #404040;
+  color: rgba(59, 130, 246, 0.7); /* Albastru transparent pentru hover în dark mode */
+}
+
+.medicines-container.dark-mode .settings-action-button--danger:hover,
+body.med-ai-dark .settings-action-button--danger:hover,
+body.medai-dark-mode .settings-action-button--danger:hover {
+  color: rgba(239, 68, 68, 0.7); /* Roșu transparent pentru hover în dark mode */
 }
 
 .plan-save-button {
@@ -5770,9 +6000,10 @@ body.medai-dark-mode .settings-action-button:hover {
 }
 
 .patient-name-input:focus {
-  border-color: #1a3c7c;
-  background: rgba(26, 60, 124, 0.05);
-  box-shadow: 0 0 0 3px rgba(26, 60, 124, 0.1);
+  border-color: var(--border-color);
+  background: white;
+  box-shadow: none;
+  outline: none;
 }
 
 .patient-name-input.error {
@@ -5817,9 +6048,10 @@ body.medai-dark-mode .settings-action-button:hover {
 }
 
 .medicines-container.dark-mode .patient-name-input:focus {
-  border-color: rgba(125, 211, 252, 0.5);
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.15);
+  background: #0a0a0a;
+  border-color: #333333;
+  box-shadow: none;
+  outline: none;
 }
 
 .medicines-container.dark-mode .patient-name-input.error {
@@ -5845,7 +6077,7 @@ body.medai-dark-mode .settings-action-button:hover {
 
 .patient-notes-textarea {
   flex: 1;
-  padding: 24px;
+  padding: 12px 16px;
   border: none;
   outline: none;
   font-size: 16px;
@@ -5862,8 +6094,33 @@ body.medai-dark-mode .settings-action-button:hover {
 }
 
 .patient-notes-textarea:focus {
-  background: rgba(26, 60, 124, 0.08);
-  border: 2px solid rgba(26, 60, 124, 0.2);
+  background: white;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.patient-notes-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.patient-notes-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.patient-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 4px;
+}
+
+.patient-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.patient-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
 }
 
 .patient-notes-footer {
@@ -6023,24 +6280,25 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .format-notes-button {
-  background: rgba(26, 60, 124, 0.1);
-  color: #1a3c7c;
-  border: 1px solid #1a3c7c;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
+  background: rgba(75, 85, 99, 0.1);
+  color: #4b5563;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  border-radius: 20px;
+  padding: 4px 8px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .format-notes-button:hover {
-  background: rgba(26, 60, 124, 0.2);
-  border-color: #2c5aa0;
-  color: #1a3c7c;
+  background: rgba(75, 85, 99, 0.2);
+  border-color: rgba(75, 85, 99, 0.5);
+  color: #374151;
   transform: translateY(-1px);
 }
 
@@ -6176,9 +6434,33 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .doctor-notes-textarea:focus {
-  background: rgba(26, 60, 124, 0.12);
-  border: 2px solid rgba(26, 60, 124, 0.3);
-  box-shadow: 0 0 0 3px rgba(26, 60, 124, 0.1);
+  background: white;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.doctor-notes-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.doctor-notes-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.doctor-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 4px;
+}
+
+.doctor-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.doctor-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
 }
 
 .ai-advice-section {
@@ -6194,7 +6476,7 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .ai-advice-section-header {
   padding: 12px 20px 6px 20px;
   background: linear-gradient(135deg, rgba(26, 60, 124, 0.03), rgba(44, 90, 160, 0.03));
-  border-bottom: 1px solid rgba(26, 60, 124, 0.08);
+  border-bottom: 1px solid var(--border-color);
   border-radius: 6px 6px 0 0;
   display: flex;
   align-items: center;
@@ -6212,26 +6494,43 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .ai-generate-button {
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(26, 60, 124, 0.2);
-  background: rgba(255, 255, 255, 0.7);
-  color: #1a3c7c;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  background: rgba(75, 85, 99, 0.1);
+  color: #4b5563;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(26, 60, 124, 0.1);
+  box-shadow: 0 1px 2px rgba(75, 85, 99, 0.1);
 }
 
 .ai-generate-button:hover:not(:disabled) {
-  background: rgba(26, 60, 124, 0.08);
-  border-color: rgba(26, 60, 124, 0.4);
-  color: #0f2a5c;
+  background: rgba(75, 85, 99, 0.2);
+  border-color: rgba(75, 85, 99, 0.5);
+  color: #4b5563;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .ai-generate-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #4b5563 !important;
+}
+
+.ai-generate-button:disabled:hover {
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #4b5563 !important;
+  box-shadow: none !important;
+}
+
+.ai-generate-button:disabled:active {
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #4b5563 !important;
 }
 
 .ai-advice-content {
@@ -6241,6 +6540,26 @@ body.med-ai-dark .patient-notes-done-button:hover {
   background: rgba(26, 60, 124, 0.01);
   border-radius: 0 0 6px 6px;
   max-height: 260px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.ai-advice-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ai-advice-content::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 4px;
+}
+
+.ai-advice-content::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.ai-advice-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
 }
 
 .ai-advice-item {
@@ -6300,8 +6619,14 @@ body.med-ai-dark .patient-notes-done-button:hover {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #000000;
   animation: ai-loading-bounce 1.4s ease-in-out infinite both;
+}
+
+body.med-ai-dark .ai-loading-spinner span,
+body.medai-dark-mode .ai-loading-spinner span,
+.medicines-container.dark-mode .ai-loading-spinner span {
+  background: white;
 }
 
 .ai-loading-spinner span:nth-child(1) {
@@ -6328,7 +6653,7 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .ai-loading-text {
-  color: #10b981;
+  color: #000000;
   font-weight: 500;
   font-size: 14px;
   line-height: 1.4;
@@ -6348,37 +6673,707 @@ body.med-ai-dark .patient-notes-done-button:hover {
 
 .ai-advice-delete-btn,
 .ai-advice-save-btn {
-  width: 24px;
-  height: 24px;
+  width: auto;
+  height: auto;
   border: none;
-  border-radius: 4px;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
+  background: transparent !important;
+  min-width: 0;
+  min-height: 0;
 }
 
 .ai-advice-delete-btn {
-  background: #fee2e2;
-  color: #dc2626;
+  color: var(--text-secondary);
 }
 
 .ai-advice-delete-btn:hover {
-  background: #fecaca;
+  background: transparent !important;
+  color: #dc2626;
   transform: scale(1.1);
+}
+
+.ai-advice-delete-btn:focus,
+.ai-advice-delete-btn:active {
+  background: transparent !important;
+  outline: none;
+  border: none;
+  color: #dc2626;
 }
 
 .ai-advice-save-btn {
-  background: #dcfce7;
-  color: #16a34a;
+  color: var(--text-secondary);
 }
 
 .ai-advice-save-btn:hover {
-  background: #bbf7d0;
+  background: transparent !important;
+  color: #16a34a;
   transform: scale(1.1);
+}
+
+.ai-advice-save-btn:focus,
+.ai-advice-save-btn:active {
+  background: transparent !important;
+  outline: none;
+  border: none;
+  color: #16a34a;
+}
+
+/* Unified Indications Modal */
+.unified-indications-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.unified-indications-content {
+  background: var(--background-card);
+  border-radius: 12px;
+  width: 90%;
+  height: 85%;
+  max-width: 1400px;
+  max-height: 900px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  animation: slideIn 0.3s ease;
+}
+
+.unified-indications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-light);
+  border-radius: 12px 12px 0 0;
+}
+
+.unified-indications-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.unified-indications-close {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.unified-indications-close:hover {
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.unified-indications-main {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.unified-indications-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.unified-patient-section,
+.unified-doctor-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.unified-patient-section {
+  flex: 1.2;
+  min-height: 0;
+}
+
+.unified-doctor-section {
+  flex: 1;
+  min-height: 0;
+}
+
+.unified-patient-section .patient-name-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-light);
+  flex-shrink: 0;
+}
+
+.unified-patient-section .patient-notes-textarea-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.unified-doctor-section .doctor-notes-section-header {
+  padding: 10px 16px;
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.unified-doctor-section .doctor-notes-section-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.unified-doctor-section .doctor-notes-textarea-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.unified-doctor-section .doctor-notes-textarea {
+  flex: 1;
+  padding: 12px 16px;
+  padding-bottom: 50px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  line-height: 1.6;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  resize: none;
+  background: var(--background-card);
+  color: var(--text-primary);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.unified-doctor-section .doctor-notes-textarea::placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.unified-doctor-section .mic-buttons-container {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.unified-patient-section .patient-notes-textarea-wrapper {
+  position: relative;
+}
+
+.unified-patient-section .patient-notes-textarea {
+  padding-bottom: 50px;
+}
+
+.unified-patient-section .mic-buttons-container {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.mic-record-button-simple {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-shadow: none !important;
+}
+
+.mic-record-button-simple:hover {
+  opacity: 1;
+  transform: scale(1.15);
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.mic-record-button-simple:focus {
+  outline: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.mic-record-button-simple:active {
+  outline: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.mic-record-button-simple.recording {
+  opacity: 1;
+  animation: pulse-simple 1.2s ease-in-out infinite;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+@keyframes pulse-simple {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.unified-patient-section h4,
+.unified-doctor-section h4 {
+  margin: 0;
+  padding: 12px 20px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.unified-ai-section {
+  flex: 0 0 350px;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.unified-ai-section .ai-advice-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  min-height: 0;
+}
+
+.unified-ai-section .ai-advice-section-header {
+  padding: 12px 20px;
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+}
+
+.unified-ai-section .ai-advice-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+.unified-ai-section .ai-advice-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.unified-ai-section .ai-advice-content::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 4px;
+}
+
+.unified-ai-section .ai-advice-content::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.unified-ai-section .ai-advice-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+.unified-ai-section .ai-generate-button:disabled {
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #4b5563 !important;
+  opacity: 0.5;
+}
+
+.unified-ai-section .ai-generate-button:disabled:hover {
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #4b5563 !important;
+  box-shadow: none !important;
+}
+
+body.med-ai-dark .unified-ai-section .ai-generate-button:disabled,
+body.medai-dark-mode .unified-ai-section .ai-generate-button:disabled {
+  background: rgba(75, 85, 99, 0.15) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: var(--text-primary) !important;
+}
+
+body.med-ai-dark .unified-ai-section .ai-generate-button:disabled:hover,
+body.medai-dark-mode .unified-ai-section .ai-generate-button:disabled:hover {
+  background: rgba(75, 85, 99, 0.15) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+.unified-ai-section .ai-advice-actions {
+  gap: 12px;
+}
+
+.unified-ai-section .ai-advice-delete-btn,
+.unified-ai-section .ai-advice-save-btn {
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+  background: transparent !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.unified-ai-section .ai-advice-delete-btn {
+  color: var(--text-secondary);
+}
+
+.unified-ai-section .ai-advice-delete-btn:hover {
+  background: transparent !important;
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.unified-ai-section .ai-advice-delete-btn:focus,
+.unified-ai-section .ai-advice-delete-btn:active {
+  background: transparent !important;
+  outline: none;
+  border: none;
+  color: #dc2626;
+}
+
+.unified-ai-section .ai-advice-save-btn {
+  color: var(--text-secondary);
+}
+
+.unified-ai-section .ai-advice-save-btn:hover {
+  background: transparent !important;
+  color: #16a34a;
+  transform: scale(1.1);
+}
+
+.unified-ai-section .ai-advice-save-btn:focus,
+.unified-ai-section .ai-advice-save-btn:active {
+  background: transparent !important;
+  outline: none;
+  border: none;
+  color: #16a34a;
+}
+
+.unified-indications-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-light);
+  border-radius: 0 0 12px 12px;
+}
+
+.unified-indications-footer p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.unified-indications-done-button {
+  padding: 8px 16px;
+  background: #4b5563 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unified-indications-done-button:hover {
+  background: #374151 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode pentru unified indications */
+body.med-ai-dark .unified-indications-content,
+body.medai-dark-mode .unified-indications-content {
+  background: var(--background-card);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .unified-indications-header,
+body.medai-dark-mode .unified-indications-header {
+  background: var(--background-light);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .unified-indications-header h3,
+body.medai-dark-mode .unified-indications-header h3 {
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .unified-indications-close,
+body.medai-dark-mode .unified-indications-close {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .unified-indications-close:hover,
+body.medai-dark-mode .unified-indications-close:hover {
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+body.med-ai-dark .unified-patient-section,
+body.med-ai-dark .unified-doctor-section,
+body.med-ai-dark .unified-ai-section,
+body.medai-dark-mode .unified-patient-section,
+body.medai-dark-mode .unified-doctor-section,
+body.medai-dark-mode .unified-ai-section {
+  background: var(--background-light);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .unified-patient-section h4,
+body.med-ai-dark .unified-doctor-section h4,
+body.medai-dark-mode .unified-patient-section h4,
+body.medai-dark-mode .unified-doctor-section h4 {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .unified-indications-footer,
+body.medai-dark-mode .unified-indications-footer {
+  background: var(--background-light);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .unified-indications-footer p,
+body.medai-dark-mode .unified-indications-footer p {
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .unified-indications-done-button,
+body.medai-dark-mode .unified-indications-done-button {
+  background: #4b5563 !important;
+  color: white !important;
+  border-radius: 20px;
+  border: none !important;
+}
+
+body.med-ai-dark .unified-indications-done-button:hover,
+body.medai-dark-mode .unified-indications-done-button:hover {
+  background: #374151 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.med-ai-dark .unified-patient-section .patient-name-section,
+body.medai-dark-mode .unified-patient-section .patient-name-section {
+  background: var(--background-light);
+  border-color: var(--border-color);
+}
+
+body.med-ai-dark .unified-patient-section .patient-name-label,
+body.medai-dark-mode .unified-patient-section .patient-name-label {
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .unified-patient-section .patient-name-input,
+body.medai-dark-mode .unified-patient-section .patient-name-input {
+  background: var(--background-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.unified-patient-section .patient-name-input:focus {
+  border-color: var(--border-color);
+  background: white;
+  box-shadow: none;
+  outline: none;
+}
+
+body.med-ai-dark .unified-patient-section .patient-name-input:focus,
+body.medai-dark-mode .unified-patient-section .patient-name-input:focus {
+  background: #0a0a0a;
+  border-color: #333333;
+  box-shadow: none;
+  outline: none;
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea {
+  background: var(--background-card);
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea:focus,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea:focus {
+  background: #0a0a0a;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea {
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-track,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-thumb,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-thumb:hover,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+body.med-ai-dark .unified-patient-section .patient-notes-textarea::placeholder,
+body.medai-dark-mode .unified-patient-section .patient-notes-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea {
+  background: var(--background-card);
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea:focus,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea:focus {
+  background: #0a0a0a;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea {
+  scrollbar-color: var(--text-secondary) var(--background-light);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-track,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-track {
+  background: var(--background-light);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-thumb,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-thumb:hover,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+body.med-ai-dark .unified-doctor-section .doctor-notes-textarea::placeholder,
+body.medai-dark-mode .unified-doctor-section .doctor-notes-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+body.med-ai-dark .mic-record-button-simple,
+body.medai-dark-mode .mic-record-button-simple {
+  opacity: 0.6;
+}
+
+body.med-ai-dark .mic-record-button-simple:hover,
+body.medai-dark-mode .mic-record-button-simple:hover {
+  opacity: 1;
+}
+
+body.med-ai-dark .mic-record-button-simple.recording,
+body.medai-dark-mode .mic-record-button-simple.recording {
+  opacity: 1;
 }
 
 .doctor-notes-footer {
@@ -6444,154 +7439,189 @@ body.med-ai-dark .patient-notes-done-button:hover {
 }
 
 .add-medicine-modal-content {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: var(--background-card);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   max-width: 420px;
   width: 85%;
   max-height: 80vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(26, 60, 124, 0.08);
+  border: 1px solid var(--border-color);
   animation: slideInUp 0.3s ease-out;
 }
 
 .add-medicine-modal-header {
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
-  color: white;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--border-color);
   position: relative;
+  flex-shrink: 0;
 }
 
-.add-medicine-modal-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-}
 
 .add-medicine-modal-header h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.01em;
 }
 
 .add-medicine-modal-close {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-weight: 500;
-  backdrop-filter: blur(10px);
 }
 
 .add-medicine-modal-close:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.08);
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .add-medicine-modal-body {
   padding: 1.5rem;
   flex: 1;
-  background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+  min-height: 0;
+  background: var(--background-card);
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.add-medicine-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.add-medicine-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.add-medicine-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.add-medicine-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Ascunde scrollbar-ul când nu este necesar */
+.add-medicine-modal-body:not(:has(.add-medicine-advanced:not(:empty))) {
+  overflow-y: hidden;
 }
 
 .add-medicine-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
 }
 
 .add-medicine-form label {
-  font-weight: 700;
-  color: #1f2937;
-  font-size: 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: -0.01em;
-  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-bottom: 0.25rem;
 }
 
 .add-medicine-input {
-  padding: 1rem 1.5rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
-  color: #374151;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background-light);
+  color: var(--text-primary);
 }
 
 .add-medicine-textarea {
-  padding: 0.9rem 1.5rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
-  color: #374151;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--background-light);
+  color: var(--text-primary);
   resize: vertical;
 }
 
 .add-medicine-input:focus {
   outline: none;
-  border-color: #1a3c7c;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(26, 60, 124, 0.08), 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: var(--background-light);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
 .add-medicine-textarea:focus {
   outline: none;
-  border-color: #1a3c7c;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(26, 60, 124, 0.08), 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: var(--background-light);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
 .add-medicine-input::placeholder {
-  color: #9ca3af;
-  font-style: italic;
+  color: var(--text-secondary);
 }
 
 .add-medicine-textarea::placeholder {
-  color: #9ca3af;
-  font-style: italic;
+  color: var(--text-secondary);
 }
 
 .add-medicine-advanced-toggle {
   align-self: flex-start;
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  background: #f8fafc;
-  color: #1f2937;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--background-light);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-medicine-advanced-toggle:hover {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.medicines-container.dark-mode .add-medicine-advanced-toggle,
+body.med-ai-dark .add-medicine-advanced-toggle,
+body.medai-dark-mode .add-medicine-advanced-toggle {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .add-medicine-advanced-toggle:hover,
+body.med-ai-dark .add-medicine-advanced-toggle:hover,
+body.medai-dark-mode .add-medicine-advanced-toggle:hover {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
 .add-medicine-advanced {
@@ -6620,60 +7650,67 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .custom-medicine-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.125rem;
   width: 100%;
 }
 
 .custom-medicine-action-button {
-  border: 1px solid var(--border-color);
-  background: var(--background-light);
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.15rem 0.35rem;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .custom-medicine-action-button:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
+  background: transparent;
+  color: var(--primary-color);
+  border: none;
+  font-weight: 600;
 }
 
 .medicines-container.dark-mode .custom-medicine-action-button {
-  background: #252525;
-  border-color: #333333;
+  background: transparent;
+  border: none;
   color: #a3a3a3;
 }
 
 .medicines-container.dark-mode .custom-medicine-action-button:hover {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background: transparent;
+  color: #3b82f6;
+  border: none;
+  font-weight: 600;
 }
 
 .custom-medicine-action-button.delete {
-  border-color: rgba(239, 68, 68, 0.3);
+  border: none;
   color: #ef4444;
+  background: transparent;
 }
 
 .custom-medicine-action-button.delete:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
+  background: transparent;
+  color: #ef4444;
+  border: none;
+  font-weight: 600;
 }
 
 .medicines-container.dark-mode .custom-medicine-action-button.delete {
-  border-color: rgba(239, 68, 68, 0.4);
+  border: none;
   color: #f87171;
+  background: transparent;
 }
 
 .medicines-container.dark-mode .custom-medicine-action-button.delete:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
+  background: transparent;
+  color: #ef4444;
+  border: none;
+  font-weight: 600;
 }
 
 .custom-medicine-row {
@@ -6884,54 +7921,53 @@ body.med-ai-dark .patient-notes-done-button:hover {
 .admin-action-button.danger-outline { background: white; color: #dc2626; border: 1px solid #fecaca; }
 
 .add-medicine-modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid rgba(26, 60, 124, 0.1);
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 0.75rem;
-  background: #ffffff;
-  border-radius: 0 0 16px 16px;
+  background: var(--background-card);
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
 }
 
 .add-medicine-cancel-button {
-  padding: 0.875rem 2rem;
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.8rem;
 }
 
 .add-medicine-cancel-button:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #475569;
-  transform: translateY(-1px);
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .add-medicine-save-button {
-  padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #1a3c7c, #2c5aa0);
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 4px 12px rgba(26, 60, 124, 0.25);
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.8rem;
 }
 
 .add-medicine-save-button:hover {
-  background: linear-gradient(135deg, #2c5aa0, #1a3c7c);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(26, 60, 124, 0.35);
+  background: var(--primary-hover);
+  color: white;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
 }
 
 /* Stiluri pentru modalul de confirmare Pacient nou */
@@ -7005,7 +8041,7 @@ body.med-ai-dark .patient-notes-done-button:hover {
 body.med-ai-dark .new-patient-modal-icon--plain,
 body.medai-dark-mode .new-patient-modal-icon--plain {
   background-size: 18px 18px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.82-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1.82 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.26.3.44.65.6 1a1.65 1.65 0 0 0 1.82.33H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.82-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1.82 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.26.3.44.65.6 1a1.65 1.65 0 0 0 1.82.33H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z'/%3E%3C/svg%3E");
 }
 
 .new-patient-modal-header h3 {
@@ -7326,7 +8362,7 @@ body.medai-dark-mode .new-patient-modal-icon--plain {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
-  z-index: 1001;
+  z-index: 2000; /* Mai mare decât pagina de istoric (1000) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7654,10 +8690,10 @@ body.medai-dark-mode .chat-send-button:disabled {
 .history-page-container {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
+  left: 80px; /* Lăsăm spațiu pentru sidebar */
+  width: calc(100vw - 80px); /* Lățime ajustată pentru sidebar */
   height: 100vh;
-  background: var(--background-card);
+  background: var(--background-main);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -7669,35 +8705,41 @@ body.medai-dark-mode .chat-send-button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 20px 30px;
-  background: linear-gradient(135deg, rgba(26, 60, 124, 0.1), rgba(44, 90, 160, 0.1));
-  border-bottom: 2px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--background-card);
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
 }
 
 .history-back-button {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 10px 20px;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 6px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  outline: none;
 }
 
-.history-back-button:hover {
-  background: #2c5aa0;
-  transform: translateX(-2px);
+.history-back-button:hover,
+.history-back-button:focus,
+.history-back-button:focus-visible {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  outline: none;
 }
 
 .history-page-title {
   margin: 0;
   color: var(--text-primary);
   font-size: 24px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
   font-weight: 600;
 }
 
@@ -7705,13 +8747,27 @@ body.medai-dark-mode .chat-send-button:disabled {
   flex: 1;
   overflow-y: auto;
   padding: 30px;
+  background: var(--background-card);
+}
+
+.medicines-container.dark-mode .history-page-content,
+body.med-ai-dark .history-page-content,
+body.medai-dark-mode .history-page-content {
+  background: rgba(15, 15, 15, 1); /* Același fundal ca medicines-container în dark mode */
 }
 
 /* Filtre pentru istoric */
 .history-filters-container {
   padding: 20px 30px;
-  background: var(--background-light);
+  background: var(--background-card);
   border-bottom: 1px solid var(--border-color);
+}
+
+.medicines-container.dark-mode .history-filters-container,
+body.med-ai-dark .history-filters-container,
+body.medai-dark-mode .history-filters-container {
+  background: rgba(15, 15, 15, 1);
+  border-bottom-color: var(--border-color);
 }
 
 .history-filters-row {
@@ -7719,6 +8775,12 @@ body.medai-dark-mode .chat-send-button:disabled {
   gap: 15px;
   align-items: flex-end;
   flex-wrap: wrap;
+}
+
+.medicines-container.dark-mode .history-filters-row,
+body.med-ai-dark .history-filters-row,
+body.medai-dark-mode .history-filters-row {
+  background: rgba(15, 15, 15, 1);
 }
 
 .history-filter-group {
@@ -7739,26 +8801,42 @@ body.medai-dark-mode .chat-send-button:disabled {
 .history-filter-select,
 .history-filter-input,
 .history-filter-date-input {
-  padding: 10px 14px;
+  padding: 0.625rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 14px;
-  background: var(--background-card);
+  font-size: 0.875rem;
+  background: var(--background-light);
   color: var(--text-primary);
   transition: all 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  outline: none;
 }
 
 .history-filter-select:focus,
 .history-filter-input:focus,
 .history-filter-date-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(26, 60, 124, 0.1);
+  border-color: var(--border-color);
+  background: white;
+  box-shadow: none;
 }
 
 .history-filter-select {
   cursor: pointer;
+}
+
+/* Stiluri pentru opțiunile din dropdown */
+.history-filter-select option {
+  background: var(--background-card);
+  color: var(--text-primary);
+  padding: 0.5rem;
+}
+
+.medicines-container.dark-mode .history-filter-select option,
+body.med-ai-dark .history-filter-select option,
+body.medai-dark-mode .history-filter-select option {
+  background: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .history-filter-input {
@@ -7793,25 +8871,48 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 /* Dark mode pentru filtre istoric */
-.medicines-container.dark-mode .history-filters-container {
-  background: rgba(15, 23, 42, 0.65);
-  border-bottom-color: rgba(148, 163, 184, 0.2);
-}
 
 .medicines-container.dark-mode .history-filter-label {
   color: var(--text-secondary);
 }
 
 .medicines-container.dark-mode .history-filter-select,
+body.med-ai-dark .history-filter-select,
+body.medai-dark-mode .history-filter-select {
+  background: #0f0f0f;
+  border-color: #333333;
+}
+
+.medicines-container.dark-mode .history-filter-select:focus,
+body.med-ai-dark .history-filter-select:focus,
+body.medai-dark-mode .history-filter-select:focus {
+  background: #0a0a0a;
+  border-color: #333333;
+  box-shadow: none;
+}
+
 .medicines-container.dark-mode .history-filter-input,
+body.med-ai-dark .history-filter-input,
+body.medai-dark-mode .history-filter-input {
+  background: #0f0f0f;
+  border-color: #333333;
+}
+
+.medicines-container.dark-mode .history-filter-input:focus,
+body.med-ai-dark .history-filter-input:focus,
+body.medai-dark-mode .history-filter-input:focus {
+  background: #0a0a0a;
+  border-color: #333333;
+  box-shadow: none;
+  outline: none;
+}
+
 .medicines-container.dark-mode .history-filter-date-input {
   background: rgba(15, 23, 42, 0.8);
   border-color: rgba(148, 163, 184, 0.25);
   color: var(--text-primary);
 }
 
-.medicines-container.dark-mode .history-filter-select:focus,
-.medicines-container.dark-mode .history-filter-input:focus,
 .medicines-container.dark-mode .history-filter-date-input:focus {
   border-color: rgba(125, 211, 252, 0.5);
   box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.2);
@@ -7839,24 +8940,41 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-view-mode-toggle {
-  background: var(--primary-color);
-  border: 2px solid var(--primary-color);
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 20px;
   cursor: pointer;
-  color: white;
+  color: var(--text-primary);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(26, 60, 124, 0.3);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .history-view-mode-toggle:hover {
-  background: #0d2a5a;
-  border-color: #0d2a5a;
-  transform: scale(1.05);
-  box-shadow: 0 3px 6px rgba(26, 60, 124, 0.4);
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.medicines-container.dark-mode .history-view-mode-toggle,
+body.med-ai-dark .history-view-mode-toggle,
+body.medai-dark-mode .history-view-mode-toggle {
+  background: #2a2a2a;
+  border-color: #333333;
+  color: #a0a0a0;
+}
+
+.medicines-container.dark-mode .history-view-mode-toggle:hover,
+body.med-ai-dark .history-view-mode-toggle:hover,
+body.medai-dark-mode .history-view-mode-toggle:hover {
+  background: #3a3a3a;
+  border-color: #404040;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .history-view-mode-toggle:active {
@@ -7898,12 +9016,13 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-card {
-  background: var(--background-light);
+  background: #f5f5f5;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
 }
 
 .history-card-list {
@@ -7917,8 +9036,15 @@ body.medai-dark-mode .chat-send-button:disabled {
 
 .history-card-list:hover {
   transform: translateX(4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-color);
+}
+
+.medicines-container.dark-mode .history-card-list:hover,
+body.med-ai-dark .history-card-list:hover,
+body.medai-dark-mode .history-card-list:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-color);
 }
 
 .history-card-compact {
@@ -7932,9 +9058,16 @@ body.medai-dark-mode .chat-send-button:disabled {
 
 .history-card-compact:hover {
   transform: scale(0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-color);
   z-index: 10;
+}
+
+.medicines-container.dark-mode .history-card-compact:hover,
+body.med-ai-dark .history-card-compact:hover,
+body.medai-dark-mode .history-card-compact:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-color);
 }
 
 .history-card-large {
@@ -7986,10 +9119,10 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-card-pdf-button {
-  background: #dc2626;
-  color: white;
+  background: var(--background-light);
+  color: var(--text-primary);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 6px 12px;
   display: flex;
   align-items: center;
@@ -8002,9 +9135,9 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-card-pdf-button:hover {
-  background: #b91c1c;
-  transform: scale(1.05);
-  box-shadow: 0 3px 6px rgba(220, 38, 38, 0.3);
+  background: var(--background-light);
+  color: rgba(255, 0, 0, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .history-card-pdf-button:active {
@@ -8016,28 +9149,57 @@ body.medai-dark-mode .chat-send-button:disabled {
   padding: 4px 8px;
 }
 
+.medicines-container.dark-mode .history-card-pdf-button,
+body.med-ai-dark .history-card-pdf-button,
+body.medai-dark-mode .history-card-pdf-button {
+  background: #252525;
+  color: #a0a0a0;
+}
+
+.medicines-container.dark-mode .history-card-pdf-button:hover,
+body.med-ai-dark .history-card-pdf-button:hover,
+body.medai-dark-mode .history-card-pdf-button:hover {
+  background: #252525;
+  color: rgba(255, 0, 0, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
 .history-card-view-button {
-  background: var(--primary-color);
-  color: white;
+  background: var(--background-light);
+  color: var(--text-primary);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 6px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
 }
 
 .history-card-view-button:hover {
-  background: #0d2a5a;
-  transform: scale(1.05);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  background: var(--background-light);
+  color: #0a0a0a;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.medicines-container.dark-mode .history-card-view-button,
+body.med-ai-dark .history-card-view-button,
+body.medai-dark-mode .history-card-view-button {
+  background: #252525;
+  color: #a0a0a0;
+}
+
+.medicines-container.dark-mode .history-card-view-button:hover,
+body.med-ai-dark .history-card-view-button:hover,
+body.medai-dark-mode .history-card-view-button:hover {
+  background: #1a1a1a;
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
 .history-card-compact .history-card-view-button {
@@ -8180,9 +9342,10 @@ body.medai-dark-mode .chat-send-button:disabled {
 
 .history-card-indications {
   padding: 8px;
-  background: rgba(26, 60, 124, 0.05);
+  background: var(--background-light);
   border-radius: 6px;
   margin-top: 8px;
+  color: var(--text-primary);
 }
 
 .history-card-text {
@@ -8213,36 +9376,70 @@ body.medai-dark-mode .chat-send-button:disabled {
   margin-top: 12px;
 }
 
-/* Dark mode pentru pagina de istoric */
-.medicines-container.dark-mode .history-page-container {
-  background: rgba(8, 13, 27, 0.98);
+/* Dark mode pentru pagina de istoric - folosește aceleași variabile ca pagina principală */
+.medicines-container.dark-mode .history-page-container,
+body.med-ai-dark .history-page-container,
+body.medai-dark-mode .history-page-container {
+  background: var(--background-main);
 }
 
-.medicines-container.dark-mode .history-page-header {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1), rgba(59, 130, 246, 0.1));
-  border-color: rgba(148, 163, 184, 0.2);
+.medicines-container.dark-mode .history-page-header,
+body.med-ai-dark .history-page-header,
+body.medai-dark-mode .history-page-header {
+  background: rgba(15, 15, 15, 1);
+  border-color: var(--border-color);
 }
 
-.medicines-container.dark-mode .history-back-button {
-  background: linear-gradient(135deg, #15234f, #253d7a);
+.medicines-container.dark-mode .history-back-button,
+body.med-ai-dark .history-back-button,
+body.medai-dark-mode .history-back-button {
+  background: #2a2a2a;
+  color: #a0a0a0;
+  border-color: #333333;
+  outline: none !important;
 }
 
-.medicines-container.dark-mode .history-back-button:hover {
-  background: linear-gradient(135deg, #253d7a, #15234f);
+.medicines-container.dark-mode .history-back-button:hover,
+body.med-ai-dark .history-back-button:hover,
+body.medai-dark-mode .history-back-button:hover,
+.medicines-container.dark-mode .history-back-button:focus,
+body.med-ai-dark .history-back-button:focus,
+body.medai-dark-mode .history-back-button:focus,
+.medicines-container.dark-mode .history-back-button:focus-visible,
+body.med-ai-dark .history-back-button:focus-visible,
+body.medai-dark-mode .history-back-button:focus-visible,
+.medicines-container.dark-mode .history-back-button:active,
+body.med-ai-dark .history-back-button:active,
+body.medai-dark-mode .history-back-button:active {
+  background: #3a3a3a;
+  color: white;
+  border-color: #333333 !important;
+  opacity: 1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  outline: none !important;
 }
 
-.medicines-container.dark-mode .history-card {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(148, 163, 184, 0.2);
+.medicines-container.dark-mode .history-card,
+body.med-ai-dark .history-card,
+body.medai-dark-mode .history-card {
+  background: #1f1f1f;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
 }
 
-.medicines-container.dark-mode .history-card:hover {
-  border-color: rgba(125, 211, 252, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+.medicines-container.dark-mode .history-card:hover,
+body.med-ai-dark .history-card:hover,
+body.medai-dark-mode .history-card:hover {
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
-.medicines-container.dark-mode .history-card-indications {
-  background: rgba(125, 211, 252, 0.08);
+.medicines-container.dark-mode .history-card-indications,
+body.med-ai-dark .history-card-indications,
+body.medai-dark-mode .history-card-indications {
+  background: var(--background-light);
+  color: var(--text-primary);
 }
 
 /* Modal pentru vizualizare detaliată rețetă */
@@ -8284,6 +9481,12 @@ body.medai-dark-mode .chat-send-button:disabled {
   z-index: 1001;
 }
 
+.medicines-container.dark-mode .history-card-modal-content,
+body.med-ai-dark .history-card-modal-content,
+body.medai-dark-mode .history-card-modal-content {
+  background: rgba(15, 15, 15, 1);
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
@@ -8300,10 +9503,18 @@ body.medai-dark-mode .chat-send-button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 2px solid var(--border-color);
-  background: var(--primary-color);
-  color: white;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-card);
+  color: var(--text-primary);
   border-radius: 12px 12px 0 0;
+}
+
+.medicines-container.dark-mode .history-card-modal-header,
+body.med-ai-dark .history-card-modal-header,
+body.medai-dark-mode .history-card-modal-header {
+  background: rgba(15, 15, 15, 1);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 .history-card-modal-header h3 {
@@ -8319,9 +9530,9 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-card-modal-close {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -8334,12 +9545,38 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-card-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--background-light);
+  border-color: var(--border-color);
   transform: scale(1.1);
+}
+
+.medicines-container.dark-mode .history-card-modal-close,
+body.med-ai-dark .history-card-modal-close,
+body.medai-dark-mode .history-card-modal-close {
+  background: #252525;
+  border-color: #333333;
+  color: #a0a0a0;
+}
+
+.medicines-container.dark-mode .history-card-modal-close:hover,
+body.med-ai-dark .history-card-modal-close:hover,
+body.medai-dark-mode .history-card-modal-close:hover {
+  background: #3a3a3a;
+  border-color: #404040;
+  color: white;
 }
 
 .history-card-modal-body {
   padding: 24px;
+  background: var(--background-light);
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .history-card-modal-body,
+body.med-ai-dark .history-card-modal-body,
+body.medai-dark-mode .history-card-modal-body {
+  background: rgba(15, 15, 15, 1);
+  color: var(--text-primary);
 }
 
 .history-card-modal-section {
@@ -8382,14 +9619,14 @@ body.medai-dark-mode .chat-send-button:disabled {
 
 /* Buton ștergere */
 .history-delete-button {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 6px 20px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -8398,9 +9635,27 @@ body.medai-dark-mode .chat-send-button:disabled {
 }
 
 .history-delete-button:hover {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: rgba(220, 38, 38, 0.5);
-  transform: translateY(-1px);
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: rgba(255, 0, 0, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.medicines-container.dark-mode .history-delete-button,
+body.med-ai-dark .history-delete-button,
+body.medai-dark-mode .history-delete-button {
+  background: #252525;
+  border-color: #333333;
+  color: #a0a0a0;
+}
+
+.medicines-container.dark-mode .history-delete-button:hover,
+body.med-ai-dark .history-delete-button:hover,
+body.medai-dark-mode .history-delete-button:hover {
+  background: #252525;
+  border-color: #404040;
+  color: rgba(255, 0, 0, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
 /* Informație selecție */
@@ -8409,57 +9664,77 @@ body.medai-dark-mode .chat-send-button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: rgba(26, 60, 124, 0.1);
-  border: 1px solid var(--primary-color);
+  background: var(--background-card);
+  border: none;
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+  outline: none;
+}
+
+.medicines-container.dark-mode .history-selection-info,
+body.med-ai-dark .history-selection-info,
+body.medai-dark-mode .history-selection-info {
+  background: rgba(15, 15, 15, 1);
 }
 
 .history-select-all-button {
-  background: rgba(26, 60, 124, 0.1);
-  color: var(--primary-color);
-  border: 1px solid rgba(26, 60, 124, 0.3);
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 6px 20px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  outline: none;
 }
 
-.history-select-all-button:hover {
-  background: rgba(26, 60, 124, 0.15);
-  border-color: rgba(26, 60, 124, 0.5);
-  transform: translateY(-1px);
+.history-select-all-button:hover,
+.history-select-all-button:focus,
+.history-select-all-button:focus-visible {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  outline: none;
 }
 
 .history-delete-selected-button {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 6px 20px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  outline: none;
 }
 
-.history-delete-selected-button:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: rgba(220, 38, 38, 0.5);
-  transform: translateY(-1px);
+.history-delete-selected-button:not(:disabled) {
+  color: #dc2626;
+}
+
+.history-delete-selected-button:hover:not(:disabled),
+.history-delete-selected-button:focus:not(:disabled),
+.history-delete-selected-button:focus-visible:not(:disabled) {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: rgba(255, 0, 0, 0.7);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  outline: none;
 }
 
 .history-delete-selected-button:disabled {
@@ -8467,26 +9742,145 @@ body.medai-dark-mode .chat-send-button:disabled {
   cursor: not-allowed;
 }
 
+.history-delete-selected-button:disabled:hover,
+.history-delete-selected-button:disabled:focus,
+.history-delete-selected-button:disabled:focus-visible {
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: none;
+  outline: none;
+  opacity: 0.5;
+}
+
 .history-cancel-delete-button {
-  background: transparent;
-  color: var(--text-secondary);
+  background: var(--background-light);
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 6px 20px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  outline: none;
 }
 
-.history-cancel-delete-button:hover {
+.history-cancel-delete-button:hover,
+.history-cancel-delete-button:focus,
+.history-cancel-delete-button:focus-visible {
   background: var(--background-light);
-  border-color: var(--text-secondary);
-  color: var(--text-primary);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+
+.medicines-container.dark-mode .history-select-all-button,
+body.med-ai-dark .history-select-all-button,
+body.medai-dark-mode .history-select-all-button {
+  background: #2a2a2a;
+  color: #a0a0a0;
+  border-color: #333333;
+  outline: none !important;
+}
+
+.medicines-container.dark-mode .history-select-all-button:hover,
+body.med-ai-dark .history-select-all-button:hover,
+body.medai-dark-mode .history-select-all-button:hover,
+.medicines-container.dark-mode .history-select-all-button:focus,
+body.med-ai-dark .history-select-all-button:focus,
+body.medai-dark-mode .history-select-all-button:focus,
+.medicines-container.dark-mode .history-select-all-button:focus-visible,
+body.med-ai-dark .history-select-all-button:focus-visible,
+body.medai-dark-mode .history-select-all-button:focus-visible {
+  background: #3a3a3a;
+  color: white;
+  border-color: #333333 !important;
+  opacity: 1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  outline: none !important;
+}
+
+.medicines-container.dark-mode .history-delete-selected-button:not(:disabled),
+body.med-ai-dark .history-delete-selected-button:not(:disabled),
+body.medai-dark-mode .history-delete-selected-button:not(:disabled) {
+  background: #2a2a2a;
+  color: #dc2626;
+  border-color: #333333;
+  outline: none !important;
+}
+
+.medicines-container.dark-mode .history-delete-selected-button:hover:not(:disabled),
+body.med-ai-dark .history-delete-selected-button:hover:not(:disabled),
+body.medai-dark-mode .history-delete-selected-button:hover:not(:disabled),
+.medicines-container.dark-mode .history-delete-selected-button:focus:not(:disabled),
+body.med-ai-dark .history-delete-selected-button:focus:not(:disabled),
+body.medai-dark-mode .history-delete-selected-button:focus:not(:disabled),
+.medicines-container.dark-mode .history-delete-selected-button:focus-visible:not(:disabled),
+body.med-ai-dark .history-delete-selected-button:focus-visible:not(:disabled),
+body.medai-dark-mode .history-delete-selected-button:focus-visible:not(:disabled) {
+  background: #3a3a3a;
+  color: rgba(255, 0, 0, 0.7);
+  border-color: #333333 !important;
+  opacity: 1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  outline: none !important;
+}
+
+.medicines-container.dark-mode .history-delete-selected-button:disabled,
+body.med-ai-dark .history-delete-selected-button:disabled,
+body.medai-dark-mode .history-delete-selected-button:disabled {
+  background: #2a2a2a;
+  color: #a0a0a0;
+  border-color: #333333;
+  opacity: 0.5;
+}
+
+.medicines-container.dark-mode .history-delete-selected-button:disabled:hover,
+body.med-ai-dark .history-delete-selected-button:disabled:hover,
+body.medai-dark-mode .history-delete-selected-button:disabled:hover,
+.medicines-container.dark-mode .history-delete-selected-button:disabled:focus,
+body.med-ai-dark .history-delete-selected-button:disabled:focus,
+body.medai-dark-mode .history-delete-selected-button:disabled:focus,
+.medicines-container.dark-mode .history-delete-selected-button:disabled:focus-visible,
+body.med-ai-dark .history-delete-selected-button:disabled:focus-visible,
+body.medai-dark-mode .history-delete-selected-button:disabled:focus-visible {
+  background: #2a2a2a;
+  color: #a0a0a0;
+  border-color: #333333 !important;
+  box-shadow: none;
+  outline: none !important;
+  opacity: 0.5;
+}
+
+.medicines-container.dark-mode .history-cancel-delete-button,
+body.med-ai-dark .history-cancel-delete-button,
+body.medai-dark-mode .history-cancel-delete-button {
+  background: #2a2a2a;
+  color: #a0a0a0;
+  border-color: #333333;
+  outline: none !important;
+}
+
+.medicines-container.dark-mode .history-cancel-delete-button:hover,
+body.med-ai-dark .history-cancel-delete-button:hover,
+body.medai-dark-mode .history-cancel-delete-button:hover,
+.medicines-container.dark-mode .history-cancel-delete-button:focus,
+body.med-ai-dark .history-cancel-delete-button:focus,
+body.medai-dark-mode .history-cancel-delete-button:focus,
+.medicines-container.dark-mode .history-cancel-delete-button:focus-visible,
+body.med-ai-dark .history-cancel-delete-button:focus-visible,
+body.medai-dark-mode .history-cancel-delete-button:focus-visible {
+  background: #3a3a3a;
+  color: white;
+  border-color: #333333 !important;
+  opacity: 1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  outline: none !important;
 }
 
 /* Checkbox pentru selecție */
@@ -8702,30 +10096,66 @@ body.medai-dark-mode .chat-send-button:disabled {
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 0;
+  padding-right: 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  background: var(--background-light);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   color: var(--text-secondary);
+  vertical-align: baseline;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .status-pending {
-  background: var(--background-light);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  color: rgba(234, 179, 8, 0.7); /* Galben transparent */
 }
 
 .status-approved {
-  background: var(--background-light);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  color: rgba(34, 197, 94, 0.7); /* Verde transparent */
 }
 
 .status-rejected {
-  background: var(--background-light);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  color: rgba(239, 68, 68, 0.7); /* Roșu transparent */
+}
+
+/* Stiluri pentru dark mode - asigură că culorile rămân aceleași */
+.medicines-container.dark-mode .status-badge,
+body.med-ai-dark .status-badge,
+body.medai-dark-mode .status-badge {
+  background: transparent;
+  border: none;
+}
+
+.medicines-container.dark-mode .status-pending,
+body.med-ai-dark .status-pending,
+body.medai-dark-mode .status-pending {
+  background: transparent;
+  border: none;
+  color: rgba(234, 179, 8, 0.7); /* Galben transparent */
+}
+
+.medicines-container.dark-mode .status-approved,
+body.med-ai-dark .status-approved,
+body.medai-dark-mode .status-approved {
+  background: transparent;
+  border: none;
+  color: rgba(34, 197, 94, 0.7); /* Verde transparent */
+}
+
+.medicines-container.dark-mode .status-rejected,
+body.med-ai-dark .status-rejected,
+body.medai-dark-mode .status-rejected {
+  background: transparent;
+  border: none;
+  color: rgba(239, 68, 68, 0.7); /* Roșu transparent */
 }
