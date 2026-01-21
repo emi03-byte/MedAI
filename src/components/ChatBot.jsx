@@ -1,13 +1,30 @@
 import { useState, useRef, useEffect } from 'react'
 
+const getStoredCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem('currentUser')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Bună! 👋 Descrie-mi simptomele sau starea pacientului și îți voi recomanda medicamentele potrivite din lista CNAS. Cu ce te pot ajuta?' }
-  ])
+  const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser())
+  const defaultWelcomeMessage = {
+    role: 'assistant',
+    content: 'Bună! 👋 Descrie-mi simptomele sau starea pacientului și îți voi recomanda medicamentele potrivite din lista CNAS. Cu ce te pot ajuta?'
+  }
+  const pendingApprovalMessage = {
+    role: 'assistant',
+    content: 'Mulțumesc pentru interes! Contul tău este în curs de aprobare. Putem discuta imediat ce este aprobat.'
+  }
+  const [messages, setMessages] = useState([defaultWelcomeMessage])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
+  const isPendingApproval = currentUser?.status === 'pending'
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -16,6 +33,24 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (!isOpen) return
+    setCurrentUser(getStoredCurrentUser())
+    const intervalId = setInterval(() => {
+      setCurrentUser(getStoredCurrentUser())
+    }, 2000)
+    return () => clearInterval(intervalId)
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (isPendingApproval) {
+      setMessages([pendingApprovalMessage])
+      return
+    }
+    setMessages([defaultWelcomeMessage])
+  }, [isOpen, isPendingApproval])
 
   // Ascultă pentru event-ul de deschidere chat din sidebar
   useEffect(() => {
@@ -29,7 +64,7 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
   }, [])
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return
+    if (!inputMessage.trim() || isLoading || isPendingApproval) return
 
     const userMessage = inputMessage.trim()
     setInputMessage('')
@@ -202,17 +237,17 @@ IMPORTANT:
             <div className="chat-input-container">
               <textarea
                 className="chat-input"
-                placeholder="Scrie un mesaj..."
+                placeholder={isPendingApproval ? 'Cont în așteptare aprobare' : 'Scrie un mesaj...'}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading}
+                disabled={isLoading || isPendingApproval}
                 rows={1}
               />
               <button 
                 className="chat-send-button"
                 onClick={sendMessage}
-                disabled={isLoading || !inputMessage.trim()}
+                disabled={isLoading || isPendingApproval || !inputMessage.trim()}
                 title="Trimite mesaj"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,10 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 body {
+  --background-card: #ffffff;
+  --background-light: #f5f5f5;
+  --border-color: #e5e7eb;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --primary-color: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-light: rgba(2, 132, 199, 0.1);
   background: #f5f7ff;
   color: #1a2742;
   transition: background 0.4s ease, color 0.4s ease;
 }
 
-body.med-ai-dark {
+body.med-ai-dark,
+body.medai-dark-mode {
+  --background-card: #1a1a1a;
+  --background-light: #252525;
+  --border-color: #333333;
+  --text-primary: #e5e5e5;
+  --text-secondary: #a3a3a3;
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: rgba(59, 130, 246, 0.15);
   background: #030712;
   color: #e2e8f0;
 }
@@ -46,9 +65,6 @@ button:focus-visible {
   transition: background 0.4s ease, color 0.4s ease;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
-/* Font imports */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* Main content wrapper */
 .main-content-wrapper {
@@ -298,28 +314,6 @@ button:focus-visible {
   cursor: pointer;
 }
 
-.sidebar-nav-item.active {
-  width: 50px;
-  height: 50px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-nav-item.active span {
-  font-size: 50px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-nav-item.active svg {
-  width: 32px !important;
-  height: 32px !important;
-}
-
 .sidebar-nav-item svg {
   width: 24px !important;
   height: 24px !important;
@@ -337,36 +331,6 @@ button:focus-visible {
 .medicines-container.dark-mode .sidebar-nav-item:hover {
   color: #e5e5e5;
   background: #252525;
-}
-
-.sidebar-nav-item.active {
-  color: var(--primary-color);
-  background: white;
-  border: none;
-  box-shadow: none;
-}
-
-.medicines-container.dark-mode .sidebar-nav-item.active {
-  color: var(--primary-color);
-  background: #1a1a1a;
-  border: none;
-  box-shadow: none;
-}
-
-.sidebar-nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 40px;
-  background: var(--primary-color);
-  border-radius: 0 2px 2px 0;
-}
-
-.medicines-container.dark-mode .sidebar-nav-item.active::before {
-  background: var(--primary-color);
 }
 
 .sidebar-footer {
@@ -987,6 +951,13 @@ code, .mono, .font-mono {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+body.med-ai-dark .new-patient-modal-content,
+body.medai-dark-mode .new-patient-modal-content {
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 .medicines-container.dark-mode .auth-button {
   border-color: rgba(125, 211, 252, 0.3);
 }
@@ -1056,15 +1027,42 @@ code, .mono, .font-mono {
   border-bottom: 1px solid var(--border-color);
 }
 
+body.med-ai-dark .new-patient-modal-header,
+body.medai-dark-mode .new-patient-modal-header {
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .medicines-container.dark-mode .new-patient-modal-header h3 {
+  color: var(--text-primary);
+}
+
+body.med-ai-dark .new-patient-modal-header h3,
+body.medai-dark-mode .new-patient-modal-header h3 {
   color: var(--text-primary);
 }
 
 .medicines-container.dark-mode .new-patient-modal-icon {
   background: var(--primary-light);
+  width: 32px;
+  height: 32px;
+}
+
+body.med-ai-dark .new-patient-modal-icon,
+body.medai-dark-mode .new-patient-modal-icon {
+  background: var(--primary-light);
+  width: 32px;
+  height: 32px;
 }
 
 .medicines-container.dark-mode .new-patient-modal-close {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+body.med-ai-dark .new-patient-modal-close,
+body.medai-dark-mode .new-patient-modal-close {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
@@ -1076,7 +1074,19 @@ code, .mono, .font-mono {
   color: var(--primary-color);
 }
 
+body.med-ai-dark .new-patient-modal-close:hover,
+body.medai-dark-mode .new-patient-modal-close:hover {
+  background: var(--background-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
 .medicines-container.dark-mode .new-patient-modal-body {
+  background: var(--background-card);
+}
+
+body.med-ai-dark .new-patient-modal-body,
+body.medai-dark-mode .new-patient-modal-body {
   background: var(--background-card);
 }
 
@@ -4752,9 +4762,9 @@ code, .mono, .font-mono {
   }
 
   .new-patient-modal-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.25rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
   }
 
   .new-patient-modal-header h3 {
@@ -5291,6 +5301,13 @@ code, .mono, .font-mono {
   color: var(--text-primary);
 }
 
+body.med-ai-dark .settings-modal-button,
+body.medai-dark-mode .settings-modal-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
+}
+
 .settings-modal-button:hover {
   background: var(--background-light);
   border-color: var(--border-color);
@@ -5305,9 +5322,71 @@ code, .mono, .font-mono {
   color: var(--text-primary);
 }
 
+body.med-ai-dark .settings-modal-button:hover,
+body.medai-dark-mode .settings-modal-button:hover {
+  background: #2a2a2a;
+  border-color: #404040;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
 .settings-modal-button:focus {
   outline: none;
   box-shadow: none;
+}
+
+.settings-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-modal-body-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.settings-action-button {
+  padding: 10px 16px;
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-action-button:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  border-color: var(--border-color);
+}
+
+.settings-action-button--danger {
+  padding: 6px 10px;
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.medicines-container.dark-mode .settings-action-button,
+body.med-ai-dark .settings-action-button,
+body.medai-dark-mode .settings-action-button {
+  background: #252525;
+  border-color: #333333;
+  color: var(--text-primary);
+}
+
+.medicines-container.dark-mode .settings-action-button:hover,
+body.med-ai-dark .settings-action-button:hover,
+body.medai-dark-mode .settings-action-button:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  border-color: #404040;
 }
 
 .plan-save-button {
@@ -6905,11 +6984,28 @@ body.med-ai-dark .patient-notes-done-button:hover {
   font-size: 1.5rem;
   background: var(--primary-light);
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.new-patient-modal-icon--plain {
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.82-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1.82 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.26.3.44.65.6 1a1.65 1.65 0 0 0 1.82.33H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z'/%3E%3C/svg%3E");
+}
+
+.medicines-container.dark-mode .new-patient-modal-icon--plain,
+body.med-ai-dark .new-patient-modal-icon--plain,
+body.medai-dark-mode .new-patient-modal-icon--plain {
+  background-size: 18px 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.82-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1.82 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.26.3.44.65.6 1a1.65 1.65 0 0 0 1.82.33H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z'/%3E%3C/svg%3E");
 }
 
 .new-patient-modal-header h3 {
@@ -7214,6 +7310,14 @@ body.med-ai-dark .patient-notes-done-button:hover {
   transform: translateY(-1px);
 }
 
+.settings-status-card {
+  margin-bottom: 30px;
+  padding: 15px;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
 .chat-modal-overlay {
   position: fixed;
   top: 0;
@@ -7229,7 +7333,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   padding: 20px;
 }
 
-.medicines-container.dark-mode .chat-modal-overlay {
+.medicines-container.dark-mode .chat-modal-overlay,
+body.med-ai-dark .chat-modal-overlay,
+body.medai-dark-mode .chat-modal-overlay {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
 }
@@ -7247,7 +7353,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   overflow: hidden;
 }
 
-.medicines-container.dark-mode .chat-modal {
+.medicines-container.dark-mode .chat-modal,
+body.med-ai-dark .chat-modal,
+body.medai-dark-mode .chat-modal {
   background: #1a1a1a !important;
   border-color: #333333 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
@@ -7263,7 +7371,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   align-items: center;
 }
 
-.medicines-container.dark-mode .chat-header {
+.medicines-container.dark-mode .chat-header,
+body.med-ai-dark .chat-header,
+body.medai-dark-mode .chat-header {
   background: #252525 !important;
   border-bottom-color: #333333 !important;
   color: #e5e5e5 !important;
@@ -7278,7 +7388,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   letter-spacing: -0.01em;
 }
 
-.medicines-container.dark-mode .chat-header h3 {
+.medicines-container.dark-mode .chat-header h3,
+body.med-ai-dark .chat-header h3,
+body.medai-dark-mode .chat-header h3 {
   color: #e5e5e5;
 }
 
@@ -7304,13 +7416,17 @@ body.med-ai-dark .patient-notes-done-button:hover {
   color: var(--primary-color);
 }
 
-.medicines-container.dark-mode .chat-close-button {
+.medicines-container.dark-mode .chat-close-button,
+body.med-ai-dark .chat-close-button,
+body.medai-dark-mode .chat-close-button {
   background: transparent;
   border-color: #333333;
   color: #a3a3a3;
 }
 
-.medicines-container.dark-mode .chat-close-button:hover {
+.medicines-container.dark-mode .chat-close-button:hover,
+body.med-ai-dark .chat-close-button:hover,
+body.medai-dark-mode .chat-close-button:hover {
   background: #252525;
   border-color: #3b82f6;
   color: #3b82f6;
@@ -7332,7 +7448,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   display: none; /* Chrome, Safari, Opera */
 }
 
-.medicines-container.dark-mode .chat-messages {
+.medicines-container.dark-mode .chat-messages,
+body.med-ai-dark .chat-messages,
+body.medai-dark-mode .chat-messages {
   background: #1a1a1a;
 }
 
@@ -7365,7 +7483,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   border-bottom-right-radius: 4px;
 }
 
-.medicines-container.dark-mode .chat-message.user .message-content {
+.medicines-container.dark-mode .chat-message.user .message-content,
+body.med-ai-dark .chat-message.user .message-content,
+body.medai-dark-mode .chat-message.user .message-content {
   background: var(--primary-color);
   color: white;
 }
@@ -7377,7 +7497,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   border-bottom-left-radius: 4px;
 }
 
-.medicines-container.dark-mode .chat-message.assistant .message-content {
+.medicines-container.dark-mode .chat-message.assistant .message-content,
+body.med-ai-dark .chat-message.assistant .message-content,
+body.medai-dark-mode .chat-message.assistant .message-content {
   background: #252525 !important;
   color: #e5e5e5 !important;
   border-color: #333333 !important;
@@ -7389,7 +7511,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   font-style: italic;
 }
 
-.medicines-container.dark-mode .message-content.loading {
+.medicines-container.dark-mode .message-content.loading,
+body.med-ai-dark .message-content.loading,
+body.medai-dark-mode .message-content.loading {
   background: #252525;
   color: #a3a3a3;
 }
@@ -7417,7 +7541,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   background: var(--background-card);
 }
 
-.medicines-container.dark-mode .chat-input-container {
+.medicines-container.dark-mode .chat-input-container,
+body.med-ai-dark .chat-input-container,
+body.medai-dark-mode .chat-input-container {
   border-top-color: #333333;
   background: #1a1a1a;
 }
@@ -7438,7 +7564,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   color: var(--text-primary);
 }
 
-.medicines-container.dark-mode .chat-input {
+.medicines-container.dark-mode .chat-input,
+body.med-ai-dark .chat-input,
+body.medai-dark-mode .chat-input {
   border-color: #333333 !important;
   background: #252525 !important;
   color: #e5e5e5 !important;
@@ -7449,7 +7577,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
-.medicines-container.dark-mode .chat-input:focus {
+.medicines-container.dark-mode .chat-input:focus,
+body.med-ai-dark .chat-input:focus,
+body.medai-dark-mode .chat-input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
@@ -7460,7 +7590,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   opacity: 0.6;
 }
 
-.medicines-container.dark-mode .chat-input:disabled {
+.medicines-container.dark-mode .chat-input:disabled,
+body.med-ai-dark .chat-input:disabled,
+body.medai-dark-mode .chat-input:disabled {
   background: #252525;
   color: #a3a3a3;
 }
@@ -7490,12 +7622,16 @@ body.med-ai-dark .patient-notes-done-button:hover {
   background: var(--primary-hover);
 }
 
-.medicines-container.dark-mode .chat-send-button {
+.medicines-container.dark-mode .chat-send-button,
+body.med-ai-dark .chat-send-button,
+body.medai-dark-mode .chat-send-button {
   background: var(--primary-color);
   color: white;
 }
 
-.medicines-container.dark-mode .chat-send-button:hover:not(:disabled) {
+.medicines-container.dark-mode .chat-send-button:hover:not(:disabled),
+body.med-ai-dark .chat-send-button:hover:not(:disabled),
+body.medai-dark-mode .chat-send-button:hover:not(:disabled) {
   background: var(--primary-hover);
 }
 
@@ -7506,7 +7642,9 @@ body.med-ai-dark .patient-notes-done-button:hover {
   opacity: 0.5;
 }
 
-.medicines-container.dark-mode .chat-send-button:disabled {
+.medicines-container.dark-mode .chat-send-button:disabled,
+body.med-ai-dark .chat-send-button:disabled,
+body.medai-dark-mode .chat-send-button:disabled {
   background: #252525;
   color: #a3a3a3;
 }
@@ -8569,34 +8707,25 @@ body.med-ai-dark .patient-notes-done-button:hover {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .status-pending {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 .status-approved {
-  background: #d4edda;
-  color: #155724;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 .status-rejected {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-body.med-ai-dark .status-pending {
-  background: #3d2e00;
-  color: #ffc107;
-}
-
-body.med-ai-dark .status-approved {
-  background: #1e4620;
-  color: #4caf50;
-}
-
-body.med-ai-dark .status-rejected {
-  background: #4a1e1e;
-  color: #f44336;
+  background: var(--background-light);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }

@@ -434,14 +434,14 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     
     if (currentUser.status === 'pending') {
       setAccountStatusTitle('Cont în așteptare')
-      setAccountStatusMessage('Îți mulțumim pentru interesul arătat! Contul tău a fost creat cu succes și este în curs de verificare de către echipa noastră.\n\nVei primi acces la toate funcțiile aplicației imediat ce contul tău va fi aprobat. Te rugăm să ai puțină răbdare.\n\nDacă ai întrebări, poți verifica statusul contului în setări (⚙️).')
+      setAccountStatusMessage('Îți mulțumim pentru interesul arătat! Contul tău a fost creat cu succes și este în curs de verificare de către echipa noastră.\n\nVei primi acces la toate funcțiile aplicației imediat ce contul tău va fi aprobat. Te rugăm să ai puțină răbdare.\n\nDacă ai întrebări, poți verifica statusul contului în setări.')
       setShowAccountStatusModal(true)
       return false
     }
     
     if (currentUser.status === 'rejected') {
       setAccountStatusTitle('Cont respins')
-      setAccountStatusMessage('Ne pare rău, dar contul tău nu a putut fi aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări (⚙️).')
+      setAccountStatusMessage('Ne pare rău, dar contul tău nu a putut fi aprobat în acest moment.\n\nPentru mai multe informații sau pentru a clarifica situația, te rugăm să contactezi administratorul aplicației.\n\nPoți verifica statusul contului în setări.')
       setShowAccountStatusModal(true)
       return false
     }
@@ -2292,17 +2292,15 @@ Programează o consultație dacă simptomele persistă`
   }, [])
 
   const handleFinalize = useCallback(async () => {
-    // Verifică dacă utilizatorul este autentificat
-    if (!currentUser) {
-      setShowLoginRequiredModal(true)
+    if (!showAccountStatusMessage()) {
       return
     }
-    
+
     // Deschide pagina de checkout în aplicație (fără pop-up)
     // Salvarea rețetei se va face când utilizatorul dă click pe "Finalizează rețeta" în checkout
     console.log('🧾 Deschid pagina de checkout (setIsCheckoutOpen(true))')
     setIsCheckoutOpen(true)
-  }, [])
+  }, [showAccountStatusMessage])
 
   // Filtrează valorile pe baza termenului de căutare
   const getFilteredValues = (filterKey) => {
@@ -2583,26 +2581,6 @@ Programează o consultație dacă simptomele persistă`
         </div>
 
         <nav className="sidebar-nav">
-          <button className="sidebar-nav-item active" title="Medicamente">
-            <span style={{ fontSize: '50px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊞</span>
-          </button>
-          {currentUser && (
-            <button 
-              className="sidebar-nav-item" 
-              onClick={() => {
-                if (!showAccountStatusMessage()) {
-                  return
-                }
-                setShowPatientNotes(true)
-              }} 
-              title="Notițe"
-            >
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-            </button>
-          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -4447,7 +4425,7 @@ etc.`
             <div className="new-patient-modal-overlay" onClick={() => setShowStatsModal(false)}>
           <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">⚙️</div>
+              <div className="new-patient-modal-icon new-patient-modal-icon--plain" aria-hidden="true" />
               <h3>Setări</h3>
               <button 
                 className="new-patient-modal-close"
@@ -4458,20 +4436,20 @@ etc.`
             </div>
             
             <div className="new-patient-modal-body">
-              <div style={{ padding: '20px' }}>
+              <div className="settings-modal-body-content">
                 {/* Status cont */}
                 {currentUser && (
-                  <div style={{ marginBottom: '30px', padding: '15px', background: 'rgba(26, 60, 124, 0.05)', borderRadius: '8px', border: '1px solid rgba(26, 60, 124, 0.1)' }}>
-                    <h4 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>📋 Status Cont</h4>
+                  <div className="settings-status-card">
+                    <h4 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>Status cont</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                       {currentUser.status === 'pending' && (
-                        <span className="status-badge status-pending">⏳ În așteptare</span>
+                        <span className="status-badge status-pending">În așteptare</span>
                       )}
                       {currentUser.status === 'approved' && (
-                        <span className="status-badge status-approved">✅ Aprobat</span>
+                        <span className="status-badge status-approved">Aprobat</span>
                       )}
                       {currentUser.status === 'rejected' && (
-                        <span className="status-badge status-rejected">❌ Respinse</span>
+                        <span className="status-badge status-rejected">Respins</span>
                       )}
                     </div>
                     {currentUser.status === 'pending' && (
@@ -4492,7 +4470,7 @@ etc.`
                   </div>
                 )}
                 
-                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>📋 Contul meu</h4>
+                <h4 style={{ marginBottom: '15px', color: 'var(--text-primary)' }}>Contul meu</h4>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
                   Gestionează informațiile contului tău, vezi statusul aprobării și accesează istoricul rețetelor tale.
                 </p>
@@ -4517,13 +4495,14 @@ etc.`
                         transition: 'all 0.2s ease'
                       }}
                     >
-                      🔐 Conectare
+                      Conectare
                     </button>
                   </div>
                 )}
                 {currentUser && (
-                  <div style={{ marginTop: '20px' }}>
+                  <div className="settings-actions">
                     <button
+                      className="settings-action-button"
                       onClick={async () => {
                         if (!showAccountStatusMessage()) {
                           return
@@ -4546,37 +4525,14 @@ etc.`
                           setLoadingHistory(false)
                         }
                       }}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'var(--primary-color)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        marginTop: '10px'
-                      }}
                     >
-                      📋 Vizualizare istoric
+                      Vizualizare istoric
                     </button>
                     <button
+                      className="settings-action-button settings-action-button--danger"
                       onClick={handleDeleteAccount}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: '#dc2626',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        marginTop: '10px'
-                      }}
                     >
-                      🗑️ Șterge contul meu
+                      Șterge contul
                     </button>
                   </div>
                 )}
@@ -4610,9 +4566,7 @@ etc.`
             <div className="new-patient-modal-overlay" onClick={() => setShowAccountStatusModal(false)}>
           <div className="new-patient-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="new-patient-modal-header">
-              <div className="new-patient-modal-icon">
-                {!currentUser ? '🔐' : currentUser?.status === 'pending' ? '⏳' : currentUser?.status === 'rejected' ? '❌' : 'ℹ️'}
-              </div>
+              <div className="new-patient-modal-icon new-patient-modal-icon--plain" aria-hidden="true" />
               <h3>{accountStatusTitle}</h3>
               <button 
                 className="new-patient-modal-close"
