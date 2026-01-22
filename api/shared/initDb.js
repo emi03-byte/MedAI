@@ -1,6 +1,7 @@
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 const { seedIfEmpty } = require('./seedMedications');
 
 // Import direct pentru a evita dependențe circulare
@@ -110,16 +111,34 @@ const ensureTable = async () => {
   // Setare status 'approved' pentru utilizatori existenți (migrare)
   await runAsyncInit(`UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''`);
 
-  // Setare automată contul caruntu.emanuel@gmail.com ca admin (dacă există deja)
+  // Seeding automat pentru utilizatorul admin
   const adminEmail = 'caruntu.emanuel@gmail.com';
+  const adminName = 'Emi';
+  const adminPassword = 'MedAi123';
+  
   const adminUser = await getAsyncInit('SELECT id, is_admin, status FROM users WHERE email = ?', [adminEmail]);
+  
   if (adminUser) {
+    // Utilizatorul există - actualizează dacă nu este admin
     if (!adminUser.is_admin || adminUser.is_admin === 0) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await runAsyncInit(
-        'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ? WHERE email = ?',
-        ['approved', new Date().toISOString(), adminEmail]
+        'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ?, parola = ? WHERE email = ?',
+        ['approved', new Date().toISOString(), hashedPassword, adminEmail]
       );
+      console.log(`✅ [SETUP] Cont ${adminEmail} actualizat ca admin`);
+    } else {
+      console.log(`✅ [SETUP] Cont ${adminEmail} este deja admin`);
     }
+  } else {
+    // Utilizatorul nu există - creează-l ca admin
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    await runAsyncInit(
+      `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [adminName, adminEmail, hashedPassword, 'approved', 1, new Date().toISOString()]
+    );
+    console.log(`✅ [SETUP] Cont admin creat: ${adminName} (${adminEmail})`);
   }
 
   // Tabelă pentru rețete

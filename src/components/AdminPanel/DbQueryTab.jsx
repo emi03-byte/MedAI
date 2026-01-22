@@ -29,11 +29,13 @@ const DbQueryTab = ({ adminUserId }) => {
     setResult(null)
 
     try {
+      console.log('🔍 [DB QUERY] Executare query:', { adminUserId, query: query.trim(), type: queryType })
       const response = await executeDbQuery({
         adminUserId,
         query: query.trim(),
         type: queryType,
       })
+      console.log('✅ [DB QUERY] Răspuns primit:', response)
 
       if (response.success) {
         setResult(response)
@@ -41,8 +43,14 @@ const DbQueryTab = ({ adminUserId }) => {
         setError(response.error || 'Eroare necunoscută')
       }
     } catch (err) {
+      console.error('❌ [DB QUERY] Eroare:', err)
+      console.error('❌ [DB QUERY] Detalii eroare:', {
+        message: err?.message,
+        status: err?.status,
+        url: err?.url,
+        body: err?.body
+      })
       setError(err?.message || 'Eroare la executarea query-ului')
-      console.error('DB Query Error:', err)
     } finally {
       setLoading(false)
     }

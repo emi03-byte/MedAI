@@ -54,7 +54,7 @@ export const executeDbQuery = async ({ adminUserId, query, type = 'all' }) => {
   return await requestJson(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, type }),
+    body: JSON.stringify({ userId: adminUserId, query, type }),
   })
 }
 

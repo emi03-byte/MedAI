@@ -56,6 +56,7 @@ const HELP_ROUTES = [
   { method: 'POST', path: '/api/admin/restore-user/:userId', description: 'Admin: restaurează utilizator (query/body: userId=adminId)' },
   { method: 'GET', path: '/api/admin/user-prescriptions/:userId', description: 'Admin: rețete utilizator (query/body: userId=adminId)' },
   { method: 'DELETE', path: '/api/admin/prescriptions/:prescriptionId', description: 'Admin: șterge rețetă (query/body: userId=adminId)' },
+  { method: 'POST', path: '/api/admin/db-query', description: 'Admin: execută query SQL SELECT (body: userId, query, type)' },
 ];
 
 const swaggerSpec = swaggerJSDoc({
@@ -192,22 +193,36 @@ const ensureTable = async () => {
   // Setare status 'approved' pentru utilizatori existenți (migrare)
   await runAsync(`UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''`);
   
-  // Setare automată contul caruntu.emanuel@gmail.com ca admin (dacă există deja)
+  // Seeding automat pentru utilizatorul admin
   const adminEmail = 'caruntu.emanuel@gmail.com';
+  const adminName = 'Emi';
+  const adminPassword = 'MedAi123';
+  
   const adminUser = await getAsync('SELECT id, is_admin, status FROM users WHERE email = ?', [adminEmail]);
+  
   if (adminUser) {
+    // Utilizatorul există - actualizează dacă nu este admin
     if (!adminUser.is_admin || adminUser.is_admin === 0) {
       console.log(`🔐 [SETUP] Setare cont ${adminEmail} ca admin...`);
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await runAsync(
-        'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ? WHERE email = ?',
-        ['approved', new Date().toISOString(), adminEmail]
+        'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ?, parola = ? WHERE email = ?',
+        ['approved', new Date().toISOString(), hashedPassword, adminEmail]
       );
       console.log(`✅ [SETUP] Cont ${adminEmail} setat ca admin`);
     } else {
       console.log(`✅ [SETUP] Cont ${adminEmail} este deja admin`);
     }
   } else {
-    console.log(`ℹ️ [SETUP] Contul ${adminEmail} nu există încă. Va fi creat automat ca admin la primul signup.`);
+    // Utilizatorul nu există - creează-l ca admin
+    console.log(`🔐 [SETUP] Creare cont admin: ${adminName} (${adminEmail})...`);
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    await runAsync(
+      `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [adminName, adminEmail, hashedPassword, 'approved', 1, new Date().toISOString()]
+    );
+    console.log(`✅ [SETUP] Cont admin creat: ${adminName} (${adminEmail})`);
   }
   
   // Tabelă pentru rețete
@@ -1927,6 +1942,78 @@ app.delete('/api/admin/prescriptions/:prescriptionId', checkAdmin, async (req, r
   } catch (error) {
     console.error('❌ [ADMIN] Eroare la ștergerea rețetei:', error);
     res.status(500).json({ error: 'Eroare la ștergerea rețetei' });
+  }
+});
+
+// Endpoint pentru executarea query-urilor SQL (admin only)
+/**
+ * @openapi
+ * /api/admin/db-query:
+ *   post:
+ *     summary: Admin - execută query SQL SELECT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, query]
+ *             properties:
+ *               userId: { type: integer, description: 'ID admin' }
+ *               query: { type: string, description: 'Query SQL SELECT' }
+ *               type: { type: string, enum: [all, get], default: 'all', description: 'all = toate rândurile, get = un singur rând' }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Query invalid sau nu este SELECT
+ *       401:
+ *         description: userId lipsă
+ *       403:
+ *         description: Nu e admin
+ *       500:
+ *         description: Eroare server
+ */
+app.post('/api/admin/db-query', checkAdmin, async (req, res) => {
+  try {
+    const { query, type = 'all' } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query SQL este obligatoriu' });
+    }
+
+    // Siguranță: permite doar SELECT queries
+    const trimmedQuery = query.trim().toUpperCase();
+    if (!trimmedQuery.startsWith('SELECT')) {
+      return res.status(400).json({ error: 'Doar query-uri SELECT sunt permise pentru siguranță' });
+    }
+
+    // Execută query-ul
+    const startTime = Date.now();
+    let result;
+    
+    if (type === 'get') {
+      result = await getAsync(query);
+    } else {
+      result = await allAsync(query);
+    }
+    
+    const executionTime = Date.now() - startTime;
+
+    console.log(`✅ [ADMIN DB QUERY] Query executat cu succes: ${result?.length || (result ? 1 : 0)} rânduri în ${executionTime}ms`);
+    
+    res.json({
+      success: true,
+      result,
+      count: Array.isArray(result) ? result.length : (result ? 1 : 0),
+      executionTime: `${executionTime}ms`
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN DB QUERY] Eroare la executarea query-ului:', error);
+    res.status(500).json({
+      error: 'Eroare la executarea query-ului',
+      message: error.message
+    });
   }
 });
 

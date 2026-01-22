@@ -7734,6 +7734,31 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
   padding: 28px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #0284c7 #f1f5f9;
+}
+
+.admin-panel::-webkit-scrollbar {
+  width: 12px;
+}
+
+.admin-panel::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.admin-panel::-webkit-scrollbar-thumb {
+  background: #0284c7;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.admin-panel::-webkit-scrollbar-thumb:hover {
+  background: #0369a1;
 }
 
 .admin-panel-full {
@@ -7873,6 +7898,29 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
   border-radius: 14px;
   overflow: auto;
   max-height: 60vh;
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #0284c7 #f1f5f9;
+}
+
+.admin-table-wrapper::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-thumb {
+  background: #0284c7;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #0369a1;
 }
 
 .admin-table {
@@ -7926,6 +7974,31 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
   background: var(--background-card);
   border-radius: 12px;
   margin-top: 1rem;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--background-light);
+}
+
+.db-query-container::-webkit-scrollbar {
+  width: 12px;
+}
+
+.db-query-container::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 6px;
+}
+
+.db-query-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 6px;
+  border: 2px solid var(--background-light);
+}
+
+.db-query-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
 }
 
 .db-query-header {
@@ -8084,6 +8157,31 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
   background: var(--background-light);
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  max-height: 75vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--background-light);
+}
+
+.db-query-result::-webkit-scrollbar {
+  width: 12px;
+}
+
+.db-query-result::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 6px;
+}
+
+.db-query-result::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 6px;
+  border: 2px solid var(--background-light);
+}
+
+.db-query-result::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
 }
 
 .db-query-result-header {
@@ -8111,11 +8209,34 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
 
 .db-query-table-container {
   overflow-x: auto;
-  max-height: 500px;
   overflow-y: auto;
+  max-height: 600px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--background-card);
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--background-light);
+}
+
+.db-query-table-container::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.db-query-table-container::-webkit-scrollbar-track {
+  background: var(--background-light);
+  border-radius: 6px;
+}
+
+.db-query-table-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 6px;
+  border: 2px solid var(--background-light);
+}
+
+.db-query-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
 }
 
 .db-query-table {
@@ -10385,6 +10506,30 @@ body.medai-dark-mode .history-cancel-delete-button:focus-visible {
   max-width: 900px;
   width: 90%;
   max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #0284c7 #f1f5f9;
+}
+
+.admin-panel-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+.admin-panel-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.admin-panel-content::-webkit-scrollbar-thumb {
+  background: #0284c7;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.admin-panel-content::-webkit-scrollbar-thumb:hover {
+  background: #0369a1;
 }
 
 .status-badge {
