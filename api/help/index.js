@@ -1,4 +1,4 @@
-const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'https://your-app.azurestaticapps.net';
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'https://ashy-mud-055a0ce03.1.azurestaticapps.net';
 const API_VERSION = process.env.npm_package_version || '0.0.0';
 
 const HELP_ROUTES = [
@@ -50,8 +50,9 @@ module.exports = async function (context, req) {
     name: 'MedAI backend',
     version: API_VERSION,
     docs: {
-      swaggerUi: `${PUBLIC_BASE_URL}/api-docs`,
-      openapiJson: `${PUBLIC_BASE_URL}/api/openapi.json`,
+      swaggerUi: `${PUBLIC_BASE_URL}/api/swagger`,
+      openapiJson: `${PUBLIC_BASE_URL}/api/swagger`,
+      help: `${PUBLIC_BASE_URL}/api/help`,
     },
     routes: HELP_ROUTES,
   };

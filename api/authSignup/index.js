@@ -90,6 +90,8 @@ module.exports = async function (context, req) {
       },
     };
   } catch (error) {
+    console.error('❌ [AUTH SIGNUP] Eroare:', error);
+    console.error('❌ [AUTH SIGNUP] Stack:', error.stack);
     if (error.message && error.message.includes('UNIQUE constraint failed')) {
       context.res = {
         status: 400,
@@ -101,7 +103,11 @@ module.exports = async function (context, req) {
     context.res = {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: { error: 'Eroare la crearea contului' },
+      body: { 
+        error: 'Eroare la crearea contului',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
     };
   }
 };

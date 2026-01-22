@@ -35,10 +35,16 @@ module.exports = async function (context, req) {
       body: { medicines: items },
     };
   } catch (error) {
+    console.error('❌ [USER MEDICINES] Eroare:', error);
+    console.error('❌ [USER MEDICINES] Stack:', error.stack);
     context.res = {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: { error: 'Eroare la listarea medicamentelor' },
+      body: { 
+        error: 'Eroare la listarea medicamentelor',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
     };
   }
 };

@@ -40,10 +40,16 @@ module.exports = async function (context, req) {
       body: { success: true, medicine: created },
     };
   } catch (error) {
+    console.error('❌ [USER MEDICINES POST] Eroare:', error);
+    console.error('❌ [USER MEDICINES POST] Stack:', error.stack);
     context.res = {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: { error: 'Eroare la crearea medicamentului' },
+      body: { 
+        error: 'Eroare la crearea medicamentului',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
     };
   }
 };
