@@ -6,19 +6,28 @@ const csv = require('csv-parser');
 // În Azure, public/ este disponibil la rădăcina site-ului
 function getCsvPath() {
   // Încearcă mai multe locații posibile
+  // Prioritate: api/ folder (pentru Azure Functions), apoi public/ (pentru static files)
   const possiblePaths = [
+    // În folderul api/ (accesibil pentru Azure Functions)
+    path.join(__dirname, '../medicamente_cu_boli_COMPLET.csv'),
+    path.join(process.cwd(), 'medicamente_cu_boli_COMPLET.csv'),
+    // În public/ (pentru static files în Azure)
     path.join(process.cwd(), 'public', 'medicamente_cu_boli_COMPLET.csv'),
     path.join(__dirname, '../../public', 'medicamente_cu_boli_COMPLET.csv'),
-    path.join('/home', 'site', 'wwwroot', 'public', 'medicamente_cu_boli_COMPLET.csv'), // Azure
-    path.join('/home', 'site', 'wwwroot', 'medicamente_cu_boli_COMPLET.csv'), // Azure alt
+    // Path-uri Azure specifice
+    path.join('/home', 'site', 'wwwroot', 'api', 'medicamente_cu_boli_COMPLET.csv'), // Azure - în api folder
+    path.join('/home', 'site', 'wwwroot', 'public', 'medicamente_cu_boli_COMPLET.csv'), // Azure - în public
+    path.join('/home', 'site', 'wwwroot', 'medicamente_cu_boli_COMPLET.csv'), // Azure - la rădăcină
   ];
   
   for (const csvPath of possiblePaths) {
     if (fs.existsSync(csvPath)) {
+      console.log(`✅ CSV găsit la: ${csvPath}`);
       return csvPath;
     }
   }
   
+  console.warn('⚠️ CSV nu a fost găsit în niciuna dintre locațiile așteptate:', possiblePaths);
   return null;
 }
 
