@@ -28,6 +28,7 @@ const HELP_ROUTES = [
   { method: 'POST', path: '/api/admin/restore-user/{userId}', description: 'Admin: restaurează utilizator (query/body: userId=adminId)' },
   { method: 'GET', path: '/api/admin/user-prescriptions/{userId}', description: 'Admin: rețete utilizator (query/body: userId=adminId)' },
   { method: 'DELETE', path: '/api/admin/prescriptions/{prescriptionId}', description: 'Admin: șterge rețetă (query/body: userId=adminId)' },
+  { method: 'POST', path: '/api/admin/db-query', description: 'Admin: execută query SQL SELECT (body: userId, query, type)' },
 ];
 
 module.exports = async function (context, req) {

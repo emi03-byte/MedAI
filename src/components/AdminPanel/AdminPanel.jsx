@@ -1,9 +1,10 @@
 import '../MedicinesTable.css'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useAdminRequests } from '../../hooks/useAdminRequests'
 import { useUserPrescriptions } from '../../hooks/useUserPrescriptions'
 import PrescriptionsModal from './PrescriptionsModal'
 import RequestsTable from './RequestsTable'
+import DbQueryTab from './DbQueryTab'
 import Tabs from './Tabs'
 
 const AdminPanel = ({ currentUser, onClose, isFullPage = false, onLogout }) => {
@@ -58,12 +59,15 @@ const AdminPanel = ({ currentUser, onClose, isFullPage = false, onLogout }) => {
     })
   }
 
+  const [showDbQuery, setShowDbQuery] = useState(false)
+
   const tabs = [
     { id: 'toate', label: 'Toate', count: requests.length },
     { id: 'pending', label: 'În așteptare', count: requests.filter((r) => r.status === 'pending').length },
     { id: 'approved', label: 'Aprobate', count: requests.filter((r) => r.status === 'approved').length },
     { id: 'rejected', label: 'Respinse', count: requests.filter((r) => r.status === 'rejected').length },
     { id: 'istoric', label: 'Șterse', count: deletedRequests.length, isHistory: true },
+    { id: 'db-query', label: '🔍 SQL Query', count: null, isDbQuery: true },
   ]
 
   const handleChangeStatus = useCallback(
@@ -183,7 +187,9 @@ const AdminPanel = ({ currentUser, onClose, isFullPage = false, onLogout }) => {
 
       <Tabs tabs={tabs} activeTab={activeTab} onSelect={setActiveTab} />
 
-      {loading ? (
+      {activeTab === 'db-query' ? (
+        <DbQueryTab adminUserId={adminUserId} />
+      ) : loading ? (
         <div className="admin-loading">Se încarcă...</div>
       ) : filteredRequests.length === 0 ? (
         <div className="admin-empty">

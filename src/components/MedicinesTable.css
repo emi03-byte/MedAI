@@ -7920,6 +7920,299 @@ body.medai-dark-mode .add-medicine-advanced-toggle:hover {
 .admin-action-button.info { background: #0284c7; color: white; }
 .admin-action-button.danger-outline { background: white; color: #dc2626; border: 1px solid #fecaca; }
 
+/* DB Query Tab Styles */
+.db-query-container {
+  padding: 1.5rem;
+  background: var(--background-card);
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.db-query-header {
+  margin-bottom: 1.5rem;
+}
+
+.db-query-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.db-query-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.db-query-examples {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.db-query-examples-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.db-query-examples-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.db-query-example-btn {
+  padding: 0.5rem 1rem;
+  background: var(--background-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.db-query-example-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.db-query-editor {
+  margin-bottom: 1.5rem;
+}
+
+.db-query-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.db-query-editor-header label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.db-query-type-selector {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8125rem;
+}
+
+.db-query-type-selector label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.db-query-type-selector input[type="radio"] {
+  cursor: pointer;
+}
+
+.db-query-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background: var(--background-light);
+  color: var(--text-primary);
+  resize: vertical;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.db-query-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.db-query-execute-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.db-query-execute-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+.db-query-execute-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.db-query-error {
+  padding: 1rem;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.db-query-result {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--background-light);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.db-query-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.db-query-result-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.db-query-result-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.db-query-table-container {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-card);
+}
+
+.db-query-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.db-query-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--background-light);
+  z-index: 1;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.db-query-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--background-light);
+  border-right: 1px solid var(--border-color);
+}
+
+.db-query-table th:last-child {
+  border-right: none;
+}
+
+.db-query-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-primary);
+  word-break: break-word;
+  max-width: 300px;
+}
+
+.db-query-table td:last-child {
+  border-right: none;
+}
+
+.db-query-table tbody tr:hover {
+  background: var(--primary-light);
+}
+
+.db-query-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.db-query-single-result {
+  padding: 1rem;
+  background: var(--background-card);
+  border-radius: 8px;
+}
+
+.db-query-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: 1rem;
+}
+
+.db-query-row:last-child {
+  border-bottom: none;
+}
+
+.db-query-row strong {
+  min-width: 150px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.db-query-row span {
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+  word-break: break-word;
+  flex: 1;
+}
+
+.db-query-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Dark mode support for DB Query */
+body.med-ai-dark .db-query-error,
+body.medai-dark-mode .db-query-error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
 .add-medicine-modal-footer {
   padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border-color);

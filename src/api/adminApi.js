@@ -49,3 +49,12 @@ export const deletePrescription = async ({ adminUserId, prescriptionId }) => {
   return await requestJson(url, { method: 'DELETE' })
 }
 
+export const executeDbQuery = async ({ adminUserId, query, type = 'all' }) => {
+  const url = buildUrl(API_BASE_URL, '/api/admin/db-query', { userId: adminUserId })
+  return await requestJson(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, type }),
+  })
+}
+
