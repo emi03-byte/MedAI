@@ -1,249 +1,277 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const sql = require('mssql');
 const { ensureInitialized } = require('./initDb');
 
-// Funcție pentru a verifica permisiunile de scriere
-function checkWritePermissions(dirPath) {
+// Connection string pentru Azure SQL Database
+const CONNECTION_STRING = process.env.AZURE_SQL_CONNECTION_STRING || 
+  'Server=tcp:medai01.database.windows.net,1433;Initial Catalog=MedAI;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";';
+
+console.log('🔍 [DB] Configurare Azure SQL Database...');
+console.log(`   [DB] Server: medai01.database.windows.net`);
+console.log(`   [DB] Database: MedAI`);
+console.log(`   [DB] Authentication: Active Directory Default`);
+
+// Configurare connection pool
+// Pentru Azure AD Default, mssql folosește automat credențialele Azure
+const config = {
+  server: 'medai01.database.windows.net',
+  database: 'MedAI',
+  port: 1433,
+  options: {
+    encrypt: true,
+    trustServerCertificate: false,
+    enableArithAbort: true,
+  },
+  authentication: {
+    type: 'azure-active-directory-default',
+  },
+  connectionTimeout: 30000,
+  requestTimeout: 30000,
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
+  },
+};
+
+// Parse connection string dacă este setat
+if (process.env.AZURE_SQL_CONNECTION_STRING) {
   try {
-    const testFile = path.join(dirPath, '.write_test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
-    fs.writeFileSync(testFile, 'test', 'utf8');
-    fs.unlinkSync(testFile);
-    console.log(`✅ [DB] Permisiuni de scriere verificate pentru: ${dirPath}`);
-    return true;
+    // Parse connection string manual pentru a extrage configurația
+    const connStr = process.env.AZURE_SQL_CONNECTION_STRING;
+    const parts = connStr.split(';');
+    parts.forEach(part => {
+      const [key, value] = part.split('=');
+      if (key && value) {
+        const keyLower = key.trim().toLowerCase();
+        if (keyLower === 'server') {
+          const serverMatch = value.match(/tcp:([^,]+),(\d+)/);
+          if (serverMatch) {
+            config.server = serverMatch[1];
+            config.port = parseInt(serverMatch[2]);
+          }
+        } else if (keyLower === 'initial catalog') {
+          config.database = value.trim();
+        } else if (keyLower === 'encrypt') {
+          config.options.encrypt = value.trim().toLowerCase() === 'true';
+        } else if (keyLower === 'trustservercertificate') {
+          config.options.trustServerCertificate = value.trim().toLowerCase() === 'true';
+        } else if (keyLower === 'connection timeout') {
+          config.connectionTimeout = parseInt(value.trim()) * 1000;
+        } else if (keyLower === 'authentication' && value.includes('Active Directory Default')) {
+          config.authentication = {
+            type: 'azure-active-directory-default',
+          };
+        }
+      }
+    });
+    console.log(`✅ [DB] Connection string parsat cu succes`);
+    console.log(`   [DB] Server: ${config.server}:${config.port}`);
+    console.log(`   [DB] Database: ${config.database}`);
   } catch (err) {
-    console.error(`❌ [DB] NU există permisiuni de scriere în ${dirPath}:`, err.message);
-    return false;
+    console.warn(`⚠️ [DB] Eroare la parsarea connection string, folosind config default:`, err.message);
   }
 }
 
-// Funcție pentru a găsi un path writable pe Azure
-function findWritablePath() {
-  console.log('🔍 [DB] Căutare path writable pentru baza de date...');
-  console.log(`   [DB] WEBSITE_INSTANCE_ID: ${process.env.WEBSITE_INSTANCE_ID || 'nu este setat'}`);
-  console.log(`   [DB] AZURE_FUNCTIONS_ENVIRONMENT: ${process.env.AZURE_FUNCTIONS_ENVIRONMENT || 'nu este setat'}`);
-  console.log(`   [DB] DB_DIR (env): ${process.env.DB_DIR || 'nu este setat'}`);
-
-  // Dacă este setat explicit, folosește-l
-  if (process.env.DB_DIR) {
-    const dbDir = process.env.DB_DIR;
-    console.log(`📁 [DB] Încercare cu DB_DIR explicit: ${dbDir}`);
-    if (!fs.existsSync(dbDir)) {
-      try {
-        fs.mkdirSync(dbDir, { recursive: true, mode: 0o755 });
-        console.log(`✅ [DB] Director creat: ${dbDir}`);
-      } catch (err) {
-        console.error(`❌ [DB] Nu pot crea ${dbDir}:`, err.message);
-        console.error(`   [DB] Stack:`, err.stack);
-        return null;
-      }
-    }
-    if (checkWritePermissions(dbDir)) {
-      console.log(`✅ [DB] Folosind DB_DIR explicit: ${dbDir}`);
-      return dbDir;
-    }
-  }
-
-  // Local development
-  if (!process.env.WEBSITE_INSTANCE_ID && !process.env.AZURE_FUNCTIONS_ENVIRONMENT) {
-    const localDir = path.join(__dirname, '../../backend/data');
-    console.log(`📁 [DB] Modul local development detectat`);
-    if (!fs.existsSync(localDir)) {
-      try {
-        fs.mkdirSync(localDir, { recursive: true });
-        console.log(`✅ [DB] Director local creat: ${localDir}`);
-      } catch (err) {
-        console.error(`❌ [DB] Nu pot crea directorul local:`, err.message);
-        throw err;
-      }
-    }
-    if (checkWritePermissions(localDir)) {
-      console.log(`✅ [DB] Local development path: ${localDir}`);
-      return localDir;
-    }
-  }
-
-  // Azure - încearcă mai multe path-uri în ordine de prioritate
-  console.log(`📁 [DB] Modul Azure detectat - căutare path writable...`);
-  const azurePaths = [
-    { path: path.join('/home', 'site', 'wwwroot', 'api', 'data'), desc: 'Azure wwwroot/api/data (recomandat)' },
-    { path: path.join('/home', 'site', 'wwwroot', 'data'), desc: 'Azure wwwroot/data' },
-    { path: path.join('/home', 'data'), desc: 'Azure /home/data (original)' },
-    { path: path.join('/tmp', 'medai_db'), desc: '/tmp/medai_db (fallback - nu persistent)' },
-  ];
-
-  for (const { path: dirPath, desc } of azurePaths) {
-    console.log(`   [DB] Încercare: ${desc} (${dirPath})`);
-    try {
-      if (!fs.existsSync(dirPath)) {
-        console.log(`   [DB] Directorul nu există, încercare creare...`);
-        fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
-        console.log(`   ✅ [DB] Director creat: ${dirPath}`);
-      } else {
-        console.log(`   ✅ [DB] Directorul există deja: ${dirPath}`);
-      }
-      
-      if (checkWritePermissions(dirPath)) {
-        console.log(`✅ [DB] Path writable găsit: ${dirPath} (${desc})`);
-        return dirPath;
-      } else {
-        console.warn(`⚠️ [DB] Path nu are permisiuni de scriere: ${dirPath}`);
-      }
-    } catch (err) {
-      console.warn(`⚠️ [DB] Eroare la verificarea ${dirPath}:`, err.message);
-      console.warn(`   [DB] Stack:`, err.stack);
-    }
-  }
-
-  console.error('❌ [DB] CRITICAL: Nu s-a găsit niciun path writable!');
-  console.error('   [DB] Toate path-urile testate au eșuat.');
-  return null;
-}
-
-// Găsește path-ul writable
-const DB_DIR = findWritablePath();
-if (!DB_DIR) {
-  const errorMsg = 'Nu s-a putut găsi un director writable pentru baza de date!';
-  console.error(`❌ [DB] ${errorMsg}`);
-  throw new Error(errorMsg);
-}
-
-const DB_PATH = path.join(DB_DIR, 'medicamente.db');
-console.log(`📁 [DB] ========================================`);
-console.log(`📁 [DB] Baza de date va fi stocată la: ${DB_PATH}`);
-console.log(`📁 [DB] Director: ${DB_DIR}`);
-console.log(`📁 [DB] ========================================`);
-
-let dbInstance = null;
+let pool = null;
 let initPromise = null;
 
-async function getDb() {
-  if (!dbInstance) {
-    console.log(`🔌 [DB] Deschidere conexiune la baza de date: ${DB_PATH}`);
-    
-    // Verifică din nou permisiunile înainte de a deschide baza de date
-    if (!checkWritePermissions(DB_DIR)) {
-      const errorMsg = `Nu există permisiuni de scriere în ${DB_DIR}`;
-      console.error(`❌ [DB] ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
-    
-    dbInstance = new sqlite3.Database(DB_PATH, (err) => {
-      if (err) {
-        console.error('❌ [DB] Eroare la deschiderea bazei de date:', err);
-        console.error('   [DB] Path:', DB_PATH);
-        console.error('   [DB] Error code:', err.code);
-        console.error('   [DB] Error message:', err.message);
-        throw err;
+async function getPool() {
+  if (!pool) {
+    console.log(`🔌 [DB] Creare connection pool la Azure SQL Database...`);
+    try {
+      pool = await sql.connect(config);
+      console.log(`✅ [DB] Connection pool creat cu succes`);
+      
+      // Test connection
+      const result = await pool.request().query('SELECT 1 as test');
+      console.log(`✅ [DB] Test connection reușit`);
+      
+      // Inițializează baza de date la prima conexiune
+      if (!initPromise) {
+        console.log(`🔄 [DB] Inițializare baza de date...`);
+        initPromise = ensureInitialized().catch(err => {
+          console.error('❌ [DB] Database initialization error:', err);
+          console.error('   [DB] Stack:', err.stack);
+          initPromise = null;
+          throw err;
+        });
       }
-      console.log(`✅ [DB] Baza de date deschisă cu succes: ${DB_PATH}`);
-    });
-    
-    // Inițializează baza de date la prima conexiune
-    if (!initPromise) {
-      console.log(`🔄 [DB] Inițializare baza de date...`);
-      initPromise = ensureInitialized().catch(err => {
-        console.error('❌ [DB] Database initialization error:', err);
-        console.error('   [DB] Stack:', err.stack);
-        initPromise = null;
-        throw err;
-      });
+      await initPromise;
+      console.log(`✅ [DB] Baza de date inițializată cu succes`);
+    } catch (err) {
+      console.error('❌ [DB] Eroare la conectarea la Azure SQL Database:', err);
+      console.error('   [DB] Error code:', err.code);
+      console.error('   [DB] Error message:', err.message);
+      console.error('   [DB] Stack:', err.stack);
+      pool = null;
+      throw err;
     }
-    await initPromise;
-    console.log(`✅ [DB] Baza de date inițializată cu succes`);
   }
-  return dbInstance;
+  return pool;
 }
 
-async function runAsync(sql, params = []) {
-  const db = await getDb();
+// Helper pentru a converti parametri SQLite (?) la SQL Server (@param)
+function convertParams(pool, sqlQuery, params = []) {
+  if (!params || params.length === 0) {
+    return { query: sqlQuery, request: pool.request() };
+  }
+  
+  // Creează un request
+  const request = pool.request();
+  
+  // Înlocuiește ? cu @p0, @p1, etc.
+  let paramIndex = 0;
+  const convertedQuery = sqlQuery.replace(/\?/g, () => {
+    const paramName = `p${paramIndex}`;
+    const paramValue = params[paramIndex];
+    paramIndex++;
+    
+    // Adaugă parametrul la request (detectează tipul automat)
+    if (paramValue === null || paramValue === undefined) {
+      request.input(paramName, sql.NVarChar, null);
+    } else if (typeof paramValue === 'number') {
+      // Folosește Int pentru numere întregi, Float pentru zecimale
+      if (Number.isInteger(paramValue)) {
+        request.input(paramName, sql.Int, paramValue);
+      } else {
+        request.input(paramName, sql.Float, paramValue);
+      }
+    } else if (typeof paramValue === 'boolean') {
+      request.input(paramName, sql.Bit, paramValue ? 1 : 0);
+    } else {
+      // Folosește NVarChar(MAX) pentru string-uri
+      request.input(paramName, sql.NVarChar, paramValue);
+    }
+    
+    return `@${paramName}`;
+  });
+  
+  return { query: convertedQuery, request };
+}
+
+async function runAsync(sqlQuery, params = []) {
+  const pool = await getPool();
   const startTime = Date.now();
-  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
+  const sqlPreview = sqlQuery.length > 100 ? sqlQuery.substring(0, 100) + '...' : sqlQuery;
   console.log(`📝 [DB] Executare SQL (run): ${sqlPreview}`);
   if (params && params.length > 0) {
     console.log(`   [DB] Parametri:`, params);
   }
   
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function runCallback(err) {
-      const duration = Date.now() - startTime;
-      if (err) {
-        console.error(`❌ [DB] Eroare SQL (run) după ${duration}ms:`, err);
-        console.error(`   [DB] SQL: ${sql}`);
-        console.error(`   [DB] Parametri:`, params);
-        console.error(`   [DB] Error code:`, err.code);
-        console.error(`   [DB] Error message:`, err.message);
-        reject(err);
-      } else {
-        console.log(`✅ [DB] SQL (run) executat cu succes în ${duration}ms`);
-        if (this.lastID) {
-          console.log(`   [DB] Last insert ID: ${this.lastID}`);
-        }
-        if (this.changes !== undefined) {
-          console.log(`   [DB] Rânduri afectate: ${this.changes}`);
-        }
-        resolve(this);
+  try {
+    const { query, request } = convertParams(pool, sqlQuery, params);
+    
+    const result = await request.query(query);
+    const duration = Date.now() - startTime;
+    
+    console.log(`✅ [DB] SQL (run) executat cu succes în ${duration}ms`);
+    if (result.recordset && result.recordset.length > 0) {
+      console.log(`   [DB] Rânduri returnate: ${result.recordset.length}`);
+    }
+    if (result.rowsAffected && result.rowsAffected.length > 0) {
+      console.log(`   [DB] Rânduri afectate: ${result.rowsAffected[0]}`);
+    }
+    
+    // Returnează un obiect similar cu SQLite pentru compatibilitate
+    // Pentru SQL Server, lastID vine din OUTPUT INSERTED.id
+    let lastID = null;
+    if (result.recordset && result.recordset.length > 0) {
+      // Verifică dacă există un câmp 'id' în recordset (din OUTPUT INSERTED.id)
+      const firstRow = result.recordset[0];
+      if (firstRow.id !== undefined) {
+        lastID = firstRow.id;
+      } else if (firstRow.ID !== undefined) {
+        lastID = firstRow.ID;
       }
-    });
-  });
+    }
+    
+    return {
+      lastID: lastID,
+      changes: result.rowsAffected && result.rowsAffected.length > 0 ? result.rowsAffected[0] : 0,
+      result: result,
+    };
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ [DB] Eroare SQL (run) după ${duration}ms:`, err);
+    console.error(`   [DB] SQL: ${sqlQuery}`);
+    console.error(`   [DB] Parametri:`, params);
+    console.error(`   [DB] Error code:`, err.code);
+    console.error(`   [DB] Error message:`, err.message);
+    console.error(`   [DB] Stack:`, err.stack);
+    throw err;
+  }
 }
 
-async function getAsync(sql, params = []) {
-  const db = await getDb();
+async function getAsync(sqlQuery, params = []) {
+  const pool = await getPool();
   const startTime = Date.now();
-  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
+  const sqlPreview = sqlQuery.length > 100 ? sqlQuery.substring(0, 100) + '...' : sqlQuery;
   console.log(`🔍 [DB] Executare SQL (get): ${sqlPreview}`);
   if (params && params.length > 0) {
     console.log(`   [DB] Parametri:`, params);
   }
   
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      const duration = Date.now() - startTime;
-      if (err) {
-        console.error(`❌ [DB] Eroare SQL (get) după ${duration}ms:`, err);
-        console.error(`   [DB] SQL: ${sql}`);
-        console.error(`   [DB] Parametri:`, params);
-        console.error(`   [DB] Error code:`, err.code);
-        console.error(`   [DB] Error message:`, err.message);
-        reject(err);
-      } else {
-        if (row) {
-          console.log(`✅ [DB] SQL (get) executat cu succes în ${duration}ms - rând găsit`);
-        } else {
-          console.log(`✅ [DB] SQL (get) executat cu succes în ${duration}ms - niciun rând găsit`);
-        }
-        resolve(row);
-      }
-    });
-  });
+  try {
+    const { query, request } = convertParams(pool, sqlQuery, params);
+    
+    const result = await request.query(query);
+    const duration = Date.now() - startTime;
+    
+    const row = result.recordset && result.recordset.length > 0 ? result.recordset[0] : null;
+    
+    if (row) {
+      console.log(`✅ [DB] SQL (get) executat cu succes în ${duration}ms - rând găsit`);
+    } else {
+      console.log(`✅ [DB] SQL (get) executat cu succes în ${duration}ms - niciun rând găsit`);
+    }
+    
+    return row;
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ [DB] Eroare SQL (get) după ${duration}ms:`, err);
+    console.error(`   [DB] SQL: ${sqlQuery}`);
+    console.error(`   [DB] Parametri:`, params);
+    console.error(`   [DB] Error code:`, err.code);
+    console.error(`   [DB] Error message:`, err.message);
+    console.error(`   [DB] Stack:`, err.stack);
+    throw err;
+  }
 }
 
-async function allAsync(sql, params = []) {
-  const db = await getDb();
+async function allAsync(sqlQuery, params = []) {
+  const pool = await getPool();
   const startTime = Date.now();
-  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
+  const sqlPreview = sqlQuery.length > 100 ? sqlQuery.substring(0, 100) + '...' : sqlQuery;
   console.log(`🔍 [DB] Executare SQL (all): ${sqlPreview}`);
   if (params && params.length > 0) {
     console.log(`   [DB] Parametri:`, params);
   }
   
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      const duration = Date.now() - startTime;
-      if (err) {
-        console.error(`❌ [DB] Eroare SQL (all) după ${duration}ms:`, err);
-        console.error(`   [DB] SQL: ${sql}`);
-        console.error(`   [DB] Parametri:`, params);
-        console.error(`   [DB] Error code:`, err.code);
-        console.error(`   [DB] Error message:`, err.message);
-        reject(err);
-      } else {
-        console.log(`✅ [DB] SQL (all) executat cu succes în ${duration}ms - ${rows ? rows.length : 0} rânduri returnate`);
-        resolve(rows);
-      }
-    });
-  });
+  try {
+    const { query, request } = convertParams(pool, sqlQuery, params);
+    
+    const result = await request.query(query);
+    const duration = Date.now() - startTime;
+    
+    const rows = result.recordset || [];
+    console.log(`✅ [DB] SQL (all) executat cu succes în ${duration}ms - ${rows.length} rânduri returnate`);
+    
+    return rows;
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ [DB] Eroare SQL (all) după ${duration}ms:`, err);
+    console.error(`   [DB] SQL: ${sqlQuery}`);
+    console.error(`   [DB] Parametri:`, params);
+    console.error(`   [DB] Error code:`, err.code);
+    console.error(`   [DB] Error message:`, err.message);
+    console.error(`   [DB] Stack:`, err.stack);
+    throw err;
+  }
+}
+
+// Funcție pentru a obține pool-ul direct (pentru seedMedications)
+async function getDb() {
+  return await getPool();
 }
 
 module.exports = {
@@ -251,6 +279,7 @@ module.exports = {
   runAsync,
   getAsync,
   allAsync,
-  DB_PATH,
-  DB_DIR,
+  DB_PATH: 'Azure SQL Database (MedAI)',
+  DB_DIR: 'Azure SQL Database',
+  sql, // Export mssql pentru utilizări avansate
 };

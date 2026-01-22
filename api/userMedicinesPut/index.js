@@ -47,7 +47,7 @@ module.exports = async function (context, req) {
 
     await runAsync(
       `UPDATE user_medicines
-       SET denumire = ?, forma_farmaceutica = ?, concentratie = ?, substanta_activa = ?, cod_atc = ?, mod_prescriere = ?, note = ?, updated_at = CURRENT_TIMESTAMP
+       SET denumire = ?, forma_farmaceutica = ?, concentratie = ?, substanta_activa = ?, cod_atc = ?, mod_prescriere = ?, note = ?, updated_at = GETDATE()
        WHERE id = ? AND user_id = ?`,
       [denumire, forma_farmaceutica || null, concentratie || null, substanta_activa || null, cod_atc || null, mod_prescriere || null, note || null, id, userId]
     );

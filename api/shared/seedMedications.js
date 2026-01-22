@@ -72,7 +72,7 @@ const mapRow = (row) => {
   };
 };
 
-async function seedFromCsv(db, csvPath) {
+async function seedFromCsv(runAsyncInit, csvPath) {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(csvPath)) {
       reject(new Error(`CSV file missing at ${csvPath}`));
@@ -101,52 +101,63 @@ async function seedFromCsv(db, csvPath) {
       coduri_boli
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
+    const rows = [];
     let processed = 0;
-    const stmt = db.prepare(insertSql);
 
     const stream = fs
       .createReadStream(csvPath)
       .pipe(csv())
       .on('data', (row) => {
         const mapped = mapRow(row);
-        stmt.run(
-          [
-            mapped.denumire_medicament,
-            mapped.substanta_activa,
-            mapped.lista_compensare,
-            mapped.cod_medicament,
-            mapped.forma_farmaceutica,
-            mapped.cod_atc,
-            mapped.mod_prescriere,
-            mapped.concentratie,
-            mapped.forma_ambalare,
-            mapped.nume_detinator_app,
-            mapped.tara_detinator_app,
-            mapped.cantitate_pe_forma_ambalare,
-            mapped.pret_max_forma_ambalare,
-            mapped.pret_max_ut,
-            mapped.contributie_max_100,
-            mapped.contributie_max_90_50_20,
-            mapped.contributie_max_pensionari_90,
-            mapped.categorie_varsta,
-            mapped.coduri_boli,
-          ],
-          (err) => {
-            if (err) {
-              stream.destroy(err);
-            }
-          }
-        );
+        rows.push([
+          mapped.denumire_medicament,
+          mapped.substanta_activa,
+          mapped.lista_compensare,
+          mapped.cod_medicament,
+          mapped.forma_farmaceutica,
+          mapped.cod_atc,
+          mapped.mod_prescriere,
+          mapped.concentratie,
+          mapped.forma_ambalare,
+          mapped.nume_detinator_app,
+          mapped.tara_detinator_app,
+          mapped.cantitate_pe_forma_ambalare,
+          mapped.pret_max_forma_ambalare,
+          mapped.pret_max_ut,
+          mapped.contributie_max_100,
+          mapped.contributie_max_90_50_20,
+          mapped.contributie_max_pensionari_90,
+          mapped.categorie_varsta,
+          mapped.coduri_boli,
+        ]);
         processed += 1;
       })
-      .on('end', () => {
-        stmt.finalize((err) => {
-          if (err) reject(err);
-          else resolve(processed);
-        });
+      .on('end', async () => {
+        try {
+          console.log(`📊 [SEED] Procesare ${processed} rânduri din CSV...`);
+          console.log(`   [SEED] Inserare în baza de date (aceasta poate dura câteva minute)...`);
+          
+          // Inserează rând cu rând (pentru simplitate și compatibilitate)
+          let inserted = 0;
+          for (const row of rows) {
+            await runAsyncInit(insertSql, row);
+            inserted += 1;
+            
+            // Log progres la fiecare 100 rânduri
+            if (inserted % 100 === 0 || inserted === rows.length) {
+              console.log(`   ✅ [SEED] Inserat ${inserted} / ${rows.length} medicamente`);
+            }
+          }
+          
+          console.log(`✅ [SEED] Import complet: ${processed} medicamente inserate`);
+          resolve(processed);
+        } catch (err) {
+          console.error(`❌ [SEED] Eroare la inserare:`, err);
+          reject(err);
+        }
       })
       .on('error', (err) => {
-        stmt.finalize(() => reject(err));
+        reject(err);
       });
   });
 }
@@ -154,8 +165,10 @@ async function seedFromCsv(db, csvPath) {
 async function seedIfEmpty(db, getAsyncInit, runAsyncInit) {
   try {
     const existing = await getAsyncInit('SELECT COUNT(*) as count FROM medications');
-    if (existing?.count > 0) {
-      return { skipped: true, rows: existing.count };
+    const count = existing?.count || 0;
+    if (count > 0) {
+      console.log(`ℹ️ [SEED] Baza de date conține deja ${count} medicamente`);
+      return { skipped: true, rows: count };
     }
 
     const csvPath = getCsvPath();
@@ -164,11 +177,16 @@ async function seedIfEmpty(db, getAsyncInit, runAsyncInit) {
       return { skipped: true, rows: 0, reason: 'CSV not found' };
     }
 
+    console.log(`🗑️ [SEED] Ștergere medicamente existente...`);
     await runAsyncInit('DELETE FROM medications');
-    const rows = await seedFromCsv(db, csvPath);
+    console.log(`✅ [SEED] Medicamente șterse`);
+    
+    console.log(`📥 [SEED] Început import din CSV: ${csvPath}`);
+    const rows = await seedFromCsv(runAsyncInit, csvPath);
     return { skipped: false, rows };
   } catch (error) {
-    console.error('Error seeding medications:', error);
+    console.error('❌ [SEED] Error seeding medications:', error);
+    console.error('   [SEED] Stack:', error.stack);
     return { skipped: true, rows: 0, error: error.message };
   }
 }

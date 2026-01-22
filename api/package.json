@@ -6,6 +6,6 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "csv-parser": "^3.0.0",
-    "sqlite3": "^5.1.7"
+    "mssql": "^10.0.1"
   }
 }

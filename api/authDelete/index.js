@@ -43,7 +43,7 @@ module.exports = async function (context, req) {
       return;
     }
 
-    await runAsync('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?', [userId]);
+    await runAsync('UPDATE users SET deleted_at = GETDATE() WHERE id = ?', [userId]);
 
     context.res = {
       status: 200,

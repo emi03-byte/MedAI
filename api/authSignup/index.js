@@ -68,14 +68,16 @@ module.exports = async function (context, req) {
 
     // Inserează utilizatorul
     const result = await runAsync(
-      'INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)',
       [nume, email, hashedPassword, status, adminFlag, dataAprobare]
     );
+
+    const lastID = result.lastID || (result.result?.recordset?.[0]?.id);
 
     // Returnează datele utilizatorului
     const newUser = await getAsync(
       'SELECT id, nume, email, data_creare, status, is_admin FROM users WHERE id = ?',
-      [result.lastID]
+      [lastID]
     );
 
     context.res = {

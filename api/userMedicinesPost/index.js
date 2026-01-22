@@ -25,13 +25,15 @@ module.exports = async function (context, req) {
     }
 
     const result = await runAsync(
-      'INSERT INTO user_medicines (user_id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO user_medicines (user_id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [userId, denumire, forma_farmaceutica || null, concentratie || null, substanta_activa || null, cod_atc || null, mod_prescriere || null, note || null]
     );
 
+    const lastID = result.lastID || (result.result?.recordset?.[0]?.id);
+    
     const created = await getAsync(
       'SELECT id, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note, created_at, updated_at FROM user_medicines WHERE id = ? AND user_id = ?',
-      [result.lastID, userId]
+      [lastID, userId]
     );
 
     context.res = {

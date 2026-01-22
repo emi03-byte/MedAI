@@ -71,7 +71,7 @@ module.exports = async function (context, req) {
 
       await runAsync(
         `UPDATE users 
-         SET nume = ?, parola = ?, status = ?, is_admin = ?, data_aprobare = ?, deleted_at = NULL, data_creare = CURRENT_TIMESTAMP 
+         SET nume = ?, parola = ?, status = ?, is_admin = ?, data_aprobare = ?, deleted_at = NULL, data_creare = GETDATE() 
          WHERE id = ?`,
         [nume, hashedPassword, status, adminFlag, dataAprobare, deletedUser.id]
       );

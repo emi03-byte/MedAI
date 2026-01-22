@@ -1,178 +1,125 @@
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { seedIfEmpty } = require('./seedMedications');
+const { runAsync, getAsync, getDb } = require('./db');
 
-// Folosim DB_PATH din db.js prin lazy loading pentru a evita dependențe circulare
-let DB_PATH = null;
-let DB_DIR = null;
-
-function getDbPath() {
-  if (!DB_PATH) {
-    // Import lazy pentru a evita dependențe circulare
-    const dbModule = require('./db');
-    DB_PATH = dbModule.DB_PATH;
-    DB_DIR = dbModule.DB_DIR;
-    console.log(`📁 [INIT] Folosind DB_PATH din db.js: ${DB_PATH}`);
-  }
-  return DB_PATH;
+// Funcții wrapper pentru compatibilitate
+async function runAsyncInit(sqlQuery, params = []) {
+  return await runAsync(sqlQuery, params);
 }
 
-let initDbInstance = null;
+async function getAsyncInit(sqlQuery, params = []) {
+  return await getAsync(sqlQuery, params);
+}
 
 function getInitDb() {
-  if (!initDbInstance) {
-    const dbPath = getDbPath();
-    console.log(`🔌 [INIT] Deschidere conexiune init la baza de date: ${dbPath}`);
-    initDbInstance = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        console.error('❌ [INIT] Eroare la deschiderea bazei de date:', err);
-        console.error('   [INIT] Path:', dbPath);
-        console.error('   [INIT] Error code:', err.code);
-        console.error('   [INIT] Error message:', err.message);
-        throw err;
-      }
-      console.log(`✅ [INIT] Baza de date deschisă pentru inițializare: ${dbPath}`);
-    });
-  }
-  return initDbInstance;
+  return getDb();
 }
 
-function runAsyncInit(sql, params = []) {
-  const startTime = Date.now();
-  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
-  console.log(`📝 [INIT] Executare SQL (run): ${sqlPreview}`);
-  if (params && params.length > 0) {
-    console.log(`   [INIT] Parametri:`, params);
+// Helper pentru a verifica dacă o tabelă există în SQL Server
+async function tableExists(tableName) {
+  try {
+    const result = await getAsyncInit(
+      `SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?`,
+      [tableName]
+    );
+    return result !== null;
+  } catch (err) {
+    console.warn(`⚠️ [INIT] Eroare la verificarea tabelei ${tableName}:`, err.message);
+    return false;
   }
-  
-  return new Promise((resolve, reject) => {
-    const db = getInitDb();
-    db.run(sql, params, function runCallback(err) {
-      const duration = Date.now() - startTime;
-      if (err) {
-        console.error(`❌ [INIT] Eroare SQL (run) după ${duration}ms:`, err);
-        console.error(`   [INIT] SQL: ${sql}`);
-        console.error(`   [INIT] Parametri:`, params);
-        console.error(`   [INIT] Error code:`, err.code);
-        console.error(`   [INIT] Error message:`, err.message);
-        reject(err);
-      } else {
-        console.log(`✅ [INIT] SQL (run) executat cu succes în ${duration}ms`);
-        if (this.lastID) {
-          console.log(`   [INIT] Last insert ID: ${this.lastID}`);
-        }
-        if (this.changes !== undefined) {
-          console.log(`   [INIT] Rânduri afectate: ${this.changes}`);
-        }
-        resolve(this);
-      }
-    });
-  });
 }
 
-function getAsyncInit(sql, params = []) {
-  const startTime = Date.now();
-  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
-  console.log(`🔍 [INIT] Executare SQL (get): ${sqlPreview}`);
-  if (params && params.length > 0) {
-    console.log(`   [INIT] Parametri:`, params);
+// Helper pentru a verifica dacă o coloană există
+async function columnExists(tableName, columnName) {
+  try {
+    const result = await getAsyncInit(
+      `SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [tableName, columnName]
+    );
+    return result !== null;
+  } catch (err) {
+    return false;
   }
-  
-  return new Promise((resolve, reject) => {
-    const db = getInitDb();
-    db.get(sql, params, (err, row) => {
-      const duration = Date.now() - startTime;
-      if (err) {
-        console.error(`❌ [INIT] Eroare SQL (get) după ${duration}ms:`, err);
-        console.error(`   [INIT] SQL: ${sql}`);
-        console.error(`   [INIT] Parametri:`, params);
-        console.error(`   [INIT] Error code:`, err.code);
-        console.error(`   [INIT] Error message:`, err.message);
-        reject(err);
-      } else {
-        if (row) {
-          console.log(`✅ [INIT] SQL (get) executat cu succes în ${duration}ms - rând găsit`);
-        } else {
-          console.log(`✅ [INIT] SQL (get) executat cu succes în ${duration}ms - niciun rând găsit`);
-        }
-        resolve(row);
-      }
-    });
-  });
 }
 
 const ensureTable = async () => {
   console.log(`🔄 [INIT] Început inițializare tabele...`);
   
   console.log(`📋 [INIT] Creare tabelă medications...`);
-  await runAsyncInit(
-    `CREATE TABLE IF NOT EXISTS medications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      denumire_medicament TEXT,
-      substanta_activa TEXT,
-      lista_compensare TEXT,
-      cod_medicament TEXT,
-      forma_farmaceutica TEXT,
-      cod_atc TEXT,
-      mod_prescriere TEXT,
-      concentratie TEXT,
-      forma_ambalare TEXT,
-      nume_detinator_app TEXT,
-      tara_detinator_app TEXT,
-      cantitate_pe_forma_ambalare TEXT,
-      pret_max_forma_ambalare TEXT,
-      pret_max_ut TEXT,
-      contributie_max_100 TEXT,
-      contributie_max_90_50_20 TEXT,
-      contributie_max_pensionari_90 TEXT,
-      categorie_varsta TEXT,
-      coduri_boli TEXT
-    )`
-  );
-  console.log(`✅ [INIT] Tabelă medications creată/verificată`);
+  if (!(await tableExists('medications'))) {
+    await runAsyncInit(
+      `CREATE TABLE medications (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        denumire_medicament NVARCHAR(MAX),
+        substanta_activa NVARCHAR(MAX),
+        lista_compensare NVARCHAR(MAX),
+        cod_medicament NVARCHAR(MAX),
+        forma_farmaceutica NVARCHAR(MAX),
+        cod_atc NVARCHAR(MAX),
+        mod_prescriere NVARCHAR(MAX),
+        concentratie NVARCHAR(MAX),
+        forma_ambalare NVARCHAR(MAX),
+        nume_detinator_app NVARCHAR(MAX),
+        tara_detinator_app NVARCHAR(MAX),
+        cantitate_pe_forma_ambalare NVARCHAR(MAX),
+        pret_max_forma_ambalare NVARCHAR(MAX),
+        pret_max_ut NVARCHAR(MAX),
+        contributie_max_100 NVARCHAR(MAX),
+        contributie_max_90_50_20 NVARCHAR(MAX),
+        contributie_max_pensionari_90 NVARCHAR(MAX),
+        categorie_varsta NVARCHAR(MAX),
+        coduri_boli NVARCHAR(MAX)
+      )`
+    );
+    console.log(`✅ [INIT] Tabelă medications creată`);
+  } else {
+    console.log(`✅ [INIT] Tabelă medications există deja`);
+  }
 
   console.log(`📋 [INIT] Creare tabelă users...`);
-  await runAsyncInit(
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nume TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      parola TEXT NOT NULL,
-      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status TEXT DEFAULT 'pending',
-      is_admin INTEGER DEFAULT 0,
-      data_aprobare DATETIME,
-      deleted_at DATETIME
-    )`
-  );
-  console.log(`✅ [INIT] Tabelă users creată/verificată`);
+  if (!(await tableExists('users'))) {
+    await runAsyncInit(
+      `CREATE TABLE users (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        nume NVARCHAR(MAX) NOT NULL,
+        email NVARCHAR(MAX) NOT NULL UNIQUE,
+        parola NVARCHAR(MAX) NOT NULL,
+        data_creare DATETIME2 DEFAULT GETDATE(),
+        status NVARCHAR(MAX) DEFAULT 'pending',
+        is_admin INT DEFAULT 0,
+        data_aprobare DATETIME2,
+        deleted_at DATETIME2
+      )`
+    );
+    console.log(`✅ [INIT] Tabelă users creată`);
+  } else {
+    console.log(`✅ [INIT] Tabelă users există deja`);
+  }
 
   console.log(`🔄 [INIT] Verificare migrări coloane users...`);
   // Migrare: adăugare coloane pentru utilizatori existenți (dacă nu există deja)
-  try {
-    await runAsyncInit(`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'pending'`);
+  if (!(await columnExists('users', 'status'))) {
+    await runAsyncInit(`ALTER TABLE users ADD status NVARCHAR(MAX) DEFAULT 'pending'`);
     console.log(`   ✅ [INIT] Coloană 'status' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'status' există deja`);
   }
-  try {
-    await runAsyncInit(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`);
+  if (!(await columnExists('users', 'is_admin'))) {
+    await runAsyncInit(`ALTER TABLE users ADD is_admin INT DEFAULT 0`);
     console.log(`   ✅ [INIT] Coloană 'is_admin' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'is_admin' există deja`);
   }
-  try {
-    await runAsyncInit(`ALTER TABLE users ADD COLUMN data_aprobare DATETIME`);
+  if (!(await columnExists('users', 'data_aprobare'))) {
+    await runAsyncInit(`ALTER TABLE users ADD data_aprobare DATETIME2`);
     console.log(`   ✅ [INIT] Coloană 'data_aprobare' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'data_aprobare' există deja`);
   }
-  try {
-    await runAsyncInit(`ALTER TABLE users ADD COLUMN deleted_at DATETIME`);
+  if (!(await columnExists('users', 'deleted_at'))) {
+    await runAsyncInit(`ALTER TABLE users ADD deleted_at DATETIME2`);
     console.log(`   ✅ [INIT] Coloană 'deleted_at' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'deleted_at' există deja`);
   }
 
@@ -206,8 +153,9 @@ const ensureTable = async () => {
     // Utilizatorul nu există - creează-l ca admin
     console.log(`   🔄 [INIT] Creare cont admin: ${adminName} (${adminEmail})...`);
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await runAsyncInit(
+    const result = await runAsyncInit(
       `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
+       OUTPUT INSERTED.id
        VALUES (?, ?, ?, ?, ?, ?)`,
       [adminName, adminEmail, hashedPassword, 'approved', 1, new Date().toISOString()]
     );
@@ -241,67 +189,74 @@ const ensureTable = async () => {
     const hashedPassword = await bcrypt.hash(testPassword, 10);
     await runAsyncInit(
       `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       OUTPUT INSERTED.id
+       VALUES (@p0, @p1, @p2, @p3, @p4, @p5)`,
       [testName, testEmail, hashedPassword, 'approved', 0, new Date().toISOString()]
     );
     console.log(`✅ [SETUP] Cont test creat: ${testName} (${testEmail})`);
   }
 
   console.log(`📋 [INIT] Creare tabelă retete...`);
-  // Tabelă pentru rețete
-  await runAsyncInit(
-    `CREATE TABLE IF NOT EXISTS retete (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      nume_pacient TEXT,
-      medicamente TEXT NOT NULL,
-      planuri_tratament TEXT,
-      indicatii_pacient TEXT,
-      indicatii_medic TEXT,
-      data_creare DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )`
-  );
-  console.log(`✅ [INIT] Tabelă retete creată/verificată`);
+  if (!(await tableExists('retete'))) {
+    await runAsyncInit(
+      `CREATE TABLE retete (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        nume_pacient NVARCHAR(MAX),
+        medicamente NVARCHAR(MAX) NOT NULL,
+        planuri_tratament NVARCHAR(MAX),
+        indicatii_pacient NVARCHAR(MAX),
+        indicatii_medic NVARCHAR(MAX),
+        data_creare DATETIME2 DEFAULT GETDATE(),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`
+    );
+    console.log(`✅ [INIT] Tabelă retete creată`);
+  } else {
+    console.log(`✅ [INIT] Tabelă retete există deja`);
+  }
 
   console.log(`📋 [INIT] Creare tabelă user_medicines...`);
-  // Tabelă pentru medicamente adăugate de utilizatori
-  await runAsyncInit(
-    `CREATE TABLE IF NOT EXISTS user_medicines (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      denumire TEXT NOT NULL,
-      forma_farmaceutica TEXT,
-      concentratie TEXT,
-      substanta_activa TEXT,
-      cod_atc TEXT,
-      mod_prescriere TEXT,
-      note TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )`
-  );
-  console.log(`✅ [INIT] Tabelă user_medicines creată/verificată`);
+  if (!(await tableExists('user_medicines'))) {
+    await runAsyncInit(
+      `CREATE TABLE user_medicines (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        denumire NVARCHAR(MAX) NOT NULL,
+        forma_farmaceutica NVARCHAR(MAX),
+        concentratie NVARCHAR(MAX),
+        substanta_activa NVARCHAR(MAX),
+        cod_atc NVARCHAR(MAX),
+        mod_prescriere NVARCHAR(MAX),
+        note NVARCHAR(MAX),
+        created_at DATETIME2 DEFAULT GETDATE(),
+        updated_at DATETIME2 DEFAULT GETDATE(),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`
+    );
+    console.log(`✅ [INIT] Tabelă user_medicines creată`);
+  } else {
+    console.log(`✅ [INIT] Tabelă user_medicines există deja`);
+  }
 
   console.log(`🔄 [INIT] Verificare migrări coloane user_medicines...`);
   // Migrare: adăugare coloane pentru user_medicines (dacă nu există deja)
-  try {
-    await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN substanta_activa TEXT`);
+  if (!(await columnExists('user_medicines', 'substanta_activa'))) {
+    await runAsyncInit(`ALTER TABLE user_medicines ADD substanta_activa NVARCHAR(MAX)`);
     console.log(`   ✅ [INIT] Coloană 'substanta_activa' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'substanta_activa' există deja`);
   }
-  try {
-    await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN cod_atc TEXT`);
+  if (!(await columnExists('user_medicines', 'cod_atc'))) {
+    await runAsyncInit(`ALTER TABLE user_medicines ADD cod_atc NVARCHAR(MAX)`);
     console.log(`   ✅ [INIT] Coloană 'cod_atc' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'cod_atc' există deja`);
   }
-  try {
-    await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN mod_prescriere TEXT`);
+  if (!(await columnExists('user_medicines', 'mod_prescriere'))) {
+    await runAsyncInit(`ALTER TABLE user_medicines ADD mod_prescriere NVARCHAR(MAX)`);
     console.log(`   ✅ [INIT] Coloană 'mod_prescriere' adăugată`);
-  } catch (e) {
+  } else {
     console.log(`   ℹ️ [INIT] Coloană 'mod_prescriere' există deja`);
   }
   
@@ -323,7 +278,7 @@ async function ensureInitialized() {
   }
 
   console.log(`🚀 [INIT] ========================================`);
-  console.log(`🚀 [INIT] Început inițializare baza de date`);
+  console.log(`🚀 [INIT] Început inițializare baza de date Azure SQL`);
   console.log(`🚀 [INIT] ========================================`);
 
   initPromise = (async () => {
@@ -332,8 +287,7 @@ async function ensureInitialized() {
       
       console.log(`🌱 [INIT] Verificare seeding medicamente...`);
       // Populează medicamentele dacă baza de date este goală
-      const db = getInitDb();
-      const seedResult = await seedIfEmpty(db, getAsyncInit, runAsyncInit);
+      const seedResult = await seedIfEmpty(null, getAsyncInit, runAsyncInit);
       if (seedResult.skipped && seedResult.rows > 0) {
         console.log(`✅ [INIT] Database already populated (${seedResult.rows} medicamente).`);
       } else if (!seedResult.skipped) {
@@ -362,4 +316,7 @@ async function ensureInitialized() {
 module.exports = {
   ensureInitialized,
   ensureTable,
+  runAsyncInit,
+  getAsyncInit,
+  getInitDb,
 };

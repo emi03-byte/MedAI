@@ -48,6 +48,7 @@ module.exports = async function (context, req) {
     // Salvează rețeta
     const result = await runAsync(
       `INSERT INTO retete (user_id, nume_pacient, medicamente, planuri_tratament, indicatii_pacient, indicatii_medic) 
+       OUTPUT INSERTED.id
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         userId,
@@ -59,7 +60,8 @@ module.exports = async function (context, req) {
       ]
     );
 
-    const newPrescription = await getAsync('SELECT * FROM retete WHERE id = ?', [result.lastID]);
+    const lastID = result.lastID || (result.result?.recordset?.[0]?.id);
+    const newPrescription = await getAsync('SELECT * FROM retete WHERE id = ?', [lastID]);
 
     context.res = {
       status: 201,
