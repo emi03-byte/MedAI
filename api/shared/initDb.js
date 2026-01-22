@@ -4,48 +4,109 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { seedIfEmpty } = require('./seedMedications');
 
-// Import direct pentru a evita dependențe circulare
-// Pentru Azure Functions, folosim /home pentru storage persistent
-const DB_DIR = process.env.DB_DIR || 
-  (process.env.WEBSITE_INSTANCE_ID 
-    ? path.join('/home', 'data')  // Azure Functions production
-    : path.join(__dirname, '../../backend/data'));  // Local development
-const DB_PATH = path.join(DB_DIR, 'medicamente.db');
+// Folosim DB_PATH din db.js prin lazy loading pentru a evita dependențe circulare
+let DB_PATH = null;
+let DB_DIR = null;
 
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+function getDbPath() {
+  if (!DB_PATH) {
+    // Import lazy pentru a evita dependențe circulare
+    const dbModule = require('./db');
+    DB_PATH = dbModule.DB_PATH;
+    DB_DIR = dbModule.DB_DIR;
+    console.log(`📁 [INIT] Folosind DB_PATH din db.js: ${DB_PATH}`);
+  }
+  return DB_PATH;
 }
 
 let initDbInstance = null;
 
 function getInitDb() {
   if (!initDbInstance) {
-    initDbInstance = new sqlite3.Database(DB_PATH);
+    const dbPath = getDbPath();
+    console.log(`🔌 [INIT] Deschidere conexiune init la baza de date: ${dbPath}`);
+    initDbInstance = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error('❌ [INIT] Eroare la deschiderea bazei de date:', err);
+        console.error('   [INIT] Path:', dbPath);
+        console.error('   [INIT] Error code:', err.code);
+        console.error('   [INIT] Error message:', err.message);
+        throw err;
+      }
+      console.log(`✅ [INIT] Baza de date deschisă pentru inițializare: ${dbPath}`);
+    });
   }
   return initDbInstance;
 }
 
 function runAsyncInit(sql, params = []) {
+  const startTime = Date.now();
+  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
+  console.log(`📝 [INIT] Executare SQL (run): ${sqlPreview}`);
+  if (params && params.length > 0) {
+    console.log(`   [INIT] Parametri:`, params);
+  }
+  
   return new Promise((resolve, reject) => {
     const db = getInitDb();
     db.run(sql, params, function runCallback(err) {
-      if (err) reject(err);
-      else resolve(this);
+      const duration = Date.now() - startTime;
+      if (err) {
+        console.error(`❌ [INIT] Eroare SQL (run) după ${duration}ms:`, err);
+        console.error(`   [INIT] SQL: ${sql}`);
+        console.error(`   [INIT] Parametri:`, params);
+        console.error(`   [INIT] Error code:`, err.code);
+        console.error(`   [INIT] Error message:`, err.message);
+        reject(err);
+      } else {
+        console.log(`✅ [INIT] SQL (run) executat cu succes în ${duration}ms`);
+        if (this.lastID) {
+          console.log(`   [INIT] Last insert ID: ${this.lastID}`);
+        }
+        if (this.changes !== undefined) {
+          console.log(`   [INIT] Rânduri afectate: ${this.changes}`);
+        }
+        resolve(this);
+      }
     });
   });
 }
 
 function getAsyncInit(sql, params = []) {
+  const startTime = Date.now();
+  const sqlPreview = sql.length > 100 ? sql.substring(0, 100) + '...' : sql;
+  console.log(`🔍 [INIT] Executare SQL (get): ${sqlPreview}`);
+  if (params && params.length > 0) {
+    console.log(`   [INIT] Parametri:`, params);
+  }
+  
   return new Promise((resolve, reject) => {
     const db = getInitDb();
     db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
+      const duration = Date.now() - startTime;
+      if (err) {
+        console.error(`❌ [INIT] Eroare SQL (get) după ${duration}ms:`, err);
+        console.error(`   [INIT] SQL: ${sql}`);
+        console.error(`   [INIT] Parametri:`, params);
+        console.error(`   [INIT] Error code:`, err.code);
+        console.error(`   [INIT] Error message:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`✅ [INIT] SQL (get) executat cu succes în ${duration}ms - rând găsit`);
+        } else {
+          console.log(`✅ [INIT] SQL (get) executat cu succes în ${duration}ms - niciun rând găsit`);
+        }
+        resolve(row);
+      }
     });
   });
 }
 
 const ensureTable = async () => {
+  console.log(`🔄 [INIT] Început inițializare tabele...`);
+  
+  console.log(`📋 [INIT] Creare tabelă medications...`);
   await runAsyncInit(
     `CREATE TABLE IF NOT EXISTS medications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,8 +131,9 @@ const ensureTable = async () => {
       coduri_boli TEXT
     )`
   );
+  console.log(`✅ [INIT] Tabelă medications creată/verificată`);
 
-  // Tabelă pentru utilizatori
+  console.log(`📋 [INIT] Creare tabelă users...`);
   await runAsyncInit(
     `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,32 +147,41 @@ const ensureTable = async () => {
       deleted_at DATETIME
     )`
   );
+  console.log(`✅ [INIT] Tabelă users creată/verificată`);
 
+  console.log(`🔄 [INIT] Verificare migrări coloane users...`);
   // Migrare: adăugare coloane pentru utilizatori existenți (dacă nu există deja)
   try {
     await runAsyncInit(`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'pending'`);
+    console.log(`   ✅ [INIT] Coloană 'status' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'status' există deja`);
   }
   try {
     await runAsyncInit(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`);
+    console.log(`   ✅ [INIT] Coloană 'is_admin' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'is_admin' există deja`);
   }
   try {
     await runAsyncInit(`ALTER TABLE users ADD COLUMN data_aprobare DATETIME`);
+    console.log(`   ✅ [INIT] Coloană 'data_aprobare' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'data_aprobare' există deja`);
   }
   try {
     await runAsyncInit(`ALTER TABLE users ADD COLUMN deleted_at DATETIME`);
+    console.log(`   ✅ [INIT] Coloană 'deleted_at' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'deleted_at' există deja`);
   }
 
+  console.log(`🔄 [INIT] Actualizare status utilizatori existenți...`);
   // Setare status 'approved' pentru utilizatori existenți (migrare)
-  await runAsyncInit(`UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''`);
+  const updateResult = await runAsyncInit(`UPDATE users SET status = 'approved' WHERE status IS NULL OR status = ''`);
+  console.log(`✅ [INIT] Status utilizatori actualizat (${updateResult.changes} rânduri afectate)`);
 
+  console.log(`👤 [INIT] Seeding utilizator admin...`);
   // Seeding automat pentru utilizatorul admin
   const adminEmail = 'caruntu.emanuel@gmail.com';
   const adminName = 'Emi';
@@ -121,6 +192,7 @@ const ensureTable = async () => {
   if (adminUser) {
     // Utilizatorul există - actualizează dacă nu este admin
     if (!adminUser.is_admin || adminUser.is_admin === 0) {
+      console.log(`   🔄 [INIT] Actualizare cont ${adminEmail} ca admin...`);
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await runAsyncInit(
         'UPDATE users SET is_admin = 1, status = ?, data_aprobare = ?, parola = ? WHERE email = ?',
@@ -132,6 +204,7 @@ const ensureTable = async () => {
     }
   } else {
     // Utilizatorul nu există - creează-l ca admin
+    console.log(`   🔄 [INIT] Creare cont admin: ${adminName} (${adminEmail})...`);
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
     await runAsyncInit(
       `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
@@ -141,6 +214,7 @@ const ensureTable = async () => {
     console.log(`✅ [SETUP] Cont admin creat: ${adminName} (${adminEmail})`);
   }
 
+  console.log(`👤 [INIT] Seeding utilizator test...`);
   // Seeding automat pentru utilizatorul test
   const testEmail = 'test@gmail.com';
   const testName = 'test';
@@ -151,6 +225,7 @@ const ensureTable = async () => {
   if (testUser) {
     // Utilizatorul există - actualizează dacă nu este aprobat
     if (testUser.status !== 'approved') {
+      console.log(`   🔄 [INIT] Actualizare cont ${testEmail} ca aprobat...`);
       const hashedPassword = await bcrypt.hash(testPassword, 10);
       await runAsyncInit(
         'UPDATE users SET status = ?, data_aprobare = ?, parola = ? WHERE email = ?',
@@ -162,6 +237,7 @@ const ensureTable = async () => {
     }
   } else {
     // Utilizatorul nu există - creează-l ca aprobat
+    console.log(`   🔄 [INIT] Creare cont test: ${testName} (${testEmail})...`);
     const hashedPassword = await bcrypt.hash(testPassword, 10);
     await runAsyncInit(
       `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
@@ -171,6 +247,7 @@ const ensureTable = async () => {
     console.log(`✅ [SETUP] Cont test creat: ${testName} (${testEmail})`);
   }
 
+  console.log(`📋 [INIT] Creare tabelă retete...`);
   // Tabelă pentru rețete
   await runAsyncInit(
     `CREATE TABLE IF NOT EXISTS retete (
@@ -185,7 +262,9 @@ const ensureTable = async () => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`
   );
+  console.log(`✅ [INIT] Tabelă retete creată/verificată`);
 
+  console.log(`📋 [INIT] Creare tabelă user_medicines...`);
   // Tabelă pentru medicamente adăugate de utilizatori
   await runAsyncInit(
     `CREATE TABLE IF NOT EXISTS user_medicines (
@@ -203,23 +282,30 @@ const ensureTable = async () => {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`
   );
+  console.log(`✅ [INIT] Tabelă user_medicines creată/verificată`);
 
+  console.log(`🔄 [INIT] Verificare migrări coloane user_medicines...`);
   // Migrare: adăugare coloane pentru user_medicines (dacă nu există deja)
   try {
     await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN substanta_activa TEXT`);
+    console.log(`   ✅ [INIT] Coloană 'substanta_activa' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'substanta_activa' există deja`);
   }
   try {
     await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN cod_atc TEXT`);
+    console.log(`   ✅ [INIT] Coloană 'cod_atc' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'cod_atc' există deja`);
   }
   try {
     await runAsyncInit(`ALTER TABLE user_medicines ADD COLUMN mod_prescriere TEXT`);
+    console.log(`   ✅ [INIT] Coloană 'mod_prescriere' adăugată`);
   } catch (e) {
-    // Coloana există deja, ignoră eroarea
+    console.log(`   ℹ️ [INIT] Coloană 'mod_prescriere' există deja`);
   }
+  
+  console.log(`✅ [INIT] Inițializare tabele completă`);
 };
 
 // Inițializează baza de date (apelat la prima invocare)
@@ -227,27 +313,42 @@ let initPromise = null;
 let initialized = false;
 
 async function ensureInitialized() {
-  if (initialized) return;
-  if (initPromise) return initPromise;
+  if (initialized) {
+    console.log(`ℹ️ [INIT] Baza de date este deja inițializată`);
+    return;
+  }
+  if (initPromise) {
+    console.log(`⏳ [INIT] Inițializare în curs, așteptare...`);
+    return initPromise;
+  }
+
+  console.log(`🚀 [INIT] ========================================`);
+  console.log(`🚀 [INIT] Început inițializare baza de date`);
+  console.log(`🚀 [INIT] ========================================`);
 
   initPromise = (async () => {
     try {
       await ensureTable();
       
+      console.log(`🌱 [INIT] Verificare seeding medicamente...`);
       // Populează medicamentele dacă baza de date este goală
       const db = getInitDb();
       const seedResult = await seedIfEmpty(db, getAsyncInit, runAsyncInit);
       if (seedResult.skipped && seedResult.rows > 0) {
-        console.log(`✅ Database already populated (${seedResult.rows} medicamente).`);
+        console.log(`✅ [INIT] Database already populated (${seedResult.rows} medicamente).`);
       } else if (!seedResult.skipped) {
-        console.log(`✅ Am importat ${seedResult.rows} medicamente din CSV.`);
+        console.log(`✅ [INIT] Am importat ${seedResult.rows} medicamente din CSV.`);
       } else if (seedResult.reason) {
-        console.log(`⚠️ Seeding skipped: ${seedResult.reason}`);
+        console.log(`⚠️ [INIT] Seeding skipped: ${seedResult.reason}`);
       }
       
       initialized = true;
+      console.log(`✅ [INIT] ========================================`);
+      console.log(`✅ [INIT] Inițializare baza de date completă`);
+      console.log(`✅ [INIT] ========================================`);
     } catch (error) {
-      console.error('Error initializing database:', error);
+      console.error('❌ [INIT] Error initializing database:', error);
+      console.error('   [INIT] Stack:', error.stack);
       initialized = false;
       throw error;
     } finally {
