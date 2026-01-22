@@ -1,9 +1,7 @@
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
-
-// Path către CSV (pentru seeding) - nu este folosit în Azure Functions, doar pentru referință
-const CSV_PATH = process.env.CSV_PATH || path.join(process.cwd(), 'public', 'medicamente_cu_boli_COMPLET.csv');
+const { seedIfEmpty } = require('./seedMedications');
 
 // Import direct pentru a evita dependențe circulare
 // Pentru Azure Functions, folosim /home pentru storage persistent
@@ -186,6 +184,18 @@ async function ensureInitialized() {
   initPromise = (async () => {
     try {
       await ensureTable();
+      
+      // Populează medicamentele dacă baza de date este goală
+      const db = getInitDb();
+      const seedResult = await seedIfEmpty(db, getAsyncInit, runAsyncInit);
+      if (seedResult.skipped && seedResult.rows > 0) {
+        console.log(`✅ Database already populated (${seedResult.rows} medicamente).`);
+      } else if (!seedResult.skipped) {
+        console.log(`✅ Am importat ${seedResult.rows} medicamente din CSV.`);
+      } else if (seedResult.reason) {
+        console.log(`⚠️ Seeding skipped: ${seedResult.reason}`);
+      }
+      
       initialized = true;
     } catch (error) {
       console.error('Error initializing database:', error);
