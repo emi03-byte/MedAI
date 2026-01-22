@@ -9,7 +9,7 @@
         "get",
         "options"
       ],
-      "route": "api/auth/me"
+      "route": "auth/me"
     },
     {
       "type": "http",

@@ -9,7 +9,7 @@
         "post",
         "options"
       ],
-      "route": "api/user-medicines"
+      "route": "user-medicines"
     },
     {
       "type": "http",

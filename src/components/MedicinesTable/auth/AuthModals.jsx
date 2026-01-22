@@ -498,7 +498,7 @@ const AuthModals = ({
                   } catch (error) {
                     console.error('❌ [FRONTEND] Eroare la login:', error)
                     setLoginError(
-                      `Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`
+                      `Eroare de conexiune: ${error.message}. Verifică conexiunea la server.`
                     )
                   }
                 }}
@@ -916,7 +916,7 @@ const AuthModals = ({
                   } catch (error) {
                     console.error('❌ [FRONTEND] Eroare la signup:', error)
                     setSignUpError(
-                      `Eroare de conexiune: ${error.message}. Verifică dacă backend-ul rulează pe portul 3001.`
+                      `Eroare de conexiune: ${error.message}. Verifică conexiunea la server.`
                     )
                   }
                 }}

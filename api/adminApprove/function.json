@@ -9,7 +9,7 @@
         "post",
         "options"
       ],
-      "route": "api/admin/approve/{userId}"
+      "route": "admin/approve/{userId}"
     },
     {
       "type": "http",

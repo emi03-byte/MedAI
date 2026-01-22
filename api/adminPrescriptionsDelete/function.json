@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["delete", "options"],
-      "route": "api/admin/prescriptions/{prescriptionId}"
+      "route": "admin/prescriptions/{prescriptionId}"
     },
     { "type": "http", "direction": "out", "name": "res" }
   ],

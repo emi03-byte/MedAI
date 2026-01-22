@@ -9,7 +9,7 @@
         "get",
         "options"
       ],
-      "route": "api/medications/{id}"
+      "route": "medications/{id}"
     },
     {
       "type": "http",

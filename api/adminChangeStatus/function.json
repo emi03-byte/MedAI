@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "options"],
-      "route": "api/admin/change-status/{userId}"
+      "route": "admin/change-status/{userId}"
     },
     { "type": "http", "direction": "out", "name": "res" }
   ],

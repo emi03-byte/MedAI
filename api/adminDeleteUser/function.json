@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["delete", "options"],
-      "route": "api/admin/delete-user/{userId}"
+      "route": "admin/delete-user/{userId}"
     },
     { "type": "http", "direction": "out", "name": "res" }
   ],

@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "options"],
-      "route": "api/admin/reject/{userId}"
+      "route": "admin/reject/{userId}"
     },
     { "type": "http", "direction": "out", "name": "res" }
   ],

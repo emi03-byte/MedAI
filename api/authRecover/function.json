@@ -9,7 +9,7 @@
         "post",
         "options"
       ],
-      "route": "api/auth/recover"
+      "route": "auth/recover"
     },
     {
       "type": "http",

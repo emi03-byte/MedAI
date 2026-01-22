@@ -9,7 +9,7 @@
         "delete",
         "options"
       ],
-      "route": "api/prescriptions/{id}"
+      "route": "prescriptions/{id}"
     },
     {
       "type": "http",

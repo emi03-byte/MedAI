@@ -9,7 +9,7 @@
         "delete",
         "options"
       ],
-      "route": "api/user-medicines/{id}"
+      "route": "user-medicines/{id}"
     },
     {
       "type": "http",

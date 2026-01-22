@@ -9,7 +9,7 @@
         "delete",
         "options"
       ],
-      "route": "api/auth/delete"
+      "route": "auth/delete"
     },
     {
       "type": "http",

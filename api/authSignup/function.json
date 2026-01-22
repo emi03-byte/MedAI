@@ -9,7 +9,7 @@
         "post",
         "options"
       ],
-      "route": "api/auth/signup"
+      "route": "auth/signup"
     },
     {
       "type": "http",

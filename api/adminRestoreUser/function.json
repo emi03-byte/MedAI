@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["post", "options"],
-      "route": "api/admin/restore-user/{userId}"
+      "route": "admin/restore-user/{userId}"
     },
     { "type": "http", "direction": "out", "name": "res" }
   ],
