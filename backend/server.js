@@ -224,6 +224,38 @@ const ensureTable = async () => {
     );
     console.log(`✅ [SETUP] Cont admin creat: ${adminName} (${adminEmail})`);
   }
+
+  // Seeding automat pentru utilizatorul test
+  const testEmail = 'test@gmail.com';
+  const testName = 'test';
+  const testPassword = 'test1223';
+  
+  const testUser = await getAsync('SELECT id, status FROM users WHERE email = ?', [testEmail]);
+  
+  if (testUser) {
+    // Utilizatorul există - actualizează dacă nu este aprobat
+    if (testUser.status !== 'approved') {
+      console.log(`🔐 [SETUP] Setare cont ${testEmail} ca aprobat...`);
+      const hashedPassword = await bcrypt.hash(testPassword, 10);
+      await runAsync(
+        'UPDATE users SET status = ?, data_aprobare = ?, parola = ? WHERE email = ?',
+        ['approved', new Date().toISOString(), hashedPassword, testEmail]
+      );
+      console.log(`✅ [SETUP] Cont ${testEmail} setat ca aprobat`);
+    } else {
+      console.log(`✅ [SETUP] Cont ${testEmail} este deja aprobat`);
+    }
+  } else {
+    // Utilizatorul nu există - creează-l ca aprobat
+    console.log(`🔐 [SETUP] Creare cont test: ${testName} (${testEmail})...`);
+    const hashedPassword = await bcrypt.hash(testPassword, 10);
+    await runAsync(
+      `INSERT INTO users (nume, email, parola, status, is_admin, data_aprobare) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [testName, testEmail, hashedPassword, 'approved', 0, new Date().toISOString()]
+    );
+    console.log(`✅ [SETUP] Cont test creat: ${testName} (${testEmail})`);
+  }
   
   // Tabelă pentru rețete
   await runAsync(
