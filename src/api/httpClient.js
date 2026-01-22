@@ -45,6 +45,17 @@ export async function requestJson(url, options = {}) {
 }
 
 export function buildUrl(baseUrl, path, query = {}) {
+  // Dacă baseUrl este gol (pentru Azure SWA), folosim rute relative
+  if (!baseUrl || baseUrl === '') {
+    const url = new URL(path, window.location.origin)
+    Object.entries(query).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return
+      url.searchParams.set(key, String(value))
+    })
+    return url.pathname + url.search
+  }
+  
+  // Pentru development cu backend Express
   const url = new URL(path, baseUrl)
   Object.entries(query).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return
