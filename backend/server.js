@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import csv from 'csv-parser';
 import sqlite3 from 'sqlite3';
 import bcrypt from 'bcryptjs';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -15,6 +17,8 @@ const DB_DIR = path.join(__dirname, 'data');
 const DB_PATH = path.join(DB_DIR, 'medicamente.db');
 const CSV_PATH = path.join(process.cwd(), 'public', 'medicamente_cu_boli_COMPLET.csv');
 const PORT = process.env.PORT || 3001;
+const API_VERSION = process.env.npm_package_version || '0.0.0';
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
 
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
@@ -24,6 +28,81 @@ const db = new sqlite.Database(DB_PATH);
 
 app.use(cors());
 app.use(express.json());
+
+const HELP_ROUTES = [
+  { method: 'GET', path: '/health', description: 'Health check (server + DB)' },
+  { method: 'GET', path: '/help', description: 'Lista rutelor și link către Swagger' },
+  { method: 'GET', path: '/api/medications', description: 'Listă medicamente (query: search, limit, offset)' },
+  { method: 'GET', path: '/api/medications/:id', description: 'Detalii medicament' },
+  { method: 'POST', path: '/api/auth/signup', description: 'Înregistrare utilizator' },
+  { method: 'POST', path: '/api/auth/login', description: 'Autentificare utilizator' },
+  { method: 'POST', path: '/api/auth/recover', description: 'Recuperare cont șters' },
+  { method: 'GET', path: '/api/auth/me', description: 'Detalii utilizator (query: userId)' },
+  { method: 'GET', path: '/api/auth/status', description: 'Status cont (query: userId)' },
+  { method: 'DELETE', path: '/api/auth/delete', description: 'Ștergere cont propriu (query: userId)' },
+  { method: 'GET', path: '/api/user-medicines', description: 'Medicamente adăugate de utilizator (query: userId)' },
+  { method: 'POST', path: '/api/user-medicines', description: 'Adaugă medicament utilizator (body: userId, denumire, ...)' },
+  { method: 'PUT', path: '/api/user-medicines/:id', description: 'Actualizează medicament utilizator (body/query: userId)' },
+  { method: 'DELETE', path: '/api/user-medicines/:id', description: 'Șterge medicament utilizator (query/body: userId)' },
+  { method: 'POST', path: '/api/prescriptions', description: 'Creează rețetă' },
+  { method: 'GET', path: '/api/prescriptions', description: 'Listă rețete (query: userId)' },
+  { method: 'DELETE', path: '/api/prescriptions/:id', description: 'Șterge o rețetă (query: userId)' },
+  { method: 'DELETE', path: '/api/prescriptions', description: 'Șterge toate rețetele (query: userId)' },
+  { method: 'GET', path: '/api/admin/requests', description: 'Admin: listă cereri (query: userId, showDeleted, status)' },
+  { method: 'POST', path: '/api/admin/approve/:userId', description: 'Admin: aprobare cont (query/body: userId=adminId)' },
+  { method: 'POST', path: '/api/admin/reject/:userId', description: 'Admin: respingere cont (query/body: userId=adminId)' },
+  { method: 'POST', path: '/api/admin/change-status/:userId', description: 'Admin: schimbă status (query/body: userId=adminId)' },
+  { method: 'DELETE', path: '/api/admin/delete-user/:userId', description: 'Admin: șterge utilizator (query/body: userId=adminId)' },
+  { method: 'POST', path: '/api/admin/restore-user/:userId', description: 'Admin: restaurează utilizator (query/body: userId=adminId)' },
+  { method: 'GET', path: '/api/admin/user-prescriptions/:userId', description: 'Admin: rețete utilizator (query/body: userId=adminId)' },
+  { method: 'DELETE', path: '/api/admin/prescriptions/:prescriptionId', description: 'Admin: șterge rețetă (query/body: userId=adminId)' },
+];
+
+const swaggerSpec = swaggerJSDoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'MedAI API',
+      version: API_VERSION,
+      description:
+        'Backend Express (SQLite) pentru MedAI. Notă: în producție ai nevoie de un backend public (nu localhost).',
+    },
+    servers: [{ url: PUBLIC_BASE_URL }],
+    components: {
+      schemas: {
+        ErrorResponse: {
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+        HealthResponse: {
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            version: { type: 'string' },
+            timestamp: { type: 'string' },
+            uptimeSeconds: { type: 'number' },
+            db: {
+              type: 'object',
+              properties: {
+                status: { type: 'string' },
+                path: { type: 'string' },
+                medicationsCount: { type: 'number', nullable: true },
+                error: { type: 'string', nullable: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  apis: [path.join(__dirname, 'server.js')],
+});
+
+app.get('/openapi.json', (_req, res) => {
+  res.json(swaggerSpec);
+});
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 
 const runAsync = (sql, params = []) =>
   new Promise((resolve, reject) => {
@@ -313,10 +392,113 @@ const seedIfEmpty = async () => {
   return { skipped: false, rows };
 };
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check (server + DB)
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ *       503:
+ *         description: DB unavailable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ */
+app.get('/health', async (_req, res) => {
+  const payload = {
+    status: 'ok',
+    version: API_VERSION,
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    db: {
+      status: 'unknown',
+      path: DB_PATH,
+      medicationsCount: null,
+      error: null,
+    },
+  };
+
+  try {
+    await getAsync('SELECT 1 as ok');
+    const countRow = await getAsync('SELECT COUNT(*) as count FROM medications');
+    payload.db.status = 'ok';
+    payload.db.medicationsCount = typeof countRow?.count === 'number' ? countRow.count : null;
+    res.json(payload);
+  } catch (err) {
+    payload.status = 'degraded';
+    payload.db.status = 'error';
+    payload.db.error = err?.message || String(err);
+    res.status(503).json(payload);
+  }
 });
 
+/**
+ * @openapi
+ * /help:
+ *   get:
+ *     summary: Lista rutelor disponibile + link către Swagger
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+app.get('/help', (_req, res) => {
+  res.json({
+    name: 'MedAI backend',
+    version: API_VERSION,
+    docs: {
+      swaggerUi: '/api-docs',
+      openapiJson: '/openapi.json',
+    },
+    routes: HELP_ROUTES,
+  });
+});
+
+/**
+ * @openapi
+ * /api/medications:
+ *   get:
+ *     summary: Listă medicamente (cu search/paginare)
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema: { type: string }
+ *         description: Caută în denumire/substanță/cod
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema: { oneOf: [ { type: integer }, { type: string, enum: [all] } ] }
+ *         description: Număr rezultate per pagină sau 'all'
+ *       - in: query
+ *         name: offset
+ *         required: false
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items: { type: object, additionalProperties: true }
+ *                 count: { type: integer }
+ *       500:
+ *         description: Eroare server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 app.get('/api/medications', async (req, res) => {
   try {
     const { search = '', limit = 50, offset = 0 } = req.query;
@@ -347,6 +529,37 @@ app.get('/api/medications', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/medications/{id}:
+ *   get:
+ *     summary: Detalii medicament după ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       404:
+ *         description: Not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Eroare server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 app.get('/api/medications/:id', async (req, res) => {
   try {
     const row = await getAsync('SELECT * FROM medications WHERE id = ?', [req.params.id]);
@@ -361,6 +574,40 @@ app.get('/api/medications/:id', async (req, res) => {
 });
 
 // Endpoint pentru înregistrare (sign up)
+/**
+ * @openapi
+ * /api/auth/signup:
+ *   post:
+ *     summary: Înregistrare utilizator nou
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nume, email, parola]
+ *             properties:
+ *               nume: { type: string }
+ *               email: { type: string }
+ *               parola: { type: string, description: "Minim 6 caractere" }
+ *           example:
+ *             nume: "Ion Popescu"
+ *             email: "ion@example.com"
+ *             parola: "parola123"
+ *     responses:
+ *       201:
+ *         description: Utilizator creat
+ *       400:
+ *         description: Validare eșuată
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Cont șters existent (ACCOUNT_DELETED)
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/auth/signup', async (req, res) => {
   try {
     console.log('📝 [SIGNUP] Cerere primită:', { 
@@ -444,6 +691,38 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 // Endpoint pentru recuperare cont șters (restaurare sau cont nou)
+/**
+ * @openapi
+ * /api/auth/recover:
+ *   post:
+ *     summary: Recuperare cont șters (restaurare sau cont nou)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, parola, mode]
+ *             properties:
+ *               nume: { type: string, nullable: true, description: "Obligatoriu doar pentru mode=new" }
+ *               email: { type: string }
+ *               parola: { type: string }
+ *               mode: { type: string, enum: [restore, new] }
+ *           example:
+ *             nume: "Ion Popescu"
+ *             email: "ion@example.com"
+ *             parola: "parola123"
+ *             mode: "restore"
+ *     responses:
+ *       200:
+ *         description: Cont recuperat
+ *       400:
+ *         description: Date invalide
+ *       404:
+ *         description: Nu există cont șters pentru email
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/auth/recover', async (req, res) => {
   try {
     const { nume, email, parola, mode } = req.body;
@@ -510,6 +789,34 @@ app.post('/api/auth/recover', async (req, res) => {
 });
 
 // Endpoint pentru autentificare (login)
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     summary: Autentificare utilizator
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, parola]
+ *             properties:
+ *               email: { type: string }
+ *               parola: { type: string }
+ *           example:
+ *             email: "ion@example.com"
+ *             parola: "parola123"
+ *     responses:
+ *       200:
+ *         description: Autentificare reușită
+ *       401:
+ *         description: Email/parolă incorectă
+ *       403:
+ *         description: Cont șters (ACCOUNT_DELETED)
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/auth/login', async (req, res) => {
   try {
     console.log('🔐 [LOGIN] Cerere primită pentru email:', req.body.email);
@@ -595,6 +902,27 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Endpoint pentru ștergerea contului propriu (soft delete)
+/**
+ * @openapi
+ * /api/auth/delete:
+ *   delete:
+ *     summary: Ștergere cont propriu (soft delete)
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID utilizator
+ *     responses:
+ *       200:
+ *         description: Cont șters
+ *       400:
+ *         description: Cerere invalidă
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/auth/delete', async (req, res) => {
   try {
     const userId = req.query.userId || req.body.userId;
@@ -622,6 +950,26 @@ app.delete('/api/auth/delete', async (req, res) => {
 });
 
 // Endpoint pentru verificare utilizator curent
+/**
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     summary: Detalii utilizator curent
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: userId lipsă
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/auth/me', async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -647,6 +995,26 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // Endpoint pentru verificare status cont
+/**
+ * @openapi
+ * /api/auth/status:
+ *   get:
+ *     summary: Status cont (pending/approved/rejected) + flag admin
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: userId lipsă
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/auth/status', async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -670,6 +1038,24 @@ app.get('/api/auth/status', async (req, res) => {
 });
 
 // Medicamente adăugate de utilizatori (doar pentru utilizatorul curent)
+/**
+ * @openapi
+ * /api/user-medicines:
+ *   get:
+ *     summary: Listă medicamente adăugate de utilizator
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: userId lipsă
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/user-medicines', async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -687,6 +1073,35 @@ app.get('/api/user-medicines', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/user-medicines:
+ *   post:
+ *     summary: Adaugă un medicament personalizat pentru utilizator
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, denumire]
+ *             properties:
+ *               userId: { type: integer }
+ *               denumire: { type: string }
+ *               forma_farmaceutica: { type: string, nullable: true }
+ *               concentratie: { type: string, nullable: true }
+ *               substanta_activa: { type: string, nullable: true }
+ *               cod_atc: { type: string, nullable: true }
+ *               mod_prescriere: { type: string, nullable: true }
+ *               note: { type: string, nullable: true }
+ *     responses:
+ *       201:
+ *         description: Creat
+ *       400:
+ *         description: Cerere invalidă
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/user-medicines', async (req, res) => {
   try {
     const { userId, denumire, forma_farmaceutica, concentratie, substanta_activa, cod_atc, mod_prescriere, note } = req.body;
@@ -708,6 +1123,47 @@ app.post('/api/user-medicines', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/user-medicines/{id}:
+ *   put:
+ *     summary: Actualizează un medicament personalizat
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: false
+ *         schema: { type: integer }
+ *         description: Alternativ, poate fi trimis și în body
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, denumire]
+ *             properties:
+ *               userId: { type: integer }
+ *               denumire: { type: string }
+ *               forma_farmaceutica: { type: string, nullable: true }
+ *               concentratie: { type: string, nullable: true }
+ *               substanta_activa: { type: string, nullable: true }
+ *               cod_atc: { type: string, nullable: true }
+ *               mod_prescriere: { type: string, nullable: true }
+ *               note: { type: string, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Actualizat
+ *       400:
+ *         description: Cerere invalidă
+ *       404:
+ *         description: Medicament negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.put('/api/user-medicines/:id', async (req, res) => {
   try {
     const userId = req.body.userId || req.query.userId;
@@ -743,6 +1199,30 @@ app.put('/api/user-medicines/:id', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/user-medicines/{id}:
+ *   delete:
+ *     summary: Șterge un medicament personalizat
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Șters
+ *       400:
+ *         description: Cerere invalidă
+ *       404:
+ *         description: Medicament negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/user-medicines/:id', async (req, res) => {
   try {
     const userId = req.query.userId || req.body.userId;
@@ -803,6 +1283,36 @@ const checkAdmin = async (req, res, next) => {
 };
 
 // Endpoint pentru listarea tuturor cererilor (admin only)
+/**
+ * @openapi
+ * /api/admin/requests:
+ *   get:
+ *     summary: Admin - listă cereri utilizatori
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID-ul adminului (folosit pentru verificare permisiuni)
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema: { type: string, enum: [toate, pending, approved, rejected] }
+ *       - in: query
+ *         name: showDeleted
+ *         required: false
+ *         schema: { type: boolean }
+ *         description: Dacă e true, returnează doar conturile șterse (istoric)
+ *     responses:
+ *       200:
+ *         description: OK
+ *       401:
+ *         description: userId lipsă
+ *       403:
+ *         description: Nu e admin
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/admin/requests', checkAdmin, async (req, res) => {
   try {
     console.log('📋 [ADMIN] Listare cereri...');
@@ -858,6 +1368,34 @@ app.get('/api/admin/requests', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru aprobare cont (admin only)
+/**
+ * @openapi
+ * /api/admin/approve/{userId}:
+ *   post:
+ *     summary: Admin - aprobă cont
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID-ul utilizatorului țintă
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID-ul adminului (pentru verificare permisiuni)
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Date invalide
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/admin/approve/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -890,6 +1428,33 @@ app.post('/api/admin/approve/:userId', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru respingere cont (admin only)
+/**
+ * @openapi
+ * /api/admin/reject/{userId}:
+ *   post:
+ *     summary: Admin - respinge cont
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID-ul adminului
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Date invalide
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/admin/reject/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -921,6 +1486,44 @@ app.post('/api/admin/reject/:userId', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru schimbare status cont (admin only) - permite orice status și schimbarea tipului
+/**
+ * @openapi
+ * /api/admin/change-status/{userId}:
+ *   post:
+ *     summary: Admin - schimbă status și (opțional) rol admin
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID-ul adminului
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [pending, approved, rejected] }
+ *               is_admin: { type: boolean, nullable: true }
+ *               userId: { type: integer, description: "ID admin (alternativ la query)" }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Date invalide
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -975,6 +1578,35 @@ app.post('/api/admin/change-status/:userId', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru ștergerea unui cont (admin only)
+/**
+ * @openapi
+ * /api/admin/delete-user/{userId}:
+ *   delete:
+ *     summary: Admin - șterge (soft delete) un cont utilizator
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID admin
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Date invalide
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/admin/delete-user/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -1048,6 +1680,35 @@ app.delete('/api/admin/delete-user/:userId', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru restaurarea unui cont șters (admin only)
+/**
+ * @openapi
+ * /api/admin/restore-user/{userId}:
+ *   post:
+ *     summary: Admin - restaurează un cont șters
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID admin
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Contul nu este șters / date invalide
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/admin/restore-user/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -1084,6 +1745,36 @@ app.post('/api/admin/restore-user/:userId', checkAdmin, async (req, res) => {
 });
 
 // Endpoint pentru obținerea rețetelor unui utilizator (admin only)
+/**
+ * @openapi
+ * /api/admin/user-prescriptions/{userId}:
+ *   get:
+ *     summary: Admin - obține rețetele unui utilizator
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID utilizator țintă
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID admin
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: ID invalid
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/admin/user-prescriptions/:userId', checkAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.userId;
@@ -1179,6 +1870,35 @@ app.get('/api/admin/user-prescriptions/:userId', checkAdmin, async (req, res) =>
 });
 
 // Endpoint pentru ștergerea unei rețete (admin only)
+/**
+ * @openapi
+ * /api/admin/prescriptions/{prescriptionId}:
+ *   delete:
+ *     summary: Admin - șterge o rețetă după ID
+ *     parameters:
+ *       - in: path
+ *         name: prescriptionId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: ID admin
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: ID lipsă/invalid
+ *       401:
+ *         description: Admin ID lipsă
+ *       403:
+ *         description: Nu e admin
+ *       404:
+ *         description: Rețetă negăsită
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/admin/prescriptions/:prescriptionId', checkAdmin, async (req, res) => {
   try {
     const prescriptionId = req.params.prescriptionId;
@@ -1211,6 +1931,46 @@ app.delete('/api/admin/prescriptions/:prescriptionId', checkAdmin, async (req, r
 });
 
 // Endpoint pentru salvarea unei rețete
+/**
+ * @openapi
+ * /api/prescriptions:
+ *   post:
+ *     summary: Creează o rețetă
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId: { type: integer }
+ *               numePacient: { type: string, nullable: true }
+ *               medicamente:
+ *                 type: array
+ *                 items: { type: object, additionalProperties: true }
+ *               planuriTratament: { type: object, nullable: true, additionalProperties: true }
+ *               indicatiiPacient: { type: string, nullable: true }
+ *               indicatiiMedic: { type: string, nullable: true }
+ *           example:
+ *             userId: 1
+ *             numePacient: "Popescu Ion"
+ *             medicamente: []
+ *             planuriTratament: null
+ *             indicatiiPacient: "Febră și tuse"
+ *             indicatiiMedic: "Hidratare + consult dacă persistă"
+ *     responses:
+ *       201:
+ *         description: Rețetă creată
+ *       400:
+ *         description: Cerere invalidă
+ *       403:
+ *         description: Cont neaprobat
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.post('/api/prescriptions', async (req, res) => {
   try {
     console.log('💾 [PRESCRIPTION] Cerere de salvare rețetă primită');
@@ -1270,6 +2030,28 @@ app.post('/api/prescriptions', async (req, res) => {
 });
 
 // Endpoint pentru obținerea istoricului rețetelor unui utilizator
+/**
+ * @openapi
+ * /api/prescriptions:
+ *   get:
+ *     summary: Listă rețete pentru utilizator
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: userId lipsă
+ *       403:
+ *         description: Cont neaprobat
+ *       404:
+ *         description: Utilizator negăsit
+ *       500:
+ *         description: Eroare server
+ */
 app.get('/api/prescriptions', async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -1312,6 +2094,30 @@ app.get('/api/prescriptions', async (req, res) => {
 });
 
 // Endpoint pentru ștergerea unei rețete individuale
+/**
+ * @openapi
+ * /api/prescriptions/{id}:
+ *   delete:
+ *     summary: Șterge o rețetă (doar dacă aparține utilizatorului)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Șters cu succes
+ *       400:
+ *         description: Cerere invalidă
+ *       404:
+ *         description: Rețetă negăsită sau fără permisiune
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/prescriptions/:id', async (req, res) => {
   try {
     const prescriptionId = req.params.id;
@@ -1353,6 +2159,24 @@ app.delete('/api/prescriptions/:id', async (req, res) => {
 });
 
 // Endpoint pentru ștergerea tuturor rețetelor unui utilizator
+/**
+ * @openapi
+ * /api/prescriptions:
+ *   delete:
+ *     summary: Șterge toate rețetele unui utilizator
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Șters cu succes
+ *       400:
+ *         description: userId lipsă
+ *       500:
+ *         description: Eroare server
+ */
 app.delete('/api/prescriptions', async (req, res) => {
   try {
     const userId = req.query.userId;
