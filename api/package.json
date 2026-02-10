@@ -1,0 +1,13 @@
+{
+  "name": "medai-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for MedAI",
+  "main": "index.js",
+  "scripts": {
+    "sync-db": "node scripts/sync-medications-to-azure.cjs"
+  },
+  "dependencies": {
+    "mssql": "^11.0.1",
+    "sqlite3": "^5.1.7"
+  }
+}

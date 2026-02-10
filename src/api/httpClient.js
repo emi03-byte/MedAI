@@ -45,7 +45,8 @@ export async function requestJson(url, options = {}) {
 }
 
 export function buildUrl(baseUrl, path, query = {}) {
-  const url = new URL(path, baseUrl)
+  const base = (baseUrl && baseUrl.trim()) || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001')
+  const url = new URL(path, base)
   Object.entries(query).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return
     url.searchParams.set(key, String(value))

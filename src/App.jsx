@@ -25,11 +25,15 @@ function App() {
     { id: 'batrani', label: 'Bătrâni', icon: '👴', description: '65+ ani' }
   ]
 
-  // Încarcă datele din backend (SQLite) pentru a le trimite la ChatBot
+  const [medicationsLoadError, setMedicationsLoadError] = useState(null)
+
+  // Încarcă datele din backend (SQLite / Azure) pentru a le trimite la ChatBot
   useEffect(() => {
     const fetchFromBackend = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/medications?limit=all`)
+        setMedicationsLoadError(null)
+        const base = API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+        const response = await fetch(`${base}/api/medications?limit=all`)
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
         }
@@ -39,6 +43,7 @@ function App() {
         setMedicinesData(mapped)
       } catch (error) {
         console.error('Error loading medications for chatbot from backend:', error)
+        setMedicationsLoadError(error.message || 'Eroare la încărcarea medicamentelor')
       }
     }
     fetchFromBackend()
@@ -47,6 +52,11 @@ function App() {
   try {
     return (
       <div className="App">
+        {medicationsLoadError && (
+          <div style={{ padding: '10px 16px', background: '#3c1e1e', color: '#f8b4b4', textAlign: 'center', fontSize: '14px' }}>
+            Medicamentele nu s-au putut încărca ({medicationsLoadError}). Verifică că API-ul și baza de date sunt configurate (ex. AZURE_SQL_CONNECTION_STRING în Azure).
+          </div>
+        )}
         <MedicinesTable 
           ageCategory={selectedAgeCategory}
           ageCategoryData={ageCategories.find(c => c.id === selectedAgeCategory)}

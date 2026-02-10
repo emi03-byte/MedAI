@@ -4,50 +4,20 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import csv from 'csv-parser';
-import sqlite3 from 'sqlite3';
 import bcrypt from 'bcryptjs';
+import * as db from './db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const sqlite = sqlite3.verbose();
-
-const DB_DIR = path.join(__dirname, 'data');
-const DB_PATH = path.join(DB_DIR, 'medicamente.db');
 const CSV_PATH = path.join(process.cwd(), 'public', 'medicamente_cu_boli_COMPLET.csv');
 const PORT = process.env.PORT || 3001;
-
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
-
-const db = new sqlite.Database(DB_PATH);
 
 app.use(cors());
 app.use(express.json());
 
-const runAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.run(sql, params, function runCallback(err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
-
-const getAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-const allAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+const runAsync = db.runAsync;
+const getAsync = db.getAsync;
+const allAsync = db.allAsync;
 
 const ensureTable = async () => {
   await runAsync(
@@ -1381,14 +1351,18 @@ app.delete('/api/prescriptions', async (req, res) => {
 const start = async () => {
   try {
     console.log('🔄 Inițializare backend...');
-    await ensureTable();
-    console.log('✅ Tabele verificate/create');
-    
-    const seeded = await seedIfEmpty();
-    if (seeded.skipped) {
-      console.log(`✅ Database already populated (${seeded.rows} înregistrări).`);
+    await db.init();
+    if (db.isAzure()) {
+      console.log('✅ Conectat la Azure SQL (producție)');
     } else {
-      console.log(`✅ Am importat ${seeded.rows} înregistrări din CSV.`);
+      await ensureTable();
+      console.log('✅ Tabele verificate/create');
+      const seeded = await seedIfEmpty();
+      if (seeded.skipped) {
+        console.log(`✅ Database already populated (${seeded.rows} înregistrări).`);
+      } else {
+        console.log(`✅ Am importat ${seeded.rows} înregistrări din CSV.`);
+      }
     }
 
     if (process.argv.includes('--seed-only')) {
