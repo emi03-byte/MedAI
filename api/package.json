@@ -1,11 +1,13 @@
 {
   "name": "medai-api",
   "version": "1.0.0",
-  "description": "Azure Functions for MedAI backend",
+  "description": "Azure Functions API for MedAI",
   "main": "index.js",
+  "scripts": {
+    "sync-db": "node scripts/sync-medications-to-azure.cjs"
+  },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "csv-parser": "^3.0.0",
-    "mssql": "^10.0.1"
+    "mssql": "^11.0.1",
+    "sqlite3": "^5.1.7"
   }
 }

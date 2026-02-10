@@ -1,0 +1,35 @@
+# Deploy backend Express pe Azure App Service.
+# În GitHub: Settings → Secrets → Actions: adaugă AZURE_WEBAPP_PUBLISH_PROFILE (din Azure Portal → App Service → Get publish profile).
+# În App Service → Configuration → Application settings: adaugă AZURE_SQL_CONNECTION_STRING.
+name: Deploy Backend to Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: npm install
+        run: npm ci
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .

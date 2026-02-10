@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arhitectura aplicației MedAI</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --red: #f85149;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 2rem;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-size: 1.75rem;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 1.25rem;
+      color: var(--accent);
+      margin-top: 2rem;
+    }
+    h3 { font-size: 1.05rem; color: var(--muted); margin-top: 1.25rem; }
+    a { color: var(--accent); }
+    code, .path { font-family: 'Consolas', 'Monaco', monospace; font-size: 0.9em; background: var(--surface); padding: 0.15em 0.4em; border-radius: 4px; }
+    pre { background: var(--surface); padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+    .layer { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 0.75rem 0; }
+    .layer-title { font-weight: 600; color: var(--green); margin-bottom: 0.5rem; }
+    ul { padding-left: 1.25rem; }
+    li { margin: 0.35rem 0; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+    th { background: var(--surface); color: var(--accent); }
+    .tree { font-family: monospace; white-space: pre; font-size: 0.85em; }
+    .badge { display: inline-block; padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.8em; }
+    .badge-fe { background: #238636; color: #fff; }
+    .badge-be { background: #8957e5; color: #fff; }
+    .badge-api { background: #bf8700; color: #000; }
+    .badge-db { background: #1f6feb; color: #fff; }
+    .diagram { background: linear-gradient(145deg, #1a2332 0%, #0f1419 100%); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); margin: 1rem 0; overflow-x: auto; }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+
+  <h1>Arhitectura aplicației MedAI</h1>
+  <p><strong>MedAI</strong> este o aplicație web medicală: catalog de medicamente compensate (CNAS), chat cu AI pentru recomandări, rețete, medicamente personale și panou admin pentru aprobare utilizatori. Documentul descrie structura codului și fluxurile principale.</p>
+
+  <h2>1. Vedere de ansamblu</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gBrowser" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#1f3a5f"/>
+          <stop offset="100%" style="stop-color:#0f172a"/>
+        </linearGradient>
+        <linearGradient id="gApi" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#312e81"/>
+          <stop offset="100%" style="stop-color:#1e1b4b"/>
+        </linearGradient>
+        <linearGradient id="gExpress" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#4c1d95"/>
+          <stop offset="100%" style="stop-color:#2e1065"/>
+        </linearGradient>
+        <linearGradient id="gAzure" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#0e4d6b"/>
+          <stop offset="100%" style="stop-color:#083344"/>
+        </linearGradient>
+        <linearGradient id="gOpenAI" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#134e4a"/>
+          <stop offset="100%" style="stop-color:#0f403c"/>
+        </linearGradient>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0 0 L8 4 L0 8 Z" fill="#58a6ff" opacity="0.9"/>
+        </marker>
+      </defs>
+      <!-- Browser container -->
+      <rect x="20" y="12" width="680" height="128" rx="12" fill="url(#gBrowser)" stroke="#3b82f6" stroke-width="1.5" opacity="0.95"/>
+      <text x="360" y="34" text-anchor="middle" fill="#93c5fd" font-size="13" font-weight="600">Browser (React SPA)</text>
+      <!-- Frontend boxes -->
+      <rect x="40" y="48" width="150" height="76" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+      <text x="115" y="78" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">MedicinesTable</text>
+      <text x="115" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">tabel, filtre, rețete, PDF</text>
+      <rect x="210" y="48" width="130" height="76" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+      <text x="275" y="78" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">ChatBot</text>
+      <text x="275" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">OpenAI</text>
+      <rect x="360" y="48" width="130" height="76" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+      <text x="425" y="78" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">AdminPanel</text>
+      <text x="425" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">cereri, rețete</text>
+      <rect x="510" y="48" width="170" height="76" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+      <text x="595" y="78" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">Auth / Storage</text>
+      <text x="595" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">localStorage</text>
+      <!-- API layer -->
+      <rect x="80" y="168" width="560" height="52" rx="10" fill="url(#gApi)" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="360" y="192" text-anchor="middle" fill="#a5b4fc" font-size="12">src/api (auth, medications, prescriptions, admin, chat) · env.js</text>
+      <!-- Arrows from browser to API -->
+      <path d="M115 124 L115 168" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.8"/>
+      <path d="M275 124 L275 168" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.8"/>
+      <path d="M425 124 L425 168" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.8"/>
+      <path d="M595 124 L595 168" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.8"/>
+      <!-- Arrow from API to backends -->
+      <path d="M360 220 L360 252" stroke="#58a6ff" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+      <!-- Backend boxes -->
+      <rect x="40" y="260" width="200" height="140" rx="10" fill="url(#gExpress)" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="140" y="288" text-anchor="middle" fill="#c4b5fd" font-size="13" font-weight="600">Express (dev)</text>
+      <text x="140" y="310" text-anchor="middle" fill="#a78bfa" font-size="11">backend/server.js</text>
+      <text x="140" y="330" text-anchor="middle" fill="#a78bfa" font-size="11">localhost:3001</text>
+      <rect x="140" y="342" width="40" height="20" rx="4" fill="#334155" stroke="#64748b"/>
+      <text x="160" y="356" text-anchor="middle" fill="#94a3b8" font-size="10">SQLite</text>
+      <rect x="260" y="260" width="200" height="140" rx="10" fill="url(#gAzure)" stroke="#0ea5e9" stroke-width="1.5"/>
+      <text x="360" y="288" text-anchor="middle" fill="#7dd3fc" font-size="13" font-weight="600">Azure (prod)</text>
+      <text x="360" y="310" text-anchor="middle" fill="#38bdf8" font-size="11">Static Web Apps</text>
+      <text x="360" y="330" text-anchor="middle" fill="#38bdf8" font-size="11">Functions + Azure SQL</text>
+      <rect x="280" y="342" width="60" height="20" rx="4" fill="#334155" stroke="#64748b"/>
+      <text x="310" y="356" text-anchor="middle" fill="#94a3b8" font-size="10">dist + api/</text>
+      <rect x="480" y="260" width="200" height="140" rx="10" fill="url(#gOpenAI)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="580" y="288" text-anchor="middle" fill="#5eead4" font-size="13" font-weight="600">OpenAI API</text>
+      <text x="580" y="310" text-anchor="middle" fill="#2dd4bf" font-size="11">/api/openai proxy</text>
+      <text x="580" y="330" text-anchor="middle" fill="#2dd4bf" font-size="11">sau openaiChat Function</text>
+      <rect x="520" y="342" width="80" height="20" rx="4" fill="#334155" stroke="#64748b"/>
+      <text x="560" y="356" text-anchor="middle" fill="#94a3b8" font-size="10">chat completions</text>
+      <!-- Arrows from API to backends -->
+      <path d="M200 220 L140 260" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.7"/>
+      <path d="M360 220 L360 260" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.7"/>
+      <path d="M520 220 L620 260" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#arrow)" opacity="0.7"/>
+    </svg>
+  </div>
+
+  <h2>2. Frontend (React + Vite)</h2>
+
+  <h3>2.1 Punct de intrare și aplicație principală</h3>
+  <ul>
+    <li><span class="path">src/main.jsx</span> – mount React în <code>#root</code>, StrictMode; dezînregistrează service worker-ul vechi.</li>
+    <li><span class="path">src/App.jsx</span> – componenta rădăcină: state pentru medicamente (pentru ChatBot), categorie vârstă, pagină istoric, dark mode; încarcă medicamentele de la <code>API_BASE_URL/api/medications?limit=all</code> și le mapează cu <code>mapMedicationRowsToUi</code>; renderează <code>MedicinesTable</code> și <code>ChatBot</code> (când nu e afișată pagina de istoric).</li>
+  </ul>
+
+  <h3>2.2 Configurare și utilitare</h3>
+  <table>
+    <tr><th>Fișier</th><th>Rol</th></tr>
+    <tr><td><span class="path">src/config/env.js</span></td><td><code>API_BASE_URL</code> (dev: localhost:3001, production: '' pentru același domeniu), <code>IS_DEV</code>.</td></tr>
+    <tr><td><span class="path">src/utils/storage.js</span></td><td>localStorage: <code>getCurrentUser</code>, <code>setCurrentUser</code>, <code>clearCurrentUser</code>, <code>getDarkMode</code>, <code>setDarkMode</code>; eveniment custom <code>currentUserChanged</code> pentru sincronizare între tab-uri.</td></tr>
+    <tr><td><span class="path">src/domain/medications.js</span></td><td>Mapare rând DB → UI: <code>mapMedicationRowToUi</code>, <code>mapMedicationRowsToUi</code> (câmpuri denumire, substanță activă, listă compensare, cod, ATC, prețuri, contribuții etc.).</td></tr>
+  </table>
+
+  <h3>2.3 Strat API (src/api)</h3>
+  <p>Toate modulele folosesc <span class="path">httpClient.js</span>: <code>requestJson</code> (fetch + JSON, aruncă <code>HttpError</code> la non-2xx), <code>buildUrl</code> (base + path + query).</p>
+  <table>
+    <tr><th>Modul</th><th>Funcții principale</th></tr>
+    <tr><td><span class="path">authApi.js</span></td><td><code>login</code>, <code>signup</code>, <code>recoverAccount</code>, <code>deleteSelfAccount</code>, <code>getMe</code></td></tr>
+    <tr><td><span class="path">medicationsApi.js</span></td><td><code>getMedications</code> (search, limit, offset), <code>getAllMedications</code></td></tr>
+    <tr><td><span class="path">prescriptionsApi.js</span></td><td><code>createPrescription</code>, <code>getPrescriptions</code>, <code>deletePrescription</code>, <code>deleteAllPrescriptions</code></td></tr>
+    <tr><td><span class="path">userMedicinesApi.js</span></td><td><code>listUserMedicines</code>, <code>createUserMedicine</code>, <code>updateUserMedicine</code>, <code>deleteUserMedicine</code></td></tr>
+    <tr><td><span class="path">adminApi.js</span></td><td><code>getAdminRequests</code>, <code>approveUser</code>, <code>rejectUser</code>, <code>changeUserStatus</code>, <code>deleteUser</code>, <code>restoreUser</code>, <code>getUserPrescriptions</code>, <code>deletePrescription</code> (admin)</td></tr>
+    <tr><td><span class="path">chatApi.js</span></td><td><code>createChatCompletion</code> – POST la <code>/api/openai/v1/chat/completions</code> (proxy Vite sau Azure)</td></tr>
+  </table>
+
+  <h3>2.4 Hooks</h3>
+  <ul>
+    <li><span class="path">src/hooks/useCurrentUser.js</span> – citește utilizatorul curent din storage; ascultă <code>currentUserChanged</code> și <code>storage</code> pentru reîmprospătare.</li>
+    <li><span class="path">src/hooks/useAdminRequests.js</span> – folosit de AdminPanel pentru cereri utilizatori.</li>
+    <li><span class="path">src/hooks/useUserPrescriptions.js</span> – folosit pentru rețetele utilizatorului.</li>
+  </ul>
+
+  <h3>2.5 Componente</h3>
+  <div class="layer">
+    <div class="layer-title"><span class="path">MedicinesTable.jsx</span> <span class="badge badge-fe">UI principal</span></div>
+    Tabel medicamente (filtre, categorii vârstă, compensare), căutare, coloane vizibile, paginare. Integrează: autentificare (AuthModals, useAuthFlow), checkout (CheckoutModal, useCheckout, openCheckoutHtml), istoric rețete (HistoryPage, pdf, useHistoryFilters), plan tratament (PlanModal), speech-to-text (useSpeechToText), storage per user (storagePerUser). AdminPanel se afișează pentru admini. Apeluri către authApi, medicationsApi, prescriptionsApi, userMedicinesApi, adminApi, chatApi.
+  </div>
+  <div class="layer">
+    <div class="layer-title">Subcomponente MedicinesTable</div>
+    <ul>
+      <li><span class="path">MedicinesTable/auth/</span> – AuthModals.jsx, useAuthFlow.js (login, signup, recover, delete cont).</li>
+      <li><span class="path">MedicinesTable/checkout/</span> – CheckoutModal.jsx, useCheckout.js, openCheckoutHtml.js.</li>
+      <li><span class="path">MedicinesTable/history/</span> – HistoryPage.jsx, pdf.js (export PDF rețete), useHistoryFilters.js.</li>
+      <li><span class="path">MedicinesTable/speech/</span> – useSpeechToText.js.</li>
+      <li>PlanModal.jsx, storagePerUser.js.</li>
+    </ul>
+  </div>
+  <div class="layer">
+    <div class="layer-title"><span class="path">ChatBot/</span> <span class="badge badge-fe">Chat</span></div>
+    ChatBot.jsx – state mesaje, loading; folosește useCurrentUser și prompt (buildSystemPrompt) cu lista de medicamente. Subcomponente: ChatButton.jsx, ChatModal.jsx, MessageInput.jsx, MessageList.jsx, prompt.js. Chat-ul folosește chatApi (OpenAI) și afișează mesaje diferite în funcție de statusul contului (pending, rejected, neautentificat).
+  </div>
+  <div class="layer">
+    <div class="layer-title"><span class="path">AdminPanel/</span> <span class="badge badge-fe">Admin</span></div>
+    AdminPanel.jsx, Tabs.jsx, RequestsTable.jsx, PrescriptionsModal.jsx – gestionare cereri utilizatori, aprobare/respingere, schimbare status, ștergere/restaurare utilizatori, vizualizare/ștergere rețete.
+  </div>
+
+  <h2>3. Backend</h2>
+
+  <h3>3.1 Backend local (dezvoltare) – <span class="path">backend/server.js</span></h3>
+  <p><span class="badge badge-be">Express</span> pe <code>PORT</code> (default 3001), CORS, JSON body. Baza de date: <span class="badge badge-db">SQLite</span> (<span class="path">backend/data/medicamente.db</span>).</p>
+  <p>Tabele: <code>medications</code>, <code>users</code>, <code>retete</code>, <code>user_medicines</code>. Seed din <span class="path">public/medicamente_cu_boli_COMPLET.csv</span> dacă medications e gol.</p>
+  <p><strong>Rute API:</strong></p>
+  <table>
+    <tr><th>Rută</th><th>Metodă</th><th>Descriere</th></tr>
+    <tr><td>/health</td><td>GET</td><td>Health check</td></tr>
+    <tr><td>/api/medications</td><td>GET</td><td>Listă medicamente (search, limit, offset)</td></tr>
+    <tr><td>/api/medications/:id</td><td>GET</td><td>Un medicament</td></tr>
+    <tr><td>/api/auth/signup</td><td>POST</td><td>Înregistrare (parolă hash bcrypt)</td></tr>
+    <tr><td>/api/auth/login</td><td>POST</td><td>Autentificare</td></tr>
+    <tr><td>/api/auth/recover</td><td>POST</td><td>Recuperare cont (reset parolă etc.)</td></tr>
+    <tr><td>/api/auth/delete</td><td>DELETE</td><td>Ștergere cont (userId)</td></tr>
+    <tr><td>/api/auth/me</td><td>GET</td><td>Date utilizator curent</td></tr>
+    <tr><td>/api/auth/status</td><td>GET</td><td>Status cont</td></tr>
+    <tr><td>/api/user-medicines</td><td>GET/POST</td><td>Listă / creare medicamente utilizator</td></tr>
+    <tr><td>/api/user-medicines/:id</td><td>PUT/DELETE</td><td>Actualizare / ștergere</td></tr>
+    <tr><td>/api/prescriptions</td><td>POST/GET/DELETE</td><td>Creare, listare, ștergere rețete</td></tr>
+    <tr><td>/api/prescriptions/:id</td><td>DELETE</td><td>Ștergere rețetă</td></tr>
+    <tr><td>/api/admin/requests</td><td>GET</td><td>Cereri utilizatori (checkAdmin)</td></tr>
+    <tr><td>/api/admin/approve|reject|change-status|delete-user|restore-user</td><td>POST/DELETE</td><td>Acțiuni admin</td></tr>
+    <tr><td>/api/admin/user-prescriptions/:userId</td><td>GET</td><td>Rețete utilizator (admin)</td></tr>
+    <tr><td>/api/admin/prescriptions/:prescriptionId</td><td>DELETE</td><td>Ștergere rețetă (admin)</td></tr>
+  </table>
+
+  <h3>3.2 API Azure (producție) – <span class="path">api/</span></h3>
+  <p><span class="badge badge-api">Azure Functions</span> (serverless). Config: <span class="path">api/host.json</span>.</p>
+  <ul>
+    <li><span class="path">api/medications/index.js</span> – GET medicamente: search, limit, offset. Folosește <span class="path">api/shared/db.js</span> (Azure SQL via <code>AZURE_SQL_CONNECTION_STRING</code>, <code>queryMedications</code>).</li>
+    <li><span class="path">api/openaiChat/index.js</span> – POST proxy către OpenAI <code>v1/chat/completions</code>; folosește <code>OPENAI_API_KEY</code> / <code>VITE_OPENAI_API_KEY</code> din environment.</li>
+  </ul>
+  <p>În producție, frontend-ul apelează același domeniu (<code>API_BASE_URL = ''</code>), deci <code>/api/medications</code> și <code>/api/openai/...</code> sunt servite de Azure (Static Web App + Functions).</p>
+
+  <h2>4. Build și deployment</h2>
+  <ul>
+    <li><strong>Vite</strong> – <span class="path">vite.config.js</span>: port 5546, proxy <code>/api/openai</code> → api.openai.com (dev), cheie din env.</li>
+    <li><strong>Azure Static Web Apps</strong> – <span class="path">staticwebapp.config.json</span>: fallback la <code>/index.html</code>, rute SPA.</li>
+    <li><strong>CI/CD</strong> – <span class="path">.github/workflows/azure-static-web-apps-ashy-mud-055a0ce03.yml</span>: la push/PR pe <code>main</code>, build (app_location: /, api_location: api, output_location: dist), deploy cu <code>AZURE_STATIC_WEB_APPS_API_TOKEN</code> și <code>OPENAI_API_KEY</code> din secrets.</li>
+  </ul>
+
+  <h2>5. Structură directoare (esențială)</h2>
+  <pre class="tree">MedAI/
+├── src/
+│   ├── main.jsx
+│   ├── App.jsx
+│   ├── App.css, index.css
+│   ├── config/env.js
+│   ├── domain/medications.js
+│   ├── utils/storage.js
+│   ├── api/
+│   │   ├── httpClient.js
+│   │   ├── authApi.js, medicationsApi.js, prescriptionsApi.js
+│   │   ├── userMedicinesApi.js, adminApi.js, chatApi.js
+│   ├── hooks/useCurrentUser.js, useAdminRequests.js, useUserPrescriptions.js
+│   └── components/
+│       ├── MedicinesTable.jsx, MedicinesTable.css
+│       ├── MedicinesTable/{ auth, checkout, history, speech, PlanModal, storagePerUser }
+│       ├── ChatBot/{ ChatBot, ChatButton, ChatModal, MessageInput, MessageList, prompt }
+│       └── AdminPanel/{ AdminPanel, Tabs, RequestsTable, PrescriptionsModal }
+├── backend/
+│   ├── server.js          # Express + SQLite, toate rutele API
+│   ├── data/medicamente.db
+│   └── update-database.js, reload-medications.js
+├── api/                    # Azure Functions (producție)
+│   ├── host.json
+│   ├── medications/index.js, function.json
+│   ├── openaiChat/index.js, function.json
+│   └── shared/db.js        # Azure SQL (mssql)
+├── public/                 # CSV, JSON, PDF, sw.js
+├── vite.config.js
+├── staticwebapp.config.json
+└── .github/workflows/azure-static-web-apps-ashy-mud-055a0ce03.yml</pre>
+
+  <p style="margin-top: 2rem; color: var(--muted); font-size: 0.9em;">Document generat pentru proiectul MedAI – arhitectura codului și a fluxurilor principale.</p>
+
+</body>
+</html>

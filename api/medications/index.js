@@ -1,56 +1,45 @@
-const { allAsync, getAsync } = require('../shared/db');
-const { getCorsHeaders } = require('../shared/helpers');
+const { queryMedications } = require('../shared/db')
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+}
 
 module.exports = async function (context, req) {
-  const corsHeaders = getCorsHeaders();
-
   if (req.method === 'OPTIONS') {
+    context.res = { status: 204, headers: corsHeaders }
+    return
+  }
+
+  if (req.method !== 'GET') {
     context.res = {
-      status: 204,
-      headers: corsHeaders,
-    };
-    return;
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: { error: 'Method Not Allowed' }
+    }
+    return
   }
 
   try {
-    const { search = '', limit = 50, offset = 0 } = req.query;
-    // Permite limită mare pentru a încărca toate medicamentele (max 50000 pentru siguranță)
-    const safeLimit = limit === 'all' || limit === '0' ? 50000 : Math.min(Number(limit) || 50, 50000);
-    const safeOffset = Math.max(Number(offset) || 0, 0);
+    const search = (req.query && req.query.search) || ''
+    const limitParam = (req.query && req.query.limit) || '50'
+    const safeLimit = limitParam === 'all' || limitParam === '0' ? 50000 : Math.min(Number(limitParam) || 50, 50000)
+    const offset = Math.max(Number((req.query && req.query.offset) || 0), 0)
 
-    const params = [];
-    let whereClause = '';
-
-    if (search) {
-      whereClause =
-        'WHERE denumire_medicament LIKE ? OR substanta_activa LIKE ? OR cod_medicament LIKE ?';
-      const like = `%${search}%`;
-      params.push(like, like, like);
-    }
-
-    params.push(safeLimit, safeOffset);
-
-    const rows = await allAsync(
-      `SELECT * FROM medications ${whereClause} ORDER BY id LIMIT ? OFFSET ?`,
-      params
-    );
-
+    const { items, count } = await queryMedications(search, safeLimit, offset)
     context.res = {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-      body: { items: rows, count: rows.length },
-    };
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: { items, count }
+    }
   } catch (error) {
+    context.log.error('Medications API error', error)
+    const message = process.env.NODE_ENV === 'development' ? error.message : 'Server error loading medications.'
     context.res = {
       status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-      body: { error: error.message },
-    };
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: { error: message }
+    }
   }
-};
+}
