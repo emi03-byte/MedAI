@@ -1,6 +1,6 @@
 # Deploy backend (Express) to Azure App Service.
-# Needs GitHub Secrets: AZURE_WEBAPP_NAME, AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_SECRET.
-# See DEPLOY.md section "Dacă Get publish profile nu merge" for how to create the App Registration.
+# Needs GitHub Secrets: AZURE_WEBAPP_NAME, AZURE_CREDENTIALS (JSON: clientId, clientSecret, subscriptionId, tenantId).
+# See DEPLOY.md for how to create the App Registration and AZURE_CREDENTIALS.
 
 name: Build and deploy Node.js app to Azure Web App - medai-backend
 
@@ -52,10 +52,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
