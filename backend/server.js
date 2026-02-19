@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import csv from 'csv-parser';
 import bcrypt from 'bcryptjs';
 import * as db from './db/index.js';
+import { load as cheerioLoad } from 'cheerio'
+import { normalizeName } from './utils/normalize.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -42,6 +44,30 @@ const ensureTable = async () => {
       contributie_max_pensionari_90 TEXT
     )`
   );
+
+  // Ensure normalized_name column exists on medications for fast comparisons
+  try {
+    await runAsync(`ALTER TABLE medications ADD COLUMN normalized_name TEXT`)
+  } catch (e) {
+    // ignore if column already exists
+  }
+
+  // Populate normalized_name for existing rows when missing
+  try {
+    const rows = await allAsync('SELECT id, denumire_medicament, normalized_name FROM medications')
+    for (const r of rows) {
+      if (!r.normalized_name || r.normalized_name.toString().trim() === '') {
+        const norm = normalizeName(r.denumire_medicament || '')
+        try {
+          await runAsync('UPDATE medications SET normalized_name = ? WHERE id = ?', [norm, r.id])
+        } catch (err) {
+          // ignore per-row failures
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
   
   // Tabelă pentru utilizatori
   await runAsync(
@@ -139,6 +165,44 @@ const ensureTable = async () => {
     await runAsync(`ALTER TABLE user_medicines ADD COLUMN substanta_activa TEXT`);
   } catch (e) {
     // Coloana există deja, ignoră eroarea
+  }
+
+  // Tabelă pentru lista oficială CNAS (ingestată periodic)
+  await runAsync(
+    `CREATE TABLE IF NOT EXISTS cnas_medicines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      denumire_medicament TEXT,
+      normalized_name TEXT,
+      cod_medicament TEXT,
+      substanta_activa TEXT,
+      lista_compensare TEXT,
+      forma_farmaceutica TEXT,
+      cod_atc TEXT,
+      mod_prescriere TEXT,
+      concentratie TEXT,
+      forma_ambalare TEXT,
+      nume_detinator_app TEXT,
+      tara_detinator_app TEXT,
+      cantitate_pe_forma_ambalare TEXT,
+      pret_max_forma_ambalare TEXT,
+      pret_max_ut TEXT,
+      contributie_max_100 TEXT,
+      contributie_max_90_50_20 TEXT,
+      contributie_max_pensionari_90 TEXT,
+      source_url TEXT,
+      fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+  // Add missing columns if table already exists
+  const cnasCols = [
+    'substanta_activa','lista_compensare','forma_farmaceutica','cod_atc','mod_prescriere','concentratie','forma_ambalare','nume_detinator_app','tara_detinator_app','cantitate_pe_forma_ambalare','pret_max_forma_ambalare','pret_max_ut','contributie_max_100','contributie_max_90_50_20','contributie_max_pensionari_90'
+  ]
+  for (const col of cnasCols) {
+    try {
+      await runAsync(`ALTER TABLE cnas_medicines ADD COLUMN ${col} TEXT`)
+    } catch (e) {
+      // ignore if exists
+    }
   }
   try {
     await runAsync(`ALTER TABLE user_medicines ADD COLUMN cod_atc TEXT`);
@@ -329,6 +393,228 @@ app.get('/api/medications/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Import medications from CNAS public list and prepare rows for insertion
+app.post('/api/import/cnas', async (req, res) => {
+  try {
+    const PAGE_URL = 'https://cnas.ro/lista-medicamente/'
+    const response = await fetch(PAGE_URL)
+    if (!response.ok) {
+      return res.status(502).json({ error: `Failed to fetch CNAS page (HTTP ${response.status})` })
+    }
+
+    const html = await response.text()
+    const $ = cheerioLoad(html)
+
+    // Find the first meaningful table on the page
+    const table = $('table').first()
+    if (!table || table.length === 0) {
+      return res.status(500).json({ error: 'No table found on CNAS page' })
+    }
+
+    // Read headers
+    const headers = []
+    table.find('thead tr').first().find('th').each((i, th) => {
+      headers.push($(th).text().trim())
+    })
+
+    // If no thead, infer headers from first row
+    if (headers.length === 0) {
+      const firstRowTds = table.find('tbody tr').first().find('td')
+      firstRowTds.each((i, td) => headers.push(`col${i}`))
+    }
+
+    const rows = []
+    table.find('tbody tr').each((i, tr) => {
+      const cols = $(tr).find('td')
+      if (cols.length === 0) return
+      const row = {}
+      cols.each((j, td) => {
+        const key = headers[j] || `col${j}`
+        row[key] = $(td).text().trim()
+      })
+      rows.push(row)
+    })
+
+    // Normalize header keys for flexible mapping
+    const normalizeHeaders = (r) => {
+      const out = {}
+      Object.keys(r).forEach(k => {
+        out[k.trim()] = r[k]
+        out[k.trim().toLowerCase()] = r[k]
+      })
+      return out
+    }
+
+    // Helper to pick value from multiple possible header names
+    const pick = (r, candidates) => {
+      for (const c of candidates) {
+        if (r[c] && r[c].toString().trim() !== '') return r[c].toString().trim()
+      }
+      return ''
+    }
+
+    // Map scraped rows to DB columns (best-effort)
+    const prepared = rows.map(raw => {
+      const r = normalizeHeaders(raw)
+      return {
+        denumire_medicament: pick(r, ['Denumire', 'Denumire medicament', 'denumire', 'denumire produs', 'denumire comercială']),
+        substanta_activa: pick(r, ['Substanță activă', 'Substanta activa', 'substantă activă', 'substanța activă', 'substanta', 'substanta activa']),
+        lista_compensare: pick(r, ['Lista de compensare', 'Lista compensare', 'lista compensare', 'lista de compensare']),
+        cod_medicament: pick(r, ['Cod', 'Cod medicament', 'cod medicament', 'cod', 'cod produs']),
+        forma_farmaceutica: pick(r, ['Formă', 'Formă farmaceutica', 'Formă farmaceutică', 'Forma farmaceutica', 'Forma']),
+        cod_atc: pick(r, ['Cod ATC', 'Cod atc', 'cod atc', 'ATC']),
+        mod_prescriere: pick(r, ['Mod de prescriere', 'Mod prescriere', 'mod de prescriere']),
+        concentratie: pick(r, ['Concentrație', 'Concentratie', 'Concentrare']),
+        forma_ambalare: pick(r, ['Formă de ambalare', 'Forma de ambalare', 'Ambalaj', 'Forma ambalare']),
+        nume_detinator_app: pick(r, ['Nume deținător APP', 'Nume detinator APP', 'Nume detinator', 'Producator', 'Nume producator']),
+        tara_detinator_app: pick(r, ['Țara deținător APP', 'Tara detinator APP', 'Tara']),
+        cantitate_pe_forma_ambalare: pick(r, ['Cantitate', 'Cantitate pe forma ambalare', 'Cantitate per ambalare']),
+        pret_max_forma_ambalare: pick(r, ['Preț', 'Preț maximal', 'Preț maximal al medicamentului raportat la forma de ambalare', 'Pret']),
+        pret_max_ut: pick(r, ['Pret maximal al medicamentului raportat la UT', 'Pret UT', 'Pret maximal UT']),
+        contributie_max_100: pick(r, ['Contribuție 100%', 'Contributie maxima 100', 'Contributie 100', 'Contributie max 100']),
+        contributie_max_90_50_20: pick(r, ['Contribuție 90/50/20', 'Contributie 90', 'Contributie 90_50_20']),
+        contributie_max_pensionari_90: pick(r, ['Contribuție pensionari 90', 'Contributie pensionari 90']),
+        categorie_varsta: pick(r, ['Categorie vârstă', 'CategorieVarsta', 'CategorieVarsta', 'categorie varsta', 'Categorie']),
+        coduri_boli: pick(r, ['Coduri boli', 'Coduri_Boli', 'coduri_boli', 'Boli'])
+      }
+    })
+
+    // If query param insert=1, insert into DB (deduplicate by cod_medicament or denumire)
+    let inserted = 0
+    if (String(req.query.insert) === '1') {
+      // Load existing medications to avoid duplicates
+      const existing = await allAsync('SELECT cod_medicament, denumire_medicament FROM medications')
+      const existingCodes = new Set()
+      const existingNames = new Set()
+      existing.forEach(e => {
+        if (e.cod_medicament) existingCodes.add(e.cod_medicament.toString().trim())
+        if (e.denumire_medicament) existingNames.add(e.denumire_medicament.toString().toLowerCase().trim())
+      })
+
+      const insertSql = `INSERT INTO medications (
+        denumire_medicament,
+        substanta_activa,
+        lista_compensare,
+        cod_medicament,
+        forma_farmaceutica,
+        cod_atc,
+        mod_prescriere,
+        concentratie,
+        forma_ambalare,
+        nume_detinator_app,
+        tara_detinator_app,
+        cantitate_pe_forma_ambalare,
+        pret_max_forma_ambalare,
+        pret_max_ut,
+        contributie_max_100,
+        contributie_max_90_50_20,
+        contributie_max_pensionari_90,
+        categorie_varsta,
+        coduri_boli
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+      for (const r of prepared) {
+        try {
+          const code = (r.cod_medicament || '').toString().trim()
+          const name = (r.denumire_medicament || '').toString().toLowerCase().trim()
+
+          // Skip if exact code already exists
+          if (code && existingCodes.has(code)) continue
+
+          // If code missing or not matched, skip if name already exists
+          if ((!code || code === '') && name && existingNames.has(name)) continue
+
+          // Insert
+          const normalized_name = normalizeName(r.denumire_medicament || '')
+          await runAsync(insertSql, [
+            r.denumire_medicament,
+            r.substanta_activa,
+            r.lista_compensare,
+            r.cod_medicament,
+            r.forma_farmaceutica,
+            r.cod_atc,
+            r.mod_prescriere,
+            r.concentratie,
+            r.forma_ambalare,
+            r.nume_detinator_app,
+            r.tara_detinator_app,
+            r.cantitate_pe_forma_ambalare,
+            r.pret_max_forma_ambalare,
+            r.pret_max_ut,
+            r.contributie_max_100,
+            r.contributie_max_90_50_20,
+            r.contributie_max_pensionari_90,
+            r.categorie_varsta,
+            r.coduri_boli,
+            normalized_name,
+          ])
+
+          // Mark as existing to avoid inserting duplicates within this run
+          if (code) existingCodes.add(code)
+          if (name) existingNames.add(name)
+          inserted += 1
+        } catch (e) {
+          console.warn('Insert error for row:', r.denumire_medicament, e.message)
+        }
+      }
+    }
+
+    // Optionally persist CNAS source into cnas_medicines for periodic comparison
+    if (String(req.query.save_cnas) === '1') {
+      try {
+        // replace entire table content for a fresh snapshot
+        await runAsync('DELETE FROM cnas_medicines')
+        const insertCnasSql = `INSERT INTO cnas_medicines (denumire_medicament, normalized_name, cod_medicament, source_url) VALUES (?, ?, ?, ?)`
+        for (const r of prepared) {
+          try {
+            const name = r.denumire_medicament || ''
+            const norm = normalizeName(name)
+            const code = r.cod_medicament || ''
+            await runAsync(insertCnasSql, [name, norm, code, PAGE_URL])
+          } catch (err) {
+            // ignore row-level failures
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to persist cnas_medicines snapshot:', err.message)
+      }
+    }
+
+    res.json({ sourceRows: rows.length, preparedRows: prepared.length, inserted })
+  } catch (error) {
+    console.error('❌ Error importing CNAS:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Compare CNAS snapshot vs local medications by normalized name
+app.get('/api/medicines/compare', async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(10000, parseInt(req.query.limit || '1000')))
+    // Read CNAS snapshot
+    const cnas = await allAsync('SELECT id, denumire_medicament, normalized_name, cod_medicament FROM cnas_medicines')
+    // Read local medications normalized names
+    const meds = await allAsync('SELECT id, denumire_medicament, normalized_name FROM medications')
+
+    const medNormSet = new Set(meds.map(m => (m.normalized_name || '').toString().trim()).filter(Boolean))
+
+    const missing = []
+    for (const c of cnas) {
+      const n = (c.normalized_name || '').toString().trim()
+      if (!n) continue
+      if (!medNormSet.has(n)) {
+        missing.push({ id: c.id, denumire_medicament: c.denumire_medicament, normalized_name: n, cod_medicament: c.cod_medicament })
+        if (missing.length >= limit) break
+      }
+    }
+
+    res.json({ total_missing: missing.length, missing })
+  } catch (err) {
+    console.error('Error in /api/medicines/compare', err)
+    res.status(500).json({ error: err.message })
+  }
+})
 
 // Endpoint pentru înregistrare (sign up)
 app.post('/api/auth/signup', async (req, res) => {
