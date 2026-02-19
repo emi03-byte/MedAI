@@ -75,10 +75,10 @@ export async function loadAllMedicationsForUi() {
       const uiRows = mapMedicationRowsToUi(items)
       cachedUiRows = uiRows
       return uiRows
-    } catch {
-      const uiRows = await loadUiRowsFromCsv()
-      cachedUiRows = uiRows
-      return uiRows
+    } catch (err) {
+      // Do NOT fallback to CSV. Bubble the error so caller can handle it.
+      cachedUiRowsPromise = null
+      throw err
     } finally {
       cachedUiRowsPromise = null
     }
