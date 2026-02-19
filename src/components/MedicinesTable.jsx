@@ -289,6 +289,7 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
       }
     }
   }, [])
+  
 
   // Verifică dacă există un utilizator autentificat la încărcarea paginii
   useEffect(() => {
@@ -790,6 +791,17 @@ const MedicinesTable = ({ ageCategory = 'toate', ageCategoryData = null, ageCate
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Listen for external event to open the Indicații page (like chat/history)
+  useEffect(() => {
+    const handleOpenIndications = () => {
+      if (!showAccountStatusMessage()) return
+      setShowUnifiedIndications(true)
+    }
+
+    window.addEventListener('openIndicationsPage', handleOpenIndications)
+    return () => window.removeEventListener('openIndicationsPage', handleOpenIndications)
+  }, [showAccountStatusMessage])
+
   // Salvează notițele în localStorage când se schimbă
   useEffect(() => {
     if (currentUser?.id) {
@@ -1006,14 +1018,13 @@ Programează o consultație dacă simptomele persistă`
           'adulti': 'Adulți',
           'batrani': 'Bătrâni'
         }
-        
+
         const categoryValue = categoryMap[activeAgeCategory]
         if (!categoryValue) return false
-        
-        // Verifică dacă categoria selectată apare în CategorieVarsta
-        // (poate fi "Copii", "Adolescenți+Tineri", "Adulți+Bătrâni", etc.)
-        // Folosim toLowerCase pentru a face comparația case-insensitive
-        return categorieVarsta.toLowerCase().includes(categoryValue.toLowerCase())
+
+        // Normalizează textul pentru a compara fără diacritice și case-insensitive
+        const normalize = (s) => (s || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+        return normalize(categorieVarsta).includes(normalize(categoryValue))
       })
     }
 
@@ -1800,6 +1811,11 @@ Programează o consultație dacă simptomele persistă`
                   <button
                     className="sidebar-avatar-menu-item"
                     onClick={() => {
+                      // Dacă suntem în istoricul rețetelor, închide-l înainte să deschizi setările
+                      if (showHistoryPage) {
+                        setShowHistoryPage(false)
+                        onHistoryPageChange(false)
+                      }
                       setShowStatsModal(true)
                       setShowAvatarMenu(false)
                     }}
@@ -1868,9 +1884,248 @@ Programează o consultație dacă simptomele persistă`
         />
       )}
 
+        {/* Fereastră modală unificată pentru Indicații (renderată independent de main content) */}
+        {showUnifiedIndications && (
+          <div className="unified-indications-overlay unified-indications-overlay-page">
+            <div className="unified-indications-content">
+              <div className="unified-indications-header">
+                <h3>Indicații</h3>
+                <button 
+                  className="unified-indications-close"
+                  onClick={() => setShowUnifiedIndications(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="unified-indications-main">
+                {/* Coloana stângă - Indicații Pacient și Medic */}
+                <div className="unified-indications-left">
+                  {/* Secțiunea Indicații Pacient */}
+                  <div className="unified-patient-section">
+                    <h4>Indicații Pacient</h4>
+                    <div className="patient-name-section">
+                      <label htmlFor="unified-patient-name-input" className="patient-name-label">
+                        Nume pacient <span className="required-asterisk">*</span>
+                      </label>
+                      <input
+                        id="unified-patient-name-input"
+                        type="text"
+                        className="patient-name-input"
+                        placeholder="Introdu numele pacientului"
+                        value={patientName}
+                        onChange={(e) => {
+                          setPatientName(e.target.value)
+                          if (patientNameError && e.target.value.trim() !== '') {
+                            setPatientNameError('')
+                          }
+                          if (e.target.value.trim() !== '') {
+                            setAiAdvice(prevAdvice => 
+                              prevAdvice.filter(advice => 
+                                !advice.text.includes('Te rugăm să introduci numele pacientului')
+                              )
+                            )
+                          }
+                        }}
+                        onKeyDown={handlePatientNameKeyDown}
+                      />
+                      {patientNameError && (
+                        <div className="patient-name-error">{patientNameError}</div>
+                      )}
+                    </div>
+                    <div className="patient-notes-textarea-wrapper">
+                      <textarea
+                        className="patient-notes-textarea"
+                        placeholder="Scrie aici exact ce spune pacientul - simptomele, durerile, observațiile lui."
+                        value={patientNotes}
+                        onChange={(e) => setPatientNotes(e.target.value)}
+                        onKeyDown={handlePatientNotesKeyDown}
+                      />
+                      <div className="mic-buttons-container">
+                        {isRecordingMicPatient && (
+                          <button
+                            type="button"
+                            className="mic-cancel-button"
+                            aria-label="Oprește înregistrarea"
+                            onClick={handleStopMicPatient}
+                          >
+                            STOP
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className={`mic-record-button-simple ${isRecordingMicPatient ? 'recording' : ''}`}
+                          aria-label={isRecordingMicPatient ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                          onClick={handleMicRecordPatient}
+                        >
+                          🎙️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-      {/* Conținut principal - ascuns când este deschisă pagina de istoric */}
-      {!showHistoryPage && (
+                  {/* Secțiunea Indicații Medic */}
+                  <div className="unified-doctor-section">
+                    <div className="doctor-notes-section-header">
+                      <h4>Indicații Medic</h4>
+                      <button 
+                        className="format-notes-button"
+                        onClick={async () => {
+                          if (!doctorNotes || doctorNotes.trim() === '') {
+                            alert('Nu există text de formatat!')
+                            return
+                          }
+                          try {
+                            const data = await createChatCompletion({
+                              model: 'gpt-3.5-turbo',
+                              messages: [
+                                {
+                                  role: 'system',
+                                  content: `Ești un asistent medical care formatează textul medical. \n\nIMPORTANT:\n- Formatează textul într-un mod plăcut și organizat\n- Folosește bullet points (-) pentru a organiza informațiile\n- NU folosi emoji-uri\n- NU folosi numerotare (1., 2., etc.)\n- Păstrează toate informațiile importante\n- Organizează textul logic și clar\n- Fiecare bullet point să fie pe o linie separată\n\nFormatul răspunsului:\n- Prima informație importantă\n- A doua informație importantă\n- A treia informație importantă\netc.`
+                                },
+                                {
+                                  role: 'user',
+                                  content: `Formatează următorul text medical: "${doctorNotes}"`,
+                                },
+                              ],
+                              temperature: 0.3,
+                              max_tokens: 800,
+                            })
+                            const formattedText = data.choices[0].message.content
+                            setDoctorNotes(formattedText)
+                          } catch (error) {
+                            console.error('Eroare la formatarea textului:', error)
+                            alert('Eroare la formatarea textului. Încearcă din nou.')
+                          }
+                        }}
+                      >
+                        Formatează
+                      </button>
+                    </div>
+                    <div className="doctor-notes-textarea-wrapper">
+                      <textarea
+                        className="doctor-notes-textarea"
+                        placeholder="Scrie aici indicațiile medicale, recomandările, observațiile..."
+                        value={doctorNotes}
+                        onChange={(e) => setDoctorNotes(e.target.value)}
+                        onKeyDown={handleDoctorNotesKeyDown}
+                      />
+                      <div className="mic-buttons-container">
+                        {isRecordingMic && (
+                          <button
+                            type="button"
+                            className="mic-cancel-button"
+                            aria-label="Oprește înregistrarea"
+                            onClick={handleStopMic}
+                          >
+                            STOP
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className={`mic-record-button-simple ${isRecordingMic ? 'recording' : ''}`}
+                          aria-label={isRecordingMic ? 'Se înregistrează...' : 'Înregistrează notițe vocale'}
+                          onClick={handleMicRecord}
+                        >
+                          🎙️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coloana dreaptă - Sfaturile AI */}
+                <div className="unified-ai-section">
+                  <div className="ai-advice-section-header">
+                    <h4>Sfaturi AI</h4>
+                    <button
+                      className="ai-generate-button"
+                      onClick={handleGenerateAIAdvice}
+                      disabled={!canGenerateAIAdvice || isLoadingAI}
+                    >
+                      {isLoadingAI ? 'Se generează...' : 'Generează sfaturi'}
+                    </button>
+                  </div>
+                  <div className="ai-advice-content">
+                    {aiAdvice.length > 0 && aiAdvice.map((advice, index) => {
+                      const isErrorMessage = advice.text.includes('Te rugăm să introduci numele pacientului')
+                      return (
+                        <div key={`${advice.text}-${index}`} className="ai-advice-item">
+                          {advice.icon && <span className="ai-advice-icon">{advice.icon}</span>}
+                          <span className="ai-advice-text">{advice.text}</span>
+                          {!isErrorMessage && (
+                            <div className="ai-advice-actions">
+                              <button 
+                                className="ai-advice-delete-btn"
+                                onClick={() => {
+                                  const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                  setAiAdvice(newAdvice)
+                                }}
+                              >
+                                ✕
+                              </button>
+                              <button 
+                                className="ai-advice-save-btn"
+                                onClick={() => {
+                                  const newDoctorNotes = doctorNotes + (doctorNotes ? '\n' : '') + (advice.icon ? `${advice.icon} ` : '') + advice.text
+                                  setDoctorNotes(newDoctorNotes)
+                                  const newAdvice = aiAdvice.filter((_, i) => i !== index)
+                                  setAiAdvice(newAdvice)
+                                }}
+                              >
+                                ✓
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {isLoadingAI && (
+                      <div className="ai-advice-loading">
+                        <div className="ai-loading-spinner">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                        <span className="ai-loading-text">AI-ul analizează indicațiile și generează sfaturi medicale...</span>
+                      </div>
+                    )}
+
+                    {!isLoadingAI && aiAdvice.length === 0 && (
+                      <div className="ai-advice-empty">
+                        <span className="ai-advice-text">
+                          {canGenerateAIAdvice
+                            ? 'Apasă „Generează sfaturi" pentru a obține recomandări AI bazate pe indicațiile pacientului'
+                            : 'Scrie indicațiile pacientului pentru a primi sfaturi AI personalizate'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="unified-indications-footer">
+                <p>Notițele se salvează automat</p>
+                <button 
+                  className="unified-indications-done-button"
+                  onClick={() => {
+                    if (!patientName || patientName.trim() === '') {
+                      setPatientNameError('Te rugăm să introduci numele pacientului')
+                      return
+                    }
+                    setPatientNameError('')
+                    setShowUnifiedIndications(false)
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+      {/* Conținut principal - ascuns când este deschisă pagina de istoric sau Indicații full-page */}
+      {!showHistoryPage && !showUnifiedIndications && (
         <>
           {/* Butoane Login/Sign Up - în colțul din dreapta sus */}
           <div className="auth-buttons-container">
@@ -1888,7 +2143,7 @@ Programează o consultație dacă simptomele persistă`
 
           {/* Fereastră modală unificată pentru Indicații */}
           {showUnifiedIndications && (
-            <div className="unified-indications-overlay">
+            <div className="unified-indications-overlay unified-indications-overlay-page">
               <div className="unified-indications-content">
                 <div className="unified-indications-header">
                   <h3>Indicații</h3>
@@ -2146,7 +2401,7 @@ etc.`
 
           {/* Zona de notițe pentru pacient */}
           {showPatientNotes && (
-            <div className="patient-notes-overlay">
+            <div className="patient-notes-overlay patient-notes-overlay-page">
           <div className="patient-notes-content">
             <div className="patient-notes-header-content">
               <h3>📝 Indicații Pacient</h3>

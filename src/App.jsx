@@ -64,7 +64,7 @@ function App() {
           onCategoryChange={setSelectedAgeCategory}
           onHistoryPageChange={setShowHistoryPage}
         />
-        {!showHistoryPage && <ChatBot medicinesData={medicinesData} />}
+        <ChatBot medicinesData={medicinesData} />
       </div>
     )
   } catch (error) {

@@ -126,7 +126,7 @@ const ChatBot = ({ medicinesData = [], renderButtonInSidebar = false }) => {
       )}
 
       {isOpen && (
-        <ChatModal onClose={() => setIsOpen(false)}>
+        <ChatModal variant="page" onClose={() => setIsOpen(false)}>
           <MessageList messages={messages} isLoading={isLoading} />
           <MessageInput
             value={inputMessage}

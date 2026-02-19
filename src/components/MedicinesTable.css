@@ -284,7 +284,8 @@ button:focus-visible {
   padding: 1.5rem 0;
   gap: 2rem;
   flex-shrink: 0;
-  z-index: 30;
+  position: relative;
+  z-index: 6000; /* peste overlay-urile de chat/istoric */
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -508,7 +509,7 @@ button:focus-visible {
 .sidebar-avatar-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2001; /* Mai mare decât pagina de istoric (1000) */
+  z-index: 5001; /* Peste chat/istoric și alte overlay-uri */
   background: transparent;
 }
 
@@ -522,7 +523,7 @@ button:focus-visible {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 200px; /* Mărit pentru a afișa textul complet */
   width: max-content; /* Se extinde pentru a încăpea textul */
-  z-index: 2002; /* Mai mare decât overlay-ul */
+  z-index: 5002; /* Peste overlay-ul de avatar și orice pagină/overlay */
   overflow: visible; /* Permite textului să fie vizibil */
   animation: slideUp 0.2s ease-out;
   white-space: nowrap; /* Previne wrap-ul textului */
@@ -8783,11 +8784,28 @@ body.medai-dark-mode .new-patient-modal-icon--plain {
   padding: 20px;
 }
 
+.chat-modal-overlay.chat-modal-overlay-page {
+  background: var(--background-main);
+  backdrop-filter: none;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  left: 80px; /* păstrează sidebar-ul vizibil */
+  width: calc(100vw - 80px);
+}
+
 .medicines-container.dark-mode .chat-modal-overlay,
 body.med-ai-dark .chat-modal-overlay,
 body.medai-dark-mode .chat-modal-overlay {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
+}
+
+.medicines-container.dark-mode .chat-modal-overlay.chat-modal-overlay-page,
+body.med-ai-dark .chat-modal-overlay.chat-modal-overlay-page,
+body.medai-dark-mode .chat-modal-overlay.chat-modal-overlay-page {
+  background: rgba(15, 15, 15, 1);
+  backdrop-filter: none;
 }
 
 .chat-modal {
@@ -8801,6 +8819,16 @@ body.medai-dark-mode .chat-modal-overlay {
   flex-direction: column;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+.chat-modal.chat-modal-page {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  margin-left: 0;
 }
 
 .medicines-container.dark-mode .chat-modal,
@@ -10596,4 +10624,75 @@ body.medai-dark-mode .status-rejected {
   background: transparent;
   border: none;
   color: rgba(239, 68, 68, 0.7); /* Roșu transparent */
+}
+
+/* Full-page variants for Indicații (păstrează sidebar fix la stânga) */
+.unified-indications-overlay.unified-indications-overlay-page,
+.patient-notes-overlay.patient-notes-overlay-page {
+  position: fixed;
+  top: 0;
+  left: 80px; /* păstrează sidebar-ul fix vizibil */
+  width: calc(100vw - 80px);
+  height: 100vh;
+  background: var(--background-main);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+/* Disable open/close animations for full-page variant to make it appear instantly */
+.unified-indications-overlay.unified-indications-overlay-page,
+.unified-indications-overlay.unified-indications-overlay-page .unified-indications-content {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Make the content fill the available page area */
+.unified-indications-overlay.unified-indications-overlay-page .unified-indications-content {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.patient-notes-overlay.patient-notes-overlay-page .patient-notes-content {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Adjust inner paddings so content uses full height */
+.unified-indications-overlay.unified-indications-overlay-page .unified-indications-main,
+.patient-notes-overlay.patient-notes-overlay-page .patient-notes-textarea-wrapper {
+  padding: 18px;
+  min-height: 0;
+}
+
+/* Ensure footer/header align like full page */
+.unified-indications-overlay.unified-indications-overlay-page .unified-indications-header,
+.patient-notes-overlay.patient-notes-overlay-page .patient-notes-header-content {
+  border-radius: 0;
+  padding: 16px 20px;
+}
+
+/* Dark mode support for full-page variants */
+body.med-ai-dark .unified-indications-overlay.unified-indications-overlay-page,
+body.medai-dark-mode .unified-indications-overlay.unified-indications-overlay-page,
+body.med-ai-dark .patient-notes-overlay.patient-notes-overlay-page,
+body.medai-dark-mode .patient-notes-overlay.patient-notes-overlay-page {
+  background: rgba(15, 15, 15, 1);
 }

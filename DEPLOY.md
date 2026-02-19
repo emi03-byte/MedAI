@@ -41,16 +41,78 @@ Aplicația are două părți în producție:
     - `AZURE_WEBAPP_PUBLISH_PROFILE`: conținutul fișierului descărcat din Azure Portal → App Service → **Get publish profile**
   - La push pe `main` (sau la modificări în `backend/`), workflow-ul `.github/workflows/azure-app-service-backend.yml` face deploy
 
-**Dacă „Get publish profile” dă „Basic authentication is disabled”**, folosești Azure Login cu Service Principal. Adaugă în GitHub → Settings → Secrets → Actions:
+**Dacă „Get publish profile” dă „Basic authentication is disabled”**, folosești Azure Login. Ai nevoie de 2 secrete în GitHub: `AZURE_WEBAPP_NAME` și `AZURE_CREDENTIALS`. Pașii detaliați sunt mai jos.
 
-| Secret | Valoare |
-|--------|--------|
-| `AZURE_WEBAPP_NAME` | Numele exact al App Service-ului (ex. `medai-backend-gbazexfhdjdufxgk`) |
-| `AZURE_CREDENTIALS` | Un singur JSON (fără spații/linemari opțional): `{"clientId":"...","clientSecret":"...","subscriptionId":"...","tenantId":"..."}` |
+---
 
-Unde găsești valorile pentru JSON: **Microsoft Entra ID** → **App registrations** → aplicația ta → **Overview** (clientId = Application ID, tenantId = Directory ID); **Certificates & secrets** → New client secret (clientSecret = Value); **Subscriptions** (subscriptionId).
+#### Pas cu pas: AZURE_CREDENTIALS (Service Principal)
 
-Creezi aplicația: **App registrations** → **New registration** (ex. „MedAI-GitHub”). Apoi **Certificates & secrets** → **New client secret**. Acordă aplicației rol **Contributor** pe Resource Group-ul App Service: **Resource groups** → grupul tău → **Access control (IAM)** → **Add role assignment** → Contributor → Members → selectezi aplicația.
+**Pas 1 – Deschizi Microsoft Entra ID**
+
+- În **Azure Portal** (portal.azure.com), în bara de search de sus scrii: **Microsoft Entra ID** (sau **Azure Active Directory**).
+- Apeși pe rezultatul **Microsoft Entra ID** (serviciu, nu „tenant”).
+
+**Pas 2 – Creezi o aplicație (App registration)**
+
+- În meniul din stânga apeși **App registrations**.
+- Apeși **+ New registration**.
+- **Name**: ex. `MedAI-GitHub`.
+- **Supported account types**: lasă „Accounts in this organizational directory only”.
+- **Redirect URI**: lasi gol.
+- Apeși **Register**.
+
+**Pas 3 – Copiezi Application (client) ID și Directory (tenant) ID**
+
+- Ești pe pagina aplicației. În **Overview** vezi:
+  - **Application (client) ID** → asta e **clientId** (copiezi și îl păstrezi).
+  - **Directory (tenant) ID** → asta e **tenantId** (copiezi și îl păstrezi).
+
+**Pas 4 – Creezi un client secret**
+
+- În meniul din stânga apeși **Certificates & secrets**.
+- La **Client secrets** apeși **+ New client secret**.
+- **Description**: ex. `GitHub Actions`.
+- **Expires**: ex. 24 months.
+- Apeși **Add**.
+- La **Value** (coloana din tabel) apeși pe **Copy** – asta e **clientSecret**. Îl copiezi acum; nu se mai arată niciodată după ce închizi pagina.
+
+**Pas 5 – Găsești Subscription ID**
+
+- În bara de search de sus scrii: **Subscriptions**.
+- Apeși pe **Subscriptions**.
+- Apeși pe subscription-ul tău (cel folosit pentru App Service).
+- Copiezi **Subscription ID** – asta e **subscriptionId**.
+
+**Pas 6 – Dai aplicației drepturi pe Resource Group**
+
+- În search scrii **Resource groups** și intri.
+- Apeși pe resource group-ul în care e App Service-ul tău (ex. unde e „medai-backend”).
+- În stânga apeși **Access control (IAM)**.
+- Apeși **+ Add** → **Add role assignment**.
+- Tab **Role**: cauți și alegi **Contributor** → **Next**.
+- La **Members**: **+ Select members**.
+- În search scrii numele aplicației (ex. `MedAI-GitHub`), o selectezi → **Select** → **Review + assign**.
+
+**Pas 7 – Compui JSON-ul AZURE_CREDENTIALS**
+
+- Deschizi Notepad și scrii pe **un singur rând** (înlocuiești cu valorile tale):
+
+```
+{"clientId":"COLEAZA_AICI_APPLICATION_CLIENT_ID","clientSecret":"COLEAZA_AICI_VALUE_DE_LA_CLIENT_SECRET","subscriptionId":"COLEAZA_AICI_SUBSCRIPTION_ID","tenantId":"COLEAZA_AICI_DIRECTORY_TENANT_ID"}
+```
+
+- Înlocuiești cele 4 zone cu valorile copiate (fără spații în plus, fără ghilimele în plus).
+- Copiezi tot rândul.
+
+**Pas 8 – Adaugi secretele în GitHub**
+
+- Repo-ul tău → **Settings** → **Secrets and variables** → **Actions**.
+- **New repository secret**:
+  - **Name**: `AZURE_WEBAPP_NAME`  
+    **Value**: numele exact al App Service-ului (ex. `medai-backend-gbazexfhdjdufxgk` – îl vezi în Overview la App Service sau în URL).
+- **New repository secret**:
+  - **Name**: `AZURE_CREDENTIALS`  
+    **Value**: lipești JSON-ul din Notepad (tot rândul).
 
 După deploy, backend-ul rulează la: `https://<AZURE_WEBAPP_NAME>.azurewebsites.net` (ex. `/health`, `/api/auth/login`).
 
