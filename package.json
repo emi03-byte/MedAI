@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "backend:start": "node backend/server.js",
     "backend:seed": "node backend/server.js --seed-only",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "test:e2e": "playwright test",
+    "test:e2e:screenshots": "playwright test e2e/capture-screenshots.spec.js",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -27,6 +30,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",

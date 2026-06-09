@@ -52,7 +52,6 @@ async function main() {
 
   try {
     const rows = await allAsync(sqlite, 'SELECT * FROM medications ORDER BY id')
-    sqlite.close()
     console.log('Citite', rows.length, 'rânduri din SQLite (medicamente.db).')
 
     if (rows.length === 0) {
