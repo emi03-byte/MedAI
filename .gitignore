@@ -26,3 +26,11 @@ dist-ssr
 # Environment and credentials
 .env
 .git-credentials
+
+# Manual deploy artifacts
+deploy-backend.zip
+deploy-backend-staging/
+playwright-report/
+test-results/
+__pycache__/
+~$*.docx

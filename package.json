@@ -11,9 +11,12 @@
     "backend:start": "node backend/server.js",
     "backend:seed": "node backend/server.js --seed-only",
     "start": "node backend/server.js",
-    "test:e2e": "playwright test",
-    "test:e2e:screenshots": "playwright test e2e/capture-screenshots.spec.js",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e": "npx playwright test",
+    "test:e2e:screenshots": "npx playwright test e2e/capture-screenshots.spec.js",
+    "test:e2e:report": "playwright show-report",
+    "deploy:package-backend": "powershell -ExecutionPolicy Bypass -File ./deploy/package-backend.ps1",
+    "deploy:build-frontend": "powershell -ExecutionPolicy Bypass -File ./deploy/build-frontend.ps1",
+    "deploy:manual": "powershell -ExecutionPolicy Bypass -File ./deploy/manual-deploy.ps1"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

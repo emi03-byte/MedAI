@@ -287,6 +287,37 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.post('/api/openai/v1/chat/completions', async (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'OpenAI API key is not configured on the server.' });
+  }
+  if (!req.body) {
+    return res.status(400).json({ error: 'Request body is missing.' });
+  }
+  try {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(req.body),
+    });
+    const text = await openaiResponse.text();
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+    res.status(openaiResponse.status).json(body);
+  } catch (error) {
+    console.error('❌ [OPENAI] Eroare la apelul API:', error);
+    res.status(500).json({ error: 'Server error calling OpenAI API.' });
+  }
+});
+
 app.get('/api/medications', async (req, res) => {
   try {
     const { search = '', limit = 50, offset = 0 } = req.query;

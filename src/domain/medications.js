@@ -19,6 +19,8 @@ export const mapMedicationRowToUi = (row) => ({
     row?.contributie_max_90_50_20 || '',
   'Contribuție maxima a asiguratului raportat la UT, pentru asiguratii care beneficiază de compensare 90% din pretul de referinta, pentru pensionari cu venituri de pana la 1.299 lei/luna inclusiv':
     row?.contributie_max_pensionari_90 || '',
+  CategorieVarsta: row?.categorie_varsta || '',
+  Coduri_Boli: row?.coduri_boli || '',
 })
 
 export const mapMedicationRowsToUi = (rows) =>
